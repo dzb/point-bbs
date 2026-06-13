@@ -28,6 +28,30 @@ public class TopicRoutes {
                 resp.put("pageSize", result.pageSize()); resp.put("total", result.total());
                 ctx.sendJson(200, ApiResponse.ok(resp));
             }),
+            // Following feed
+            Route.get("/following", ctx -> {
+                var user = AuthFilter.requireUser();
+                int page = parseInt(ctx.queryParam("page"), 1);
+                int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
+                var db = AppContext.get(com.jujin.freeway.db.Database.class);
+                int offset = (page - 1) * pageSize;
+                // Get followed user IDs
+                var followedIds = db.query(
+                    "SELECT other_id FROM bbs_user_follow WHERE user_id = ? AND status = 1", user.userId()
+                ).list(com.jujin.freeway.db.Row.class).stream()
+                    .map(r -> r.integer("other_id").toString()).toList();
+                if (followedIds.isEmpty()) {
+                    ctx.sendJson(200, ApiResponse.ok(java.util.List.of()));
+                    return;
+                }
+                var inClause = String.join(",", followedIds);
+                var tweets = db.query(
+                    "SELECT * FROM bbs_topic WHERE user_id IN (" + inClause + ") AND status = 1 AND type = 1 ORDER BY create_time DESC LIMIT ? OFFSET ?",
+                    pageSize, offset
+                ).list(com.jujin.point.domain.entity.Topic.class);
+                var enriched = tweets.stream().map(com.jujin.point.web.ResponseEnricher::enrichTopic).toList();
+                ctx.sendJson(200, ApiResponse.ok(enriched));
+            }),
             // Moments (tweets — type=1)
             Route.get("/moments", ctx -> {
                 int page = TopicRoutes.parseInt(ctx.queryParam("page"), 1);

@@ -6,6 +6,7 @@
         <header class="main-header" :style="{ borderBottom: '1px solid ' + theme.border }">
           <div class="header-tabs">
             <router-link to="/" class="header-tab" :class="{ active: $route.path === '/' }">推荐</router-link>
+            <router-link to="/following" class="header-tab" :class="{ active: $route.path === '/following' }">关注</router-link>
             <router-link to="/explore" class="header-tab" :class="{ active: $route.path === '/explore' }">探索</router-link>
             <router-link to="/articles" class="header-tab" :class="{ active: $route.path === '/articles' }">文章</router-link>
           </div>
@@ -93,7 +94,7 @@ html.dark .v-divider { border-color: #3a3530 !important; }
 .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .main-header { display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: 48px; position: sticky; top: 0; background: var(--paper-bg); z-index: 10; }
 .header-tabs { display: flex; flex-shrink: 0; }
-.header-tab { padding: 12px 16px; font-size: 16px; color: var(--paper-text2); text-decoration: none; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
+.header-tab { padding: 12px 16px; font-size: 18px; color: var(--paper-text2); text-decoration: none; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
 .header-tab:hover { color: var(--paper-text); }
 .header-tab.active { color: #c43d3d; border-bottom-color: #c43d3d; }
 .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 1; min-width: 0; }

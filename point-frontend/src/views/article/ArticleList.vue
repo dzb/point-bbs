@@ -1,26 +1,23 @@
 <template>
   <div style="max-width:680px">
-    <v-row v-if="articles.length > 0">
-      <v-col v-for="a in articles" :key="a.id" cols="12" md="4">
-        <v-card class="h-100" @click="$router.push(`/articles/${a.id}`)">
-          <v-img v-if="a.cover" :src="a.cover" height="160" cover />
-          <v-card-item>
-            <v-card-title class="text-body-1">{{ a.title }}</v-card-title>
-            <v-card-subtitle class="text-caption">
-              {{ a.summary || a.content?.substring(0, 100) }}
-            </v-card-subtitle>
-            <template #append>
-              <div class="text-caption text-grey mt-1">
-                {{ a.viewCount }} 阅读 · {{ a.commentCount }} 评论 · {{ formatTime(a.createTime) }}
-              </div>
-            </template>
-          </v-card-item>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <div v-if="articles.length === 0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无文章</div>
-    <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" />
+    <div v-for="a in articles" :key="a.id" class="article-item" @click="$router.push(`/articles/${a.id}`)">
+      <div class="d-flex">
+        <div class="flex-grow-1">
+          <div class="mb-1" style="font-size:16px;font-weight:500;color:var(--paper-text);line-height:1.4">{{ a.title }}</div>
+          <div style="font-size:13px;color:var(--paper-text2);line-height:1.6;margin-bottom:6px">
+            {{ a.summary || stripHtml(a.content).substring(0, 120) }}
+          </div>
+          <div style="font-size:12px;color:var(--paper-text2)">
+            {{ a.viewCount }} 阅读 · {{ a.commentCount }} 评论 · {{ fmt(a.createTime) }}
+          </div>
+        </div>
+        <div v-if="a.cover" class="ml-3 flex-shrink-0" style="width:80px;height:60px;border-radius:6px;overflow:hidden">
+          <img :src="a.cover" style="width:100%;height:100%;object-fit:cover" />
+        </div>
+      </div>
+    </div>
+    <div v-if="articles.length===0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无文章</div>
+    <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="#c43d3d" />
   </div>
 </template>
 
@@ -37,5 +34,13 @@ onMounted(async () => {
   loading.value = false
 })
 
-function formatTime(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') : '' }
+function stripHtml(html: string) {
+  return html ? html.replace(/<[^>]*>/g, '').replace(/[#*>`_~]/g, '') : ''
+}
+function fmt(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') : '' }
 </script>
+
+<style scoped>
+.article-item { padding: 16px 0; border-bottom: 1px solid var(--paper-border); cursor: pointer; transition: background .15s; }
+.article-item:hover { background: rgba(0,0,0,.01); }
+</style>

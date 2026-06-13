@@ -8,6 +8,7 @@ const router = createRouter({
       component: () => import('@/layouts/DefaultLayout.vue'),
       children: [
         { path: '', name: 'home', component: () => import('@/views/home/HomePage.vue') },
+        { path: 'following', name: 'following', component: () => import('@/views/home/FollowingPage.vue') },
         { path: 'explore', name: 'explore', component: () => import('@/views/home/ExplorePage.vue') },
         { path: 'topics/:id', name: 'topic-detail', component: () => import('@/views/topic/TopicDetail.vue') },
         { path: 'topics/create', name: 'topic-create', component: () => import('@/views/topic/TopicCreate.vue') },

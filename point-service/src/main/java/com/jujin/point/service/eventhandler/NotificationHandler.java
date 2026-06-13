@@ -11,14 +11,15 @@ public final class NotificationHandler {
     private NotificationHandler() {}
 
     public static void onCommentCreated(CommentCreatedEvent e, Container c) {
+        var db = c.get(Database.class);
         var msgSvc = c.get(MessageService.class);
+        var nickname = getNickname(db, e.userId());
         if ("topic".equals(e.entityType())) {
-            var db = c.get(Database.class);
             db.query("SELECT user_id, title FROM bbs_topic WHERE id = ?", e.entityId())
                 .one(Topic.class)
                 .ifPresent(topic ->
                     msgSvc.send(e.userId(), topic.getUserId(),
-                        "新评论", "评论了你的帖子",
+                        "新评论", nickname + " 评论了你的帖子",
                         truncate(topic.getTitle(), 200), 0,
                         e.entityType() + ":" + e.entityId()));
         }
@@ -27,6 +28,7 @@ public final class NotificationHandler {
     public static void onUserLiked(UserLikedEvent e, Container c) {
         var db = c.get(Database.class);
         var msgSvc = c.get(MessageService.class);
+        var nickname = getNickname(db, e.userId());
 
         Long authorId = switch (e.entityType()) {
             case "topic" -> DbQuery.longValue(db,
@@ -37,14 +39,24 @@ public final class NotificationHandler {
         };
         if (authorId != null) {
             msgSvc.send(e.userId(), authorId,
-                "点赞", "赞了你的" + e.entityType(), null, 1,
+                "点赞", nickname + " 赞了你的" + e.entityType(), null, 1,
                 e.entityType() + ":" + e.entityId());
         }
     }
 
+    private static String getNickname(com.jujin.freeway.db.Database db, long userId) {
+        return db.query("SELECT nickname FROM bbs_user WHERE id = ?", userId)
+            .list(com.jujin.freeway.db.Row.class).stream()
+            .findFirst().map(r -> r.string("nickname")).orElse("有人");
+    }
+
     public static void onUserFollowed(UserFollowedEvent e, Container c) {
+        var db = c.get(Database.class);
+        var nickname = db.query("SELECT nickname FROM bbs_user WHERE id = ?", e.userId())
+            .list(com.jujin.freeway.db.Row.class).stream()
+            .findFirst().map(r -> r.string("nickname")).orElse("有人");
         c.get(MessageService.class).send(e.userId(), e.otherId(),
-            "新粉丝", "关注了你", null, 2, "user:" + e.userId());
+            "新粉丝", nickname + " 关注了你", null, 2, "user:" + e.userId());
     }
 
     private static String truncate(String s, int maxLen) {
