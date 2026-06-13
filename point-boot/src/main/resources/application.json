@@ -1,0 +1,35 @@
+{
+  "app": {
+    "name": "point",
+    "description": "point — a modern forum system built with freeway"
+  },
+  "web": {
+    "server": {
+      "host": "0.0.0.0",
+      "port": 8082
+    },
+    "cors": {
+      "enabled": true,
+      "allowed-origins": "*"
+    }
+  },
+  "freeway": {
+    "db": {
+      "url": "jdbc:h2:file:./data/bbs;MODE=MySQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE,KEY,LABEL,TYPE,LEVEL,INDEX",
+      "username": "sa",
+      "password": "",
+      "pool": {
+        "max-size": 20
+      }
+    }
+  },
+  "bbs": {
+    "jwt": {
+      "secret": "change-me-in-production-use-a-long-random-string",
+      "expire-days": 7
+    },
+    "upload": {
+      "dir": "./uploads"
+    }
+  }
+}

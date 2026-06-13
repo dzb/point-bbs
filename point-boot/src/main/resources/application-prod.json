@@ -1,0 +1,28 @@
+{
+  "web": {
+    "server": {
+      "host": "0.0.0.0",
+      "port": 8080
+    }
+  },
+  "freeway": {
+    "db": {
+      "url": "jdbc:mysql://localhost:3306/bbs?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai",
+      "username": "",
+      "password": "",
+      "pool": {
+        "max-size": 30,
+        "min-idle": 5
+      }
+    }
+  },
+  "bbs": {
+    "jwt": {
+      "secret": "",
+      "expire-days": 7
+    },
+    "upload": {
+      "dir": "./uploads"
+    }
+  }
+}

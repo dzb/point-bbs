@@ -1,0 +1,14 @@
+target/
+node_modules/
+dist/
+logs/
+data/
+*.log
+*.lck
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.DS_Store
+dependency-reduced-pom.xml
