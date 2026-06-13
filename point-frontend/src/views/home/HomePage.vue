@@ -126,10 +126,9 @@ function fmt(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') 
 .home-feed { flex: 1; max-width: 680px; min-width: 0; padding-right: 48px; border-right: 1px solid var(--paper-border); }
 .home-aside { width: 340px; flex-shrink: 0; padding-left: 36px; }
 
-@media (max-width: 1100px) {
-  .home-aside { display: none; }
-  .home-feed { border-right: none; padding-right: 0; }
-}
+@media (max-width: 1200px) { .home-feed { padding-right: 32px; } .home-aside { padding-left: 32px; } }
+@media (max-width: 1100px) { .home-aside { display: none; } .home-feed { border-right: none; padding-right: 0; } }
+@media (max-width: 900px)  { .home-feed { padding-right: 16px; } }
 
 .moments-list { display: flex; flex-direction: column; gap: 10px; }
 .moment-card { background: var(--paper-bg); border: 1px solid var(--paper-border); border-radius: 8px; padding: 16px 18px; }

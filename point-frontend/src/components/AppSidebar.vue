@@ -3,7 +3,7 @@
     <!-- Logo -->
     <div class="sidebar-top">
       <router-link to="/" class="sidebar-logo" :class="{ collapsed }">
-        <span class="logo-mark">印</span>
+        <span class="logo-mark">聚</span>
         <span v-if="!collapsed" class="logo-text">point</span>
       </router-link>
       <v-btn icon="mdi-chevron-left" variant="text" size="small" class="collapse-btn"
@@ -20,7 +20,7 @@
         <v-icon size="20">mdi-pen</v-icon>
         <span v-if="!collapsed" class="nav-label">创作</span>
       </router-link>
-      <router-link to="/users/1/favorites" class="nav-item">
+      <router-link to="/favorites" class="nav-item">
         <v-icon size="20">mdi-bookmark-outline</v-icon>
         <span v-if="!collapsed" class="nav-label">收藏</span>
       </router-link>
@@ -64,10 +64,10 @@ window.addEventListener('resize', () => {
 .collapse-btn.flipped { transform: rotate(180deg); }
 
 .sidebar-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
-.logo-mark { width: 28px; height: 28px; background: #c43d3d; color: #fff; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;
+.logo-mark { width: 36px; height: 36px; background: #c43d3d; color: #fff; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700;
   font-family: 'Noto Serif SC', Georgia, serif; }
-.logo-text { font-family: 'Noto Serif SC', Georgia, serif; font-size: 18px; font-weight: 700; color: var(--paper-text); }
+.logo-text { font-family: 'Noto Serif SC', Georgia, serif; font-size: 20px; font-weight: 700; color: var(--paper-text); }
 
 .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 0 8px; }
 .sidebar-bottom { padding: 0 8px; }

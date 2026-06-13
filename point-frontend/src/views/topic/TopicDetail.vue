@@ -1,10 +1,11 @@
 <template>
   <div v-if="topic">
+    <v-btn icon="mdi-arrow-left" variant="text" size="34" class="mb-2 back-btn" @click="$router.back()" />
     <v-card class="mb-4">
       <v-card-item>
         <v-card-title class="text-h5">{{ topic.title }}</v-card-title>
         <v-card-subtitle>
-          <v-avatar :image="topic.user?.avatar" size="24" class="mr-1" />
+          <UserAvatar :src="topic.user?.avatar" :name="topic.user?.nickname" :size="24" class="mr-1" />
           {{ topic.user?.nickname }} · {{ formatTime(topic.createTime) }}
           <span class="ml-3"><v-icon size="small">mdi-eye-outline</v-icon> {{ topic.viewCount }}</span>
           <span class="ml-2"><v-icon size="small">mdi-comment-outline</v-icon> {{ topic.commentCount }}</span>
@@ -18,13 +19,14 @@
         <v-btn :color="favorited ? '#c43d3d' : ''" variant="text"
           :icon="favorited ? 'mdi-bookmark' : 'mdi-bookmark-outline'" :loading="favLoading" @click="toggleFav" />
         <v-btn v-if="topic.userId !== auth.user?.id" variant="text" :color="following ? '#c43d3d' : ''"
-          :loading="followLoading" @click="toggleFollow">{{ following ? '已关注' : '关注' }}</v-btn>
+          :icon="following ? 'mdi-account-check-outline' : 'mdi-account-plus-outline'"
+          :loading="followLoading" @click="toggleFollow" />
         <v-btn v-if="topic.userId === auth.user?.id" variant="text" icon="mdi-pencil" :to="`/topic/${topic.id}/edit`" />
       </v-card-actions>
     </v-card>
 
     <v-card class="mb-4">
-      <v-card-title>评论 ({{ comments.length }})</v-card-title>
+      <v-card-title class="text-body-1" style="font-weight:500">评论 <span style="font-size:13px;color:var(--paper-text2);font-weight:400">{{ comments.length }}</span></v-card-title>
       <v-card-text>
         <div v-if="auth.isLoggedIn" class="mb-4">
           <v-textarea v-model="commentText" label="写下你的评论..." rows="3" variant="outlined" density="compact" hide-details class="mb-2" />
@@ -33,7 +35,7 @@
         <v-divider class="mb-3" />
         <div v-for="c in comments" :key="c.id" class="mb-3">
           <div class="d-flex align-start">
-            <v-avatar :image="c.user?.avatar" size="32" class="mr-2" />
+            <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" class="mr-2" />
             <div class="flex-grow-1">
               <div class="text-caption text-grey">{{ c.user?.nickname }} · {{ formatTime(c.createTime) }}</div>
               <div v-html="c.content" class="comment-content" />
@@ -55,6 +57,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
+import UserAvatar from '@/components/UserAvatar.vue'
 import MarkdownIt from 'markdown-it'
 
 const md = new MarkdownIt({ breaks: true, linkify: true })
@@ -133,4 +136,5 @@ function formatTime(ts: number) { return ts ? new Date(ts).toLocaleString('zh-CN
 
 <style scoped>
 .topic-content :deep(img), .comment-content :deep(img) { max-width: 100%; }
+.back-btn { margin-left: -10px; }
 </style>

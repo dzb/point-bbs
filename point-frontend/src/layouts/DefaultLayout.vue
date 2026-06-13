@@ -121,6 +121,8 @@ html.dark .v-divider { border-color: #3a3530 !important; }
 .header-tab.active { color: #c43d3d; border-bottom-color: #c43d3d; }
 .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 1; min-width: 0; }
 .main-content { flex: 1; padding: 24px 48px; }
+@media (max-width: 1200px) { .main-content { padding: 24px 32px; } .main-header { padding: 0 32px; } }
+@media (max-width: 900px)  { .main-content { padding: 20px 16px; } .main-header { padding: 0 16px; } }
 
 .btn-login { color: var(--paper-text) !important; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 14px; border: 1px solid #c43d3d !important; border-radius: 6px; padding: 0 20px; transition: border-width .15s, box-shadow .15s; }
 .btn-login:hover { background: rgba(196,61,61,.04) !important; }
@@ -133,4 +135,6 @@ html.dark .v-divider { border-color: #3a3530 !important; }
 
 .search-input { width: 200px; transition: width .3s ease; }
 .search-input.focused { width: 480px; }
+.search-input :deep(.v-field) { min-height: 28px !important; }
+.search-input :deep(.v-field__input) { font-size: 13px; min-height: 16px !important; padding-top: 0 !important; padding-bottom: 0 !important; }
 </style>
