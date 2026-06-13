@@ -1,6 +1,6 @@
 <template>
   <div v-if="topic">
-    <v-btn icon="mdi-arrow-left" variant="text" size="34" class="mb-2 back-btn" @click="$router.back()" />
+    <BackButton />
     <v-card class="mb-4">
       <v-card-item>
         <v-card-title class="text-h5">{{ topic.title }}</v-card-title>
@@ -58,6 +58,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import UserAvatar from '@/components/UserAvatar.vue'
+import BackButton from '@/components/BackButton.vue'
 import MarkdownIt from 'markdown-it'
 
 const md = new MarkdownIt({ breaks: true, linkify: true })
@@ -136,5 +137,4 @@ function formatTime(ts: number) { return ts ? new Date(ts).toLocaleString('zh-CN
 
 <style scoped>
 .topic-content :deep(img), .comment-content :deep(img) { max-width: 100%; }
-.back-btn { margin-left: -10px; }
 </style>

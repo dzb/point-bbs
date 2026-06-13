@@ -53,45 +53,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useTheme } from 'vuetify'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import AppSidebar from '@/components/AppSidebar.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { usePaperTheme } from '@/composables/usePaperTheme'
 
-const vuetifyTheme = useTheme()
+const { current: theme, setTheme, themes, activeKey: paperTheme } = usePaperTheme()
 const auth = useAuthStore()
 const router = useRouter()
 const searchQuery = ref('')
 const searchFocused = ref(false)
 const unreadCount = ref(0)
-const paperTheme = ref(localStorage.getItem('paperTheme') || 'jade')
 
-const themes = [
-  { key: 'jade',   label: '象牙 · 玉白', bg: '#fdfaf6', text: '#2c2416', text2: '#8b7e6a', border: '#e8e0d5' },
-  { key: 'jinsu',  label: '金粟 · 暖黄', bg: '#fcf7ee', text: '#2c2416', text2: '#8b7e6a', border: '#ece3d2' },
-  { key: 'cicada', label: '蝉翼 · 冷灰', bg: '#f5f4f1', text: '#1e1d1a', text2: '#7d7a73', border: '#e6e3dd' },
-  { key: 'night',  label: '夜读 · 墨池', bg: '#1e1b18', text: '#e8e0d5', text2: '#9b8e7e', border: '#3a3530' },
-]
-
-const theme = computed(() => themes.find(t => t.key === paperTheme.value) || themes[1])
-
-function setTheme(key: string) { paperTheme.value = key; localStorage.setItem('paperTheme', key); applyTheme(theme.value) }
-
-function applyTheme(t: typeof themes[0]) {
-  const root = document.documentElement; const isDark = t.key === 'night'
-  root.style.setProperty('--paper-bg', t.bg); root.style.setProperty('--paper-text', t.text)
-  root.style.setProperty('--paper-text2', t.text2); root.style.setProperty('--paper-border', t.border)
-  document.body.style.backgroundColor = t.bg
-  if (isDark) { root.classList.add('dark') } else { root.classList.remove('dark') }
-  vuetifyTheme.themes.value.light.colors.background = t.bg
-  vuetifyTheme.themes.value.light.colors.surface = isDark ? '#252220' : '#ffffff'
-  vuetifyTheme.themes.value.light.colors.primary = t.text; vuetifyTheme.themes.value.light.colors.secondary = t.text2
-}
-
-onMounted(async () => { applyTheme(theme.value); if (auth.isLoggedIn) await fetchUnread() })
+onMounted(async () => { if (auth.isLoggedIn) await fetchUnread() })
 auth.$subscribe(async () => { if (auth.isLoggedIn) await fetchUnread() })
 
 async function fetchUnread() {

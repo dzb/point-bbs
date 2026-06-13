@@ -22,30 +22,7 @@
 
     <!-- Moments feed -->
     <div class="moments-list">
-    <router-link v-for="m in moments" :key="m.id" :to="`/topics/${m.id}`" class="moment-card text-decoration-none">
-      <div class="d-flex">
-        <router-link :to="`/users/${m.userId}`" class="flex-shrink-0 mr-3">
-          <UserAvatar :src="m.user?.avatar" :name="m.user?.nickname" :size="36" />
-        </router-link>
-        <div class="flex-grow-1" style="min-width:0">
-          <div class="d-flex align-center mb-1">
-            <router-link :to="`/users/${m.userId}`" class="text-decoration-none" style="color:var(--paper-text);font-weight:500;font-size:14px">
-              {{ m.user?.nickname }}
-            </router-link>
-            <span class="moment-time">{{ fmt(m.createTime) }}</span>
-          </div>
-          <div v-html="mdBrief(m.content)" style="font-size:15px;color:var(--paper-text);line-height:1.7;word-break:break-word" />
-          <div class="d-flex mt-2 moment-actions">
-            <span @click.prevent.stop>
-              <v-icon size="14">mdi-comment-outline</v-icon>{{ m.commentCount||0 }}
-            </span>
-            <span @click.prevent.stop="toggleLike(m)">
-              <v-icon size="14" :color="m.liked ? '#c43d3d' : ''">{{ m.liked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>{{ m.likeCount||0 }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </router-link>
+      <MomentCard v-for="m in moments" :key="m.id" :moment="m" @toggle-like="toggleLike" />
     </div><!-- .moments-list -->
 
     <div v-if="moments.length===0" class="text-center py-16" style="color:var(--paper-text2)">暂无随想</div>
@@ -70,10 +47,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useTheme } from 'vuetify'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
-import UserAvatar from '@/components/UserAvatar.vue'
+import MomentCard from '@/components/MomentCard.vue'
 
 const auth = useAuthStore()
 const moments = ref<any[]>([])
