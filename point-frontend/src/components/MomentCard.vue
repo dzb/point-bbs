@@ -73,8 +73,16 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 
 const rendered = computed(() => {
   const c = props.moment?.content || ''
-  const html = md.render(c)
-  return html.length > 600 ? html.substring(0, 600) + '…' : html
+  let html = md.render(c)
+  // Wrap consecutive <img> tags in a grid container
+  html = html.replace(/((?:<p><img[^>]*><\/p>\s*)+)/g, (match) => {
+    const count = (match.match(/<img/g) || []).length
+    const imgs = match.replace(/<\/?p>/g, '')
+    const cols = count === 1 ? 'cols-1' : count === 2 ? 'cols-2' : count === 3 ? 'cols-3' : 'cols-4'
+    return `<div class="img-grid ${cols}">${imgs}</div>`
+  })
+  if (html.length > 600) html = html.substring(0, 600) + '…'
+  return html
 })
 
 const textOnly = computed(() => {
@@ -112,13 +120,15 @@ function fmt(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') 
 .mc-time { font-size: 12px; color: var(--paper-text2); margin-left: auto; }
 .mc-body { font-size: 15px; color: var(--paper-text); line-height: 1.7; word-break: break-word; }
 .mc-body :deep(p) { margin: .3em 0; }
-.mc-body :deep(p:has(img)) { display: grid; gap: 4px; margin: 8px 0; }
-.mc-body :deep(img) { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid var(--paper-border); cursor: pointer; }
-.mc-body :deep(p:has(img:only-child)) { grid-template-columns: 1fr; }
-.mc-body :deep(p:has(img:only-child)) :deep(img) { max-height: 400px; }
-.mc-body :deep(p:has(> img:nth-child(2):last-child)) { grid-template-columns: 1fr 1fr; }
-.mc-body :deep(p:has(> img:nth-child(3))) { grid-template-columns: 1fr 1fr; }
-.mc-body :deep(p:has(> img:nth-child(3))) :deep(img:first-child) { grid-row: span 2; }
+.mc-body :deep(img) { max-width: 100%; max-height: 400px; border-radius: 8px; cursor: pointer; vertical-align: top; }
+/* Multi-image grid via container */
+.mc-body :deep(.img-grid) { display: grid; gap: 4px; margin: 8px 0; }
+.mc-body :deep(.img-grid.cols-1) { grid-template-columns: 1fr; }
+.mc-body :deep(.img-grid.cols-2) { grid-template-columns: 1fr 1fr; }
+.mc-body :deep(.img-grid.cols-3) { grid-template-columns: 1fr 1fr; }
+.mc-body :deep(.img-grid.cols-3 img:first-child) { grid-row: span 2; }
+.mc-body :deep(.img-grid.cols-4) { grid-template-columns: 1fr 1fr; }
+.mc-body :deep(.img-grid img) { width: 100%; height: 100%; object-fit: cover; border: 1px solid var(--paper-border); }
 .mc-actions { gap: 20px; font-size: 12px; color: var(--paper-text2); }
 .mc-actions span { cursor: pointer; display: flex; align-items: center; gap: 3px; }
 </style>

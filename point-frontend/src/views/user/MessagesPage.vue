@@ -1,7 +1,7 @@
 <template>
   <div style="max-width:680px">
-    <div class="d-flex justify-end mb-3">
-      <v-btn v-if="messages.length > 0" variant="text" size="small" @click="markAllRead">全部已读</v-btn>
+    <div v-if="messages.length > 0" class="d-flex justify-end mb-3">
+      <v-btn variant="text" size="small" @click="markAllRead">全部已读</v-btn>
     </div>
 
     <v-card v-for="m in messages" :key="m.id" class="mb-2" :class="{ 'bg-grey-lighten-4': m.status === 0 }">

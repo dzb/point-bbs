@@ -134,7 +134,7 @@ async function toggleLike(m: any) {
 .aside-card { background: var(--paper-bg); border: 1px solid var(--paper-border); border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; }
 .aside-card-title { font-size: 14px; color: var(--paper-text); font-weight: 500; margin-bottom: 4px; }
 .aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.7; }
-.composer { border: 1px solid var(--paper-border); border-radius: 12px; padding: 16px; background: var(--paper-bg); }
+.composer { border: 1px solid var(--paper-border); border-radius: 12px; padding: 16px; background: var(--paper-bg); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 .composer-input :deep(.v-field) { border: none !important; }
 .composer-input :deep(.v-field__input) { padding-top: 4px !important; padding-bottom: 4px !important; min-height: 40px !important; font-size: 15px; }
 .composer-images { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; margin-top: 8px; }

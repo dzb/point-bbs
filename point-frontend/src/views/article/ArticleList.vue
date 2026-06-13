@@ -1,12 +1,6 @@
 <template>
-  <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h5">文章</h1>
-      <v-spacer />
-      <v-btn color="primary" to="/articles/create" v-if="auth.isLoggedIn">写文章</v-btn>
-    </div>
-
-    <v-row>
+  <div style="max-width:680px">
+    <v-row v-if="articles.length > 0">
       <v-col v-for="a in articles" :key="a.id" cols="12" md="4">
         <v-card class="h-100" @click="$router.push(`/articles/${a.id}`)">
           <v-img v-if="a.cover" :src="a.cover" height="160" cover />
@@ -25,17 +19,15 @@
       </v-col>
     </v-row>
 
-    <div v-if="articles.length === 0 && !loading" class="text-center py-8 text-grey">暂无文章</div>
+    <div v-if="articles.length === 0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无文章</div>
     <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 
-const auth = useAuthStore()
 const articles = ref<any[]>([])
 const loading = ref(true)
 
