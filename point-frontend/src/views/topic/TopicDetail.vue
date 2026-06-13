@@ -51,12 +51,12 @@
 
           <div v-for="c in comments" :key="c.id" class="py-3" style="border-top:1px solid var(--paper-border)">
             <div class="d-flex">
-              <router-link :to="`/users/${c.userId}`" class="flex-shrink-0 mr-3">
+              <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
                 <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" />
               </router-link>
               <div>
                 <div class="mb-1">
-                  <router-link :to="`/users/${c.userId}`" class="text-decoration-none" style="font-size:13px;font-weight:500;color:var(--paper-text)">
+                  <router-link :to="`/users/${c.user?.id}`" class="text-decoration-none" style="font-size:13px;font-weight:500;color:var(--paper-text)">
                     {{ c.user?.nickname }}
                   </router-link>
                   <span style="font-size:12px;color:var(--paper-text2);margin-left:8px">{{ formatTime(c.createTime) }}</span>

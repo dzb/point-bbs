@@ -11,10 +11,19 @@
         </div>
         <div v-html="rendered" class="mc-body" @click="onBodyClick" />
         <div class="d-flex mt-2 mc-actions">
-          <span @click.prevent.stop><v-icon size="14">mdi-comment-outline</v-icon>{{ moment.commentCount || 0 }}</span>
+          <span @click.prevent.stop="showReply = !showReply"><v-icon size="14">mdi-comment-outline</v-icon>{{ commentCount }}</span>
           <span @click.prevent.stop="$emit('toggle-like', moment)">
             <v-icon size="14" :color="moment.liked ? '#c43d3d' : ''">{{ moment.liked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>{{ moment.likeCount || 0 }}
           </span>
+        </div>
+
+        <!-- Inline reply box -->
+        <div v-if="showReply" class="reply-box" @click.prevent.stop>
+          <div class="d-flex mt-3">
+            <v-textarea v-model="replyText" placeholder="写下你的回复..." rows="2" density="compact" hide-details variant="outlined" class="mr-2" style="font-size:13px" @keydown.enter.ctrl="doReply" />
+            <v-btn variant="flat" size="small" :loading="replying" @click="doReply"
+              style="background:#c43d3d;color:#fff;text-transform:none;letter-spacing:0;border-radius:20px;padding:0 16px;align-self:flex-end">回复</v-btn>
+          </div>
         </div>
       </div>
     </div>
@@ -90,7 +99,10 @@ const newComment = ref('')
 const posting = ref(false)
 const liked = ref(false)
 const likeCount = ref(0)
-const commentCount = ref(0)
+const commentCount = computed(() => props.moment?.commentCount || 0)
+const showReply = ref(false)
+const replyText = ref('')
+const replying = ref(false)
 
 function onKey(e: KeyboardEvent) { if (e.key === 'Escape') viewer.value = 0 }
 onMounted(() => window.addEventListener('keydown', onKey))
@@ -142,7 +154,8 @@ watch(viewer, async (v) => {
   if (v > 0 && props.moment?.id) {
     liked.value = props.moment.liked || false
     likeCount.value = props.moment.likeCount || 0
-    commentCount.value = props.moment.commentCount || 0
+    showReply.value = false
+    replyText.value = ''
     try {
       const { data } = await client.get(`/topics/${props.moment.id}/comments`, { params: { pageSize: 50 } })
       if (data.code === 0) comments.value = data.data || []
@@ -156,6 +169,18 @@ async function toggleLike() {
     else { await client.post(`/topics/${props.moment.id}/like`); liked.value = true; likeCount.value++ }
     emit('toggle-like', props.moment)
   } catch { /* */ }
+}
+
+async function doReply() {
+  if (!replyText.value.trim()) return
+  replying.value = true
+  try {
+    await client.post(`/topics/${props.moment.id}/comments`, { content: replyText.value, contentType: 'markdown' })
+    replyText.value = ''
+    props.moment.commentCount = (props.moment.commentCount || 0) + 1
+    showReply.value = false
+  } catch { /* */ }
+  replying.value = false
 }
 
 async function postComment() {

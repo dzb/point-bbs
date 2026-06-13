@@ -93,14 +93,15 @@ html.dark .v-divider { border-color: #3a3530 !important; }
 .app-shell { display: flex; min-height: 100vh; }
 .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .main-header { display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: 48px; position: sticky; top: 0; background: var(--paper-bg); z-index: 10; }
-.header-tabs { display: flex; flex-shrink: 0; }
-.header-tab { padding: 12px 16px; font-size: 18px; color: var(--paper-text2); text-decoration: none; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
+.header-tabs { display: flex; }
+.header-tab { padding: 12px 16px; font-size: 18px; color: var(--paper-text2); text-decoration: none; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s, font-size .15s, padding .15s; white-space: nowrap; }
 .header-tab:hover { color: var(--paper-text); }
 .header-tab.active { color: #c43d3d; border-bottom-color: #c43d3d; }
 .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 1; min-width: 0; }
 .main-content { flex: 1; padding: 24px 48px; }
-@media (max-width: 1200px) { .main-content { padding: 24px 32px; } .main-header { padding: 0 32px; } }
-@media (max-width: 900px)  { .main-content { padding: 20px 16px; } .main-header { padding: 0 16px; } }
+@media (max-width: 1200px) { .header-tab { font-size: 16px; padding: 10px 12px; } .main-content { padding: 24px 32px; } .main-header { padding: 0 32px; } }
+@media (max-width: 1000px) { .header-tab { font-size: 15px; padding: 8px 10px; } }
+@media (max-width: 900px)  { .header-tab { font-size: 14px; padding: 8px 8px; } .main-content { padding: 20px 16px; } .main-header { padding: 0 16px; } }
 
 .btn-login { color: var(--paper-text) !important; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 14px; border: 1px solid #c43d3d !important; border-radius: 6px; padding: 0 20px; transition: border-width .15s, box-shadow .15s; }
 .btn-login:hover { background: rgba(196,61,61,.04) !important; }

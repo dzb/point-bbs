@@ -65,7 +65,7 @@ window.addEventListener('resize', () => {
 
 .sidebar-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
 .logo-mark { width: 36px; height: 36px; background: #c43d3d; color: #fff; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700;
   font-family: 'Noto Serif SC', Georgia, serif; }
 .logo-text { font-family: 'Noto Serif SC', Georgia, serif; font-size: 20px; font-weight: 700; color: var(--paper-text); }
 

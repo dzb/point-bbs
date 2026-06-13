@@ -40,10 +40,22 @@ public class CommentService {
 
         db.transaction(() -> {
             commentRepo.insert(comment);
+            incrCommentCount(entityType, entityId, 1);
             eventBus.publish(new CommentCreatedEvent(userId, comment.getId(), entityId, entityType, now));
         });
 
         return comment;
+    }
+
+    private void incrCommentCount(String entityType, long entityId, int delta) {
+        String table = switch (entityType) {
+            case "topic" -> "bbs_topic";
+            case "article" -> "bbs_article";
+            default -> null;
+        };
+        if (table != null) {
+            db.execute("UPDATE " + table + " SET comment_count = comment_count + ? WHERE id = ?", delta, entityId);
+        }
     }
 
     public void delete(long userId, long commentId) {

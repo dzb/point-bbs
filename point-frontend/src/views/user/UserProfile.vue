@@ -2,7 +2,7 @@
   <div v-if="profile" class="mx-auto" style="max-width:680px">
     <section class="mb-6">
       <div class="d-flex align-start">
-        <v-avatar :image="profile.avatar" size="64" class="mr-4 flex-shrink-0" />
+        <UserAvatar :src="profile.avatar" :name="profile.nickname" :size="64" class="mr-4 flex-shrink-0" />
         <div class="flex-grow-1">
           <h1 class="text-h5 mb-1" style="font-family:'Noto Serif SC',Georgia,serif;font-weight:700;color:#1a1a1a">{{ profile.nickname }}</h1>
           <div class="mb-2" style="font-size:13px;color:#999">
@@ -49,6 +49,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import client from '@/api/client'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 const route = useRoute()
 const profile = ref<any>(null)
