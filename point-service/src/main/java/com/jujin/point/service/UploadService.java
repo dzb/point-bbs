@@ -4,6 +4,7 @@ import com.jujin.point.domain.entity.Attachment;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
 
+import com.jujin.freeway.ioc.annotation.Value;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -19,7 +20,7 @@ public class UploadService {
     private final Orm orm;
     private final Path uploadDir;
 
-    public UploadService(Database db, String uploadDirPath) {
+    public UploadService(Database db, @Value("${bbs.upload.dir:./uploads}") String uploadDirPath) {
         this.db = db;
         this.orm = Orm.of(db);
         this.uploadDir = Path.of(uploadDirPath).toAbsolutePath().normalize();
@@ -34,18 +35,17 @@ public class UploadService {
      */
     public Attachment upload(long userId, long topicId, String fileName, InputStream data,
                              long fileSize, String fileType) throws IOException {
-        // Generate unique stored filename
-        String ext = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.')) : "";
-        String storedName = UUID.randomUUID() + ext;
-
-        // Save to disk
-        Path target = uploadDir.resolve(storedName);
-        Files.copy(data, target, StandardCopyOption.REPLACE_EXISTING);
-
-        // Create attachment record
+        // Create attachment record (PK = stored filename)
         var att = new Attachment();
         var now = System.currentTimeMillis();
-        att.setId(UUID.randomUUID().toString());
+        String id = UUID.randomUUID().toString();
+        att.setId(id);
+
+        // Save to disk with same ID
+        String ext = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.')) : "";
+        String storedName = id + ext;
+        Path target = uploadDir.resolve(storedName);
+        Files.copy(data, target, StandardCopyOption.REPLACE_EXISTING);
         att.setUserId(userId);
         att.setTopicId(topicId);
         att.setFileName(fileName);
@@ -71,8 +71,13 @@ public class UploadService {
      * Get the file path for an attachment.
      */
     public Path getFilePath(Attachment att) {
-        String storedName = att.getFileUrl().substring(att.getFileUrl().lastIndexOf('/') + 1);
-        return uploadDir.resolve(storedName);
+        String id = att.getId();
+        try (var stream = Files.list(uploadDir)) {
+            return stream.filter(p -> p.getFileName().toString().startsWith(id))
+                .findFirst().orElse(uploadDir.resolve(id));
+        } catch (IOException e) {
+            return uploadDir.resolve(id);
+        }
     }
 
     /**
