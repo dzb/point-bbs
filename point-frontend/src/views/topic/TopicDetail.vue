@@ -187,8 +187,8 @@ function formatTime(ts: number) { return ts ? new Date(ts).toLocaleString('zh-CN
 
 <style scoped>
 .detail-layout { display: flex; gap: 0; }
-.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 48px; border-right: 1px solid var(--paper-border); }
-.detail-aside { width: 300px; flex-shrink: 0; padding-left: 48px; }
+.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); }
+.detail-aside { width: 300px; flex-shrink: 0; padding-left: 32px; }
 .post-card { background: var(--paper-bg); border: 1px solid var(--paper-border); border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .topic-content { font-size: 17px; line-height: 1.9; color: var(--paper-text); word-break: break-word; }
 .topic-content :deep(img) { max-width: 100%; border-radius: 8px; margin: 8px 0; }

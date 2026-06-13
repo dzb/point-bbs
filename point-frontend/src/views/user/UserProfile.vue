@@ -114,12 +114,12 @@ function fmt(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') 
 
 <style scoped>
 .detail-layout { display: flex; }
-.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 48px; border-right: 1px solid var(--paper-border); }
-.detail-aside { width: 300px; flex-shrink: 0; padding-left: 48px; }
+.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); }
+.detail-aside { width: 300px; flex-shrink: 0; padding-left: 32px; }
 .aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
 .aside-section { margin-bottom: 24px; }
 @media (max-width: 1300px) { .detail-aside { width: 260px; padding-left: 36px; } .detail-main { padding-right: 36px; } }
-@media (max-width: 1200px) { .detail-aside { width: 240px; padding-left: 28px; } .detail-main { padding-right: 28px; } }
+@media (max-width: 1200px) { .detail-aside { width: 240px; padding-left: 20px; } .detail-main { padding-right: 20px; } }
 @media (max-width: 1100px) { .detail-aside { display: none; } .detail-main { border-right: none; padding-right: 0; } }
 @media (max-width: 900px)  { .detail-main { padding-right: 16px; } }
 </style>

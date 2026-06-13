@@ -129,8 +129,8 @@ async function toggleLike(m: any) {
 
 <style scoped>
 .home-layout { display: flex; }
-.home-feed { flex: 1; max-width: 680px; min-width: 0; padding-right: 48px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
-.home-aside { width: 340px; flex-shrink: 0; padding-left: 6px; transition: width .2s ease, padding .2s ease, opacity .2s ease; }
+.home-feed { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
+.home-aside { width: 366px; flex-shrink: 0; padding-left: 32px; transition: width .2s ease, padding .2s ease, opacity .2s ease; }
 .moments-list { display: flex; flex-direction: column; gap: 10px; }
 .aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
 .aside-card { border: 1px solid var(--paper-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
@@ -147,8 +147,8 @@ async function toggleLike(m: any) {
 .composer-img:hover .img-remove-btn { opacity: 1; }
 .post-btn { background: #c43d3d !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 20px; padding: 0 20px; font-weight: 500; }
 .post-btn:hover { background: #a83434 !important; }
-@media (max-width: 1300px) { .home-aside { width: 300px; } .home-feed { padding-right: 36px; } }
-@media (max-width: 1200px) { .home-aside { width: 260px; } .home-feed { padding-right: 28px; } }
-@media (max-width: 1100px) { .home-aside { width: 0; opacity: 0; overflow: hidden; } .home-feed { border-right: none; padding-right: 0; } }
+@media (max-width: 1300px) { .home-aside { width: 320px; padding-left: 24px; } .home-feed { padding-right: 24px; } }
+@media (max-width: 1200px) { .home-aside { width: 280px; padding-left: 20px; } .home-feed { padding-right: 20px; } }
+@media (max-width: 1100px) { .home-aside { width: 0; padding-left: 0; opacity: 0; overflow: hidden; } .home-feed { border-right: none; padding-right: 0; } }
 @media (max-width: 900px)  { .home-feed { padding-right: 16px; } }
 </style>

@@ -100,10 +100,13 @@ async function submit() {
 .post-btn { background: #c43d3d !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 8px; font-weight: 500; padding: 0 32px; }
 .post-btn:hover { background: #a83434 !important; }
 .detail-layout { display: flex; }
-.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 48px; border-right: 1px solid var(--paper-border); }
-.detail-aside { width: 340px; flex-shrink: 0; padding-left: 48px; }
+.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); }
+.detail-aside { width: 340px; flex-shrink: 0; padding-left: 32px; }
 .aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
-.aside-section { margin-bottom: 24px; }
-@media (max-width: 1200px) { .detail-main { padding-right: 32px; } .detail-aside { padding-left: 32px; } }
+.aside-card { border: 1px solid var(--paper-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+.aside-card-title { font-size: 16px; color: var(--paper-text); font-weight: 500; margin-bottom: 2px; }
+.aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.6; }
+@media (max-width: 1200px) { .detail-main { padding-right: 20px; } .detail-aside { padding-left: 20px; width: 280px; } }
+@media (max-width: 1100px) { .detail-aside { display: none; } .detail-main { border-right: none; padding-right: 0; } }
 @media (max-width: 900px) { .detail-main { padding-right: 16px; } }
 </style>

@@ -98,8 +98,8 @@ html.dark .v-divider { border-color: #3a3530 !important; }
 .header-tab:hover { color: var(--paper-text); }
 .header-tab.active { color: #c43d3d; border-bottom-color: #c43d3d; }
 .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 1; min-width: 0; }
-.main-content { flex: 1; padding: 24px 48px; }
-@media (max-width: 1200px) { .header-tab { font-size: 16px; padding: 10px 12px; } .main-content { padding: 24px 32px; } .main-header { padding: 0 32px; } }
+.main-content { flex: 1; padding: 24px 32px; }
+@media (max-width: 1200px) { .header-tab { font-size: 16px; padding: 10px 12px; } .main-content { padding: 24px 24px; } .main-header { padding: 0 24px; } }
 @media (max-width: 1000px) { .header-tab { font-size: 15px; padding: 8px 10px; } }
 @media (max-width: 900px)  { .header-tab { font-size: 14px; padding: 8px 8px; } .main-content { padding: 20px 16px; } .main-header { padding: 0 16px; } }
 
