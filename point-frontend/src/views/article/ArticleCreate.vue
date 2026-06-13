@@ -1,17 +1,32 @@
 <template>
-  <v-card class="mx-auto" max-width="900">
-    <v-card-title>写文章</v-card-title>
-    <v-card-text>
-      <v-text-field v-model="form.title" label="标题" variant="outlined" density="compact" class="mb-3" />
-      <v-text-field v-model="form.summary" label="摘要（选填）" variant="outlined" density="compact" class="mb-3" />
-      <v-text-field v-model="form.cover" label="封面图 URL（选填）" variant="outlined" density="compact" class="mb-3" />
-      <v-textarea v-model="form.content" label="内容（Markdown）" rows="15" variant="outlined" class="mb-3" />
-      <v-text-field v-model="form.sourceUrl" label="原文链接（选填）" variant="outlined" density="compact" class="mb-3" />
-      <v-combobox v-model="form.tags" label="标签" multiple chips variant="outlined" density="compact" class="mb-4" />
-      <v-btn block color="primary" :loading="submitting" @click="submit">发布</v-btn>
-      <v-alert v-if="error" type="error" density="compact" class="mt-3">{{ error }}</v-alert>
-    </v-card-text>
-  </v-card>
+  <div class="mx-auto" style="max-width:720px">
+    <v-text-field v-model="form.title" placeholder="文章标题..." variant="plain" hide-details class="title-input mb-3" density="compact" />
+
+    <!-- Markdown toolbar -->
+    <div class="md-toolbar">
+      <v-btn icon="mdi-format-bold" variant="text" size="small" @click="insertMd('**', '**')" />
+      <v-btn icon="mdi-format-italic" variant="text" size="small" @click="insertMd('*', '*')" />
+      <v-btn icon="mdi-format-header-2" variant="text" size="small" @click="insertLine('## ')" />
+      <v-btn icon="mdi-format-header-3" variant="text" size="small" @click="insertLine('### ')" />
+      <v-divider vertical class="mx-1" />
+      <v-btn icon="mdi-format-quote-open" variant="text" size="small" @click="insertLine('> ')" />
+      <v-btn icon="mdi-code-tags" variant="text" size="small" @click="insertMd('`', '`')" />
+      <v-btn icon="mdi-link-variant" variant="text" size="small" @click="insertMd('[', '](url)')" />
+      <v-btn icon="mdi-image-outline" variant="text" size="small" @click="insertLine('![](')" />
+      <v-divider vertical class="mx-1" />
+      <v-btn icon="mdi-table" variant="text" size="small" @click="insertTable" />
+      <v-btn icon="mdi-minus" variant="text" size="small" @click="insertLine('---\n')" />
+      <v-btn icon="mdi-format-list-bulleted" variant="text" size="small" @click="insertLine('- ')" />
+      <v-btn icon="mdi-format-list-numbered" variant="text" size="small" @click="insertLine('1. ')" />
+    </div>
+
+    <v-textarea ref="contentArea" v-model="form.content" placeholder="开始写作..." rows="18" variant="plain" hide-details class="content-area" />
+
+    <v-alert v-if="error" type="error" density="compact" class="mt-3" variant="tonal">{{ error }}</v-alert>
+    <div class="d-flex justify-end mt-4">
+      <v-btn class="post-btn" variant="flat" size="large" :loading="submitting" @click="submit">发布文章</v-btn>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -20,9 +35,36 @@ import { useRouter } from 'vue-router'
 import client from '@/api/client'
 
 const router = useRouter()
-const form = reactive({ title: '', summary: '', content: '', cover: '', sourceUrl: '', tags: [] as string[], contentType: 'markdown' })
+const contentArea = ref<any>(null)
+const form = reactive({ title: '', content: '', contentType: 'markdown' as string, summary: '', cover: '', sourceUrl: '', tags: [] as string[] })
 const submitting = ref(false)
 const error = ref('')
+
+function insertMd(before: string, after: string) {
+  const el = contentArea.value?.$el?.querySelector('textarea')
+  if (!el) return
+  const start = el.selectionStart; const end = el.selectionEnd
+  const selected = form.content.substring(start, end)
+  form.content = form.content.substring(0, start) + before + selected + after + form.content.substring(end)
+  setTimeout(() => { el.selectionStart = start + before.length; el.selectionEnd = end + before.length; el.focus() }, 0)
+}
+
+function insertLine(prefix: string) {
+  const el = contentArea.value?.$el?.querySelector('textarea')
+  if (!el) return
+  const start = el.selectionStart
+  const lineStart = form.content.lastIndexOf('\n', start - 1) + 1
+  form.content = form.content.substring(0, lineStart) + prefix + form.content.substring(lineStart)
+  setTimeout(() => { el.selectionStart = el.selectionEnd = lineStart + prefix.length; el.focus() }, 0)
+}
+
+function insertTable() {
+  const table = '\n| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n|     |     |     |\n'
+  const el = contentArea.value?.$el?.querySelector('textarea')
+  if (!el) return
+  const start = el.selectionStart
+  form.content = form.content.substring(0, start) + table + form.content.substring(start)
+}
 
 async function submit() {
   if (!form.title || !form.content) { error.value = '标题和内容不能为空'; return }
@@ -35,3 +77,11 @@ async function submit() {
   submitting.value = false
 }
 </script>
+
+<style scoped>
+.title-input :deep(input) { font-family: 'Noto Serif SC', Georgia, serif; font-size: 28px; font-weight: 700; }
+.md-toolbar { display: flex; align-items: center; gap: 2px; padding: 4px 0; border-top: 1px solid var(--paper-border); border-bottom: 1px solid var(--paper-border); margin-bottom: 8px; }
+.content-area :deep(textarea) { font-size: 17px; line-height: 1.9; font-family: 'Noto Serif SC', Georgia, serif; }
+.post-btn { background: #c43d3d !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 8px; font-weight: 500; padding: 0 32px; }
+.post-btn:hover { background: #a83434 !important; }
+</style>

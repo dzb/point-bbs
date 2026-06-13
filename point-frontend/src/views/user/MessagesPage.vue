@@ -1,8 +1,6 @@
 <template>
-  <div>
-    <div class="d-flex align-center mb-4">
-      <h1 class="text-h5">通知中心</h1>
-      <v-spacer />
+  <div style="max-width:680px">
+    <div class="d-flex justify-end mb-3">
       <v-btn v-if="messages.length > 0" variant="text" size="small" @click="markAllRead">全部已读</v-btn>
     </div>
 
@@ -22,7 +20,7 @@
       </v-card-item>
     </v-card>
 
-    <div v-if="messages.length === 0 && !loading" class="text-center py-8 text-grey">暂无通知</div>
+    <div v-if="messages.length === 0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无通知</div>
     <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" />
   </div>
 </template>

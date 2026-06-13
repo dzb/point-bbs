@@ -1,27 +1,26 @@
 <template>
   <div class="home-layout">
     <div class="home-feed">
-      <!-- Input box -->
-      <div v-if="auth.isLoggedIn" class="mb-4">
+      <!-- Composer -->
+      <div v-if="auth.isLoggedIn" class="composer mb-4">
         <div class="d-flex">
-          <v-avatar size="36" class="mr-3 mt-1"><v-icon>mdi-pen</v-icon></v-avatar>
-          <div class="flex-grow-1">
-            <v-textarea v-model="newMoment" placeholder="记录思考，分享见闻..." rows="2" variant="outlined" hide-details density="compact" @paste="onPaste" />
-            <!-- Image previews -->
-            <div v-if="images.length" class="d-flex flex-wrap my-2" style="gap:8px">
-              <div v-for="(img,i) in images" :key="i" class="img-preview">
-                <img :src="img.url" style="max-height:120px;border-radius:6px" />
-                <v-btn icon="mdi-close" variant="flat" size="x-small" class="img-remove" @click="images.splice(i,1)" />
+          <v-avatar size="36" class="mr-3 mt-1 flex-shrink-0"><v-icon>mdi-pen</v-icon></v-avatar>
+          <div class="flex-grow-1" style="min-width:0">
+            <v-textarea v-model="newMoment" placeholder="记录思考，分享见闻..." rows="2" variant="plain" hide-details density="compact" @paste="onPaste" class="composer-input" />
+            <div v-if="images.length" class="composer-images">
+              <div v-for="(img,i) in images" :key="i" class="composer-img">
+                <img :src="img.url" />
+                <v-btn icon="mdi-close" variant="flat" size="x-small" class="img-remove-btn" @click="images.splice(i,1)" />
               </div>
-              <div v-if="uploading" class="img-preview d-flex align-center justify-center" style="width:80px;height:80px;background:rgba(0,0,0,.03);border-radius:6px">
+              <div v-if="uploading" class="composer-img uploading">
                 <v-progress-circular indeterminate size="20" color="#c43d3d" />
               </div>
             </div>
-            <div class="d-flex align-center mt-1">
+            <div class="d-flex align-center mt-2 composer-bar">
               <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFileChange" />
-              <v-btn icon="mdi-image-outline" variant="text" size="small" :loading="uploading" @click="triggerUpload" />
+              <v-btn icon="mdi-image-outline" variant="text" size="small" :loading="uploading" @click="triggerUpload" :style="{color:'var(--paper-text2)'}" />
               <v-spacer />
-              <v-btn style="background:#c43d3d;color:#fff;text-transform:none;letter-spacing:0;border-radius:20px;padding:0 20px" variant="flat" size="small" :loading="posting" @click="postMoment">发布</v-btn>
+              <v-btn class="post-btn" variant="flat" size="small" :loading="posting" @click="postMoment">发布</v-btn>
             </div>
           </div>
         </div>
@@ -135,9 +134,17 @@ async function toggleLike(m: any) {
 .aside-card { background: var(--paper-bg); border: 1px solid var(--paper-border); border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; }
 .aside-card-title { font-size: 14px; color: var(--paper-text); font-weight: 500; margin-bottom: 4px; }
 .aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.7; }
-.img-preview { position: relative; }
-.img-preview:hover .img-remove { opacity: 1; }
-.img-remove { opacity: 0; position: absolute; top: -4px; right: -4px; transition: opacity .15s; }
+.composer { border: 1px solid var(--paper-border); border-radius: 12px; padding: 16px; background: var(--paper-bg); }
+.composer-input :deep(.v-field) { border: none !important; }
+.composer-input :deep(.v-field__input) { padding-top: 4px !important; padding-bottom: 4px !important; min-height: 40px !important; font-size: 15px; }
+.composer-images { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; margin-top: 8px; }
+.composer-img { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
+.composer-img img { width: 100%; height: 100%; object-fit: cover; }
+.composer-img.uploading { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.03); }
+.img-remove-btn { opacity: 0; position: absolute; top: 4px; right: 4px; transition: opacity .15s; background: rgba(0,0,0,.5) !important; color: #fff !important; }
+.composer-img:hover .img-remove-btn { opacity: 1; }
+.post-btn { background: #c43d3d !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 20px; padding: 0 20px; font-weight: 500; }
+.post-btn:hover { background: #a83434 !important; }
 @media (max-width: 1200px) { .home-feed { padding-right: 32px; } .home-aside { padding-left: 32px; } }
 @media (max-width: 1100px) { .home-aside { display: none; } .home-feed { border-right: none; padding-right: 0; } }
 @media (max-width: 900px)  { .home-feed { padding-right: 16px; } }

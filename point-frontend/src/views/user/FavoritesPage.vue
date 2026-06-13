@@ -1,6 +1,5 @@
 <template>
   <div style="max-width:680px">
-    <h1 class="text-h5 mb-4" style="font-family:'Noto Serif SC',Georgia,serif;color:var(--paper-text)">我的收藏</h1>
     <div v-if="favorites.length">
       <div v-for="f in favorites" :key="f.id" class="py-3" style="border-bottom:1px solid var(--paper-border);cursor:pointer"
         @click="$router.push(`/topics/${f.entityId}`)">
