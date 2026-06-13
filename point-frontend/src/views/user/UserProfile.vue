@@ -51,8 +51,8 @@
       <!-- Right aside -->
       <aside class="detail-aside">
         <p class="aside-tagline">记录思考，分享见闻</p>
-        <div class="aside-section"><div class="aside-title">社区公告</div><p class="aside-text">point 正在建设中。</p></div>
-        <div class="aside-section"><div class="aside-title">推荐阅读</div><p class="aside-text">暂无推荐</p></div>
+        <div class="aside-card"><div class="aside-card-title">社区公告</div><div class="aside-card-text">point 正在建设中。</div></div>
+        <div class="aside-card"><div class="aside-card-title">推荐阅读</div><div class="aside-card-text">暂无推荐</div></div>
       </aside>
     </div>
   </div>

@@ -39,7 +39,7 @@
           | 表格 | 列 |
         </div>
       </div>
-      <div class="aside-section"><div class="aside-title">社区公告</div><p class="aside-text">point 正在建设中。</p></div>
+      <div class="aside-card"><div class="aside-card-title">社区公告</div><div class="aside-card-text">point 正在建设中。</div></div>
     </aside>
   </div><!-- .detail-layout -->
 </template>

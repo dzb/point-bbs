@@ -37,14 +37,10 @@
     <!-- Right aside -->
     <aside class="home-aside">
       <p class="aside-tagline">记录思考，分享见闻</p>
-      <div class="aside-section">
-        <div class="aside-title">社区公告</div>
-        <p class="aside-text">point 正在建设中，欢迎反馈建议。</p>
+      <div class="aside-card"><div class="aside-card-title">社区公告</div>
+        <div class="aside-card-text">欢迎来到 point — 一个安静的思考角落。记录随想，发表文章，关注有趣的人。</div>
       </div>
-      <div class="aside-section">
-        <div class="aside-title">推荐阅读</div>
-        <p class="aside-text">暂无推荐</p>
-      </div>
+      <div class="aside-card"><div class="aside-card-title">推荐阅读</div><div class="aside-card-text">暂无推荐</div></div>
     </aside>
   </div>
 </template>
@@ -134,12 +130,12 @@ async function toggleLike(m: any) {
 <style scoped>
 .home-layout { display: flex; }
 .home-feed { flex: 1; max-width: 680px; min-width: 0; padding-right: 48px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
-.home-aside { width: 340px; flex-shrink: 0; padding-left: 48px; transition: width .2s ease, padding .2s ease, opacity .2s ease; }
+.home-aside { width: 340px; flex-shrink: 0; padding-left: 6px; transition: width .2s ease, padding .2s ease, opacity .2s ease; }
 .moments-list { display: flex; flex-direction: column; gap: 10px; }
-.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 28px; }
-.aside-section { margin-bottom: 24px; }
-.aside-title { font-size: 14px; color: var(--paper-text); font-weight: 500; margin-bottom: 6px; }
-.aside-text { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin: 0; }
+.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
+.aside-card { border: 1px solid var(--paper-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+.aside-card-title { font-size: 16px; color: var(--paper-text); font-weight: 500; margin-bottom: 2px; }
+.aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.6; }
 .composer { border: 1px solid var(--paper-border); border-radius: 12px; padding: 16px; background: var(--paper-bg); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 .composer-input :deep(.v-field) { border: none !important; }
 .composer-input :deep(.v-field__input) { padding-top: 4px !important; padding-bottom: 4px !important; min-height: 40px !important; font-size: 15px; }
@@ -151,8 +147,8 @@ async function toggleLike(m: any) {
 .composer-img:hover .img-remove-btn { opacity: 1; }
 .post-btn { background: #c43d3d !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 20px; padding: 0 20px; font-weight: 500; }
 .post-btn:hover { background: #a83434 !important; }
-@media (max-width: 1300px) { .home-aside { width: 300px; padding-left: 36px; } .home-feed { padding-right: 36px; } }
-@media (max-width: 1200px) { .home-aside { width: 260px; padding-left: 28px; } .home-feed { padding-right: 28px; } }
-@media (max-width: 1100px) { .home-aside { width: 0; padding-left: 0; opacity: 0; overflow: hidden; } .home-feed { border-right: none; padding-right: 0; } }
+@media (max-width: 1300px) { .home-aside { width: 300px; } .home-feed { padding-right: 36px; } }
+@media (max-width: 1200px) { .home-aside { width: 260px; } .home-feed { padding-right: 28px; } }
+@media (max-width: 1100px) { .home-aside { width: 0; opacity: 0; overflow: hidden; } .home-feed { border-right: none; padding-right: 0; } }
 @media (max-width: 900px)  { .home-feed { padding-right: 16px; } }
 </style>
