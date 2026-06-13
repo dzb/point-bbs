@@ -9,7 +9,7 @@
           <router-link :to="`/users/${moment.userId}`" class="mc-name" @click.prevent.stop>{{ moment.user?.nickname }}</router-link>
           <span class="mc-time">{{ fmt(moment.createTime) }}</span>
         </div>
-        <div v-html="rendered" class="mc-body" @click.prevent.stop="onBodyClick" />
+        <div v-html="rendered" class="mc-body" @click="onBodyClick" />
         <div class="d-flex mt-2 mc-actions">
           <span @click.prevent.stop><v-icon size="14">mdi-comment-outline</v-icon>{{ moment.commentCount || 0 }}</span>
           <span @click.prevent.stop="$emit('toggle-like', moment)">
@@ -37,18 +37,36 @@
         <!-- Right: Post context -->
         <div class="viewer-context">
           <div class="d-flex align-center mb-3">
-            <UserAvatar :src="moment.user?.avatar" :name="moment.user?.nickname" :size="36" />
+            <router-link :to="`/users/${moment.userId}`" @click.stop>
+              <UserAvatar :src="moment.user?.avatar" :name="moment.user?.nickname" :size="36" />
+            </router-link>
             <div class="ml-3">
               <div style="font-size:14px;font-weight:600;color:var(--paper-text)">{{ moment.user?.nickname }}</div>
             </div>
           </div>
-          <div v-html="textOnly" style="font-size:15px;color:var(--paper-text);line-height:1.7;word-break:break-word;flex:1;overflow-y:auto" />
+          <div v-html="textOnly" class="viewer-text" />
           <div class="viewer-divider" />
-          <div class="d-flex viewer-actions-row">
-            <span class="d-flex align-center" style="gap:4px"><v-icon size="16">mdi-comment-outline</v-icon>{{ moment.commentCount||0 }}</span>
-            <span class="d-flex align-center" style="gap:4px;cursor:pointer" @click="$emit('toggle-like',moment)">
-              <v-icon size="16" :color="moment.liked?'#c43d3d':''">{{ moment.liked?'mdi-heart':'mdi-heart-outline' }}</v-icon>{{ moment.likeCount||0 }}
+          <div class="d-flex viewer-actions-row mb-3">
+            <span class="d-flex align-center" style="gap:4px"><v-icon size="16">mdi-comment-outline</v-icon>{{ commentCount }}</span>
+            <span class="d-flex align-center" style="gap:4px;cursor:pointer" @click.stop="toggleLike">
+              <v-icon size="16" :color="liked?'#c43d3d':''">{{ liked?'mdi-heart':'mdi-heart-outline' }}</v-icon>{{ likeCount }}
             </span>
+          </div>
+          <!-- Comments -->
+          <div style="border-top:1px solid var(--paper-border);padding-top:12px;overflow-y:auto;flex:1">
+            <div class="d-flex mb-3">
+              <v-textarea v-model="newComment" placeholder="发表评论..." rows="1" density="compact" hide-details variant="outlined" class="mr-2" style="font-size:13px" />
+              <v-btn variant="text" size="small" :loading="posting" @click.stop="postComment" style="color:#c43d3d;text-transform:none;letter-spacing:0;min-width:auto">发布</v-btn>
+            </div>
+            <div v-for="c in comments" :key="c.id" class="mb-2">
+              <div class="d-flex">
+                <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0" />
+                <div>
+                  <span style="font-size:12px;font-weight:500;color:var(--paper-text);margin-right:6px">{{ c.user?.nickname }}</span>
+                  <span style="font-size:12px;color:var(--paper-text2)">{{ c.content }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -57,15 +75,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import UserAvatar from './UserAvatar.vue'
 import MarkdownIt from 'markdown-it'
+import client from '@/api/client'
 
 const md = new MarkdownIt({ breaks: true, linkify: true })
 const props = defineProps<{ moment: any }>()
-defineEmits<{ 'toggle-like': [moment: any] }>()
+const emit = defineEmits<{ 'toggle-like': [moment: any] }>()
 
 const viewer = ref(0)
+const comments = ref<any[]>([])
+const newComment = ref('')
+const posting = ref(false)
+const liked = ref(false)
+const likeCount = ref(0)
+const commentCount = ref(0)
 
 function onKey(e: KeyboardEvent) { if (e.key === 'Escape') viewer.value = 0 }
 onMounted(() => window.addEventListener('keydown', onKey))
@@ -99,17 +124,53 @@ function onBodyClick(e: MouseEvent) {
   const target = e.target as HTMLElement
   if (target.tagName === 'IMG') {
     e.preventDefault()
+    e.stopPropagation()
     const src = target.getAttribute('src')
     if (src) {
       const idx = images.value.indexOf(src)
       viewer.value = idx >= 0 ? idx + 1 : 1
     }
   }
+  // Non-image clicks: let the router-link handle navigation naturally
 }
 
 function closeViewer() { viewer.value = 0 }
 function prevImage() { if (viewer.value > 1) viewer.value-- }
 function nextImage() { if (viewer.value < images.value.length) viewer.value++ }
+
+watch(viewer, async (v) => {
+  if (v > 0 && props.moment?.id) {
+    liked.value = props.moment.liked || false
+    likeCount.value = props.moment.likeCount || 0
+    commentCount.value = props.moment.commentCount || 0
+    try {
+      const { data } = await client.get(`/topics/${props.moment.id}/comments`, { params: { pageSize: 50 } })
+      if (data.code === 0) comments.value = data.data || []
+    } catch { comments.value = [] }
+  }
+})
+
+async function toggleLike() {
+  try {
+    if (liked.value) { await client.post(`/topics/${props.moment.id}/unlike`); liked.value = false; likeCount.value-- }
+    else { await client.post(`/topics/${props.moment.id}/like`); liked.value = true; likeCount.value++ }
+    emit('toggle-like', props.moment)
+  } catch { /* */ }
+}
+
+async function postComment() {
+  if (!newComment.value.trim()) return
+  posting.value = true
+  try {
+    await client.post(`/topics/${props.moment.id}/comments`, { content: newComment.value, contentType: 'markdown' })
+    newComment.value = ''
+    commentCount.value++
+    const { data } = await client.get(`/topics/${props.moment.id}/comments`, { params: { pageSize: 50 } })
+    if (data.code === 0) comments.value = data.data || []
+  } catch { /* */ }
+  posting.value = false
+}
+
 function fmt(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') : '' }
 </script>
 
@@ -143,7 +204,9 @@ function fmt(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') 
 .viewer-arrow.left { left: 8px; }
 .viewer-arrow.right { right: 8px; }
 .viewer-counter { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.5); font-size: 13px; }
-.viewer-context { width: 360px; flex-shrink: 0; background: #fff; display: flex; flex-direction: column; padding: 48px 24px 24px; overflow-y: auto; }
+.viewer-context { width: 360px; flex-shrink: 0; background: #fff; display: flex; flex-direction: column; padding: 48px 24px 24px; }
+.viewer-text { font-size: 15px; color: var(--paper-text); line-height: 1.7; word-break: break-word; max-height: 200px; overflow-y: auto; }
+.viewer-text :deep(p) { margin: .3em 0; }
 .viewer-divider { height: 1px; background: var(--paper-border); margin: 20px 0; }
 .viewer-actions-row { gap: 24px; font-size: 13px; color: var(--paper-text2); }
 @media (max-width: 800px) { .viewer-context { display: none; } }
