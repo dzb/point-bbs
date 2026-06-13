@@ -37,8 +37,14 @@
     <!-- Right aside -->
     <aside class="home-aside">
       <p class="aside-tagline">记录思考，分享见闻</p>
-      <div class="aside-card"><div class="aside-card-title">社区公告</div><div class="aside-card-text">point 正在建设中。</div></div>
-      <div class="aside-card"><div class="aside-card-title">推荐阅读</div><div class="aside-card-text">暂无推荐</div></div>
+      <div class="aside-section">
+        <div class="aside-title">社区公告</div>
+        <p class="aside-text">point 正在建设中，欢迎反馈建议。</p>
+      </div>
+      <div class="aside-section">
+        <div class="aside-title">推荐阅读</div>
+        <p class="aside-text">暂无推荐</p>
+      </div>
     </aside>
   </div>
 </template>
@@ -130,10 +136,10 @@ async function toggleLike(m: any) {
 .home-feed { flex: 1; max-width: 680px; min-width: 0; padding-right: 48px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
 .home-aside { width: 340px; flex-shrink: 0; padding-left: 48px; transition: width .2s ease, padding .2s ease, opacity .2s ease; }
 .moments-list { display: flex; flex-direction: column; gap: 10px; }
-.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
-.aside-card { background: var(--paper-bg); border: 1px solid var(--paper-border); border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; }
-.aside-card-title { font-size: 14px; color: var(--paper-text); font-weight: 500; margin-bottom: 4px; }
-.aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.7; }
+.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 28px; }
+.aside-section { margin-bottom: 24px; }
+.aside-title { font-size: 14px; color: var(--paper-text); font-weight: 500; margin-bottom: 6px; }
+.aside-text { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin: 0; }
 .composer { border: 1px solid var(--paper-border); border-radius: 12px; padding: 16px; background: var(--paper-bg); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 .composer-input :deep(.v-field) { border: none !important; }
 .composer-input :deep(.v-field__input) { padding-top: 4px !important; padding-bottom: 4px !important; min-height: 40px !important; font-size: 15px; }

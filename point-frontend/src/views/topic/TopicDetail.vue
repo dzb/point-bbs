@@ -194,10 +194,6 @@ function formatTime(ts: number) { return ts ? new Date(ts).toLocaleString('zh-CN
 .topic-content :deep(img) { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 .topic-content :deep(p) { margin: .5em 0; }
 .comment-body { font-size: 14px; color: var(--paper-text); line-height: 1.6; word-break: break-word; }
-.aside-card { border: 1px solid var(--paper-border); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
-.aside-card-title { font-size: 13px; color: var(--paper-text); font-weight: 500; margin-bottom: 4px; }
-.aside-card-text { font-size: 13px; color: var(--paper-text2); line-height: 1.7; }
-@media (max-width: 1100px) { .detail-aside { display: none; } .detail-main { border-right: none; padding-right: 0; } }
 @media (max-width: 1200px) { .detail-main { padding-right: 32px; } .detail-aside { padding-left: 32px; } }
 @media (max-width: 900px) { .detail-main { padding-right: 16px; } }
 </style>

@@ -49,6 +49,7 @@ public class TopicService {
 
         db.transaction(() -> {
             topicRepo.insert(topic);
+            db.execute("UPDATE bbs_user SET topic_count = topic_count + 1 WHERE id = ?", userId);
             eventBus.publish(new TopicCreatedEvent(userId, topic.getId(), req.type(), now));
         });
 

@@ -1,5 +1,6 @@
 <template>
-  <div class="mx-auto" style="max-width:720px">
+  <div class="detail-layout">
+    <div class="detail-main">
     <v-text-field v-model="form.title" placeholder="文章标题..." variant="plain" hide-details class="title-input mb-3" density="compact" />
 
     <!-- Markdown toolbar -->
@@ -26,7 +27,21 @@
     <div class="d-flex justify-end mt-4">
       <v-btn class="post-btn" variant="flat" size="large" :loading="submitting" @click="submit">发布文章</v-btn>
     </div>
-  </div>
+    </div><!-- .detail-main -->
+
+    <aside class="detail-aside">
+      <p class="aside-tagline">记录思考，分享见闻</p>
+      <div class="aside-card"><div class="aside-card-title">Markdown 语法参考</div>
+        <div class="aside-card-text" style="font-size:12px;line-height:2">
+          **粗体** · *斜体* · ## 标题<br />
+          &gt; 引用 · `代码` · [链接](url)<br />
+          ![](图片) · --- 分割线<br />
+          | 表格 | 列 |
+        </div>
+      </div>
+      <div class="aside-section"><div class="aside-title">社区公告</div><p class="aside-text">point 正在建设中。</p></div>
+    </aside>
+  </div><!-- .detail-layout -->
 </template>
 
 <script setup lang="ts">
@@ -84,4 +99,11 @@ async function submit() {
 .content-area :deep(textarea) { font-size: 17px; line-height: 1.9; font-family: 'Noto Serif SC', Georgia, serif; }
 .post-btn { background: #c43d3d !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 8px; font-weight: 500; padding: 0 32px; }
 .post-btn:hover { background: #a83434 !important; }
+.detail-layout { display: flex; }
+.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 48px; border-right: 1px solid var(--paper-border); }
+.detail-aside { width: 340px; flex-shrink: 0; padding-left: 48px; }
+.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
+.aside-section { margin-bottom: 24px; }
+@media (max-width: 1200px) { .detail-main { padding-right: 32px; } .detail-aside { padding-left: 32px; } }
+@media (max-width: 900px) { .detail-main { padding-right: 16px; } }
 </style>
