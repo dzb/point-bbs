@@ -6,8 +6,6 @@
         <span class="logo-mark">聚</span>
         <span v-if="!collapsed" class="logo-text">point</span>
       </router-link>
-      <v-btn icon="mdi-chevron-left" variant="text" size="small" class="collapse-btn"
-        :class="{ flipped: collapsed }" @click="collapsed = !collapsed" />
     </div>
 
     <!-- Nav items -->
@@ -59,10 +57,7 @@ window.addEventListener('resize', () => {
 }
 .sidebar.collapsed { width: 60px; }
 
-.sidebar-top { display: flex; align-items: center; justify-content: space-between; padding: 0 12px; margin-bottom: 20px; }
-.collapse-btn { transition: transform .2s; }
-.collapse-btn.flipped { transform: rotate(180deg); }
-
+.sidebar-top { display: flex; align-items: center; padding: 0 12px; margin-bottom: 20px; }
 .sidebar-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
 .logo-mark { width: 36px; height: 36px; background: #c43d3d; color: #fff; border-radius: 6px;
   display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700;

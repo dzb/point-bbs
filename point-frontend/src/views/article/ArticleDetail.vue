@@ -34,7 +34,7 @@
       </div>
       <div v-for="c in comments" :key="c.id" class="py-3" style="border-top:1px solid var(--paper-border)">
         <div class="d-flex">
-          <v-avatar :image="c.user?.avatar" size="32" class="mr-3 flex-shrink-0 mt-1" />
+          <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" class="mr-3 flex-shrink-0 mt-1" />
           <div class="flex-grow-1">
             <div class="d-flex align-center mb-1">
               <span style="font-size:14px;color:var(--paper-text);font-weight:500">{{ c.user?.nickname }}</span>
