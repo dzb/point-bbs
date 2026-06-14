@@ -1,9 +1,9 @@
 <template>
   <div v-if="topic">
-    <BackButton />
     <div class="detail-layout">
       <!-- Left: post + comments -->
       <div class="detail-main">
+        <BackButton />
         <!-- Post content card -->
         <div class="post-card mb-4">
           <div class="d-flex align-center mb-3">
@@ -70,6 +70,7 @@
 
       <!-- Right: user info + announcements -->
       <aside class="detail-aside">
+        <p class="aside-tagline">记录思考，分享见闻</p>
         <div class="aside-card">
           <div class="d-flex align-center mb-2">
             <UserAvatar :src="topic.user?.avatar" :name="topic.user?.nickname" :size="48" />
@@ -84,7 +85,7 @@
           <v-btn v-if="topic.userId !== auth.user?.id" block size="small" variant="outlined"
             :color="following ? '#c43d3d' : ''" :loading="followLoading"
             @click="toggleFollow" style="text-transform:none;letter-spacing:0;border-radius:20px">
-            {{ following ? '已关注' : '+ 关注' }}
+            {{ following ? '已订阅' : '+ 订阅' }}
           </v-btn>
         </div>
 
@@ -186,14 +187,20 @@ function formatTime(ts: number) { return ts ? new Date(ts).toLocaleString('zh-CN
 </script>
 
 <style scoped>
-.detail-layout { display: flex; gap: 0; }
-.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); }
-.detail-aside { width: 300px; flex-shrink: 0; padding-left: 32px; }
+.detail-layout { display: flex; }
+.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
+.detail-aside { width: 300px; flex-shrink: 0; padding: 20px 20px; background: var(--paper-nav); transition: width .2s ease, padding .2s ease, opacity .2s ease; }
 .post-card { background: var(--paper-bg); border: 1px solid var(--paper-border); border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .topic-content { font-size: 17px; line-height: 1.9; color: var(--paper-text); word-break: break-word; }
 .topic-content :deep(img) { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 .topic-content :deep(p) { margin: .5em 0; }
 .comment-body { font-size: 14px; color: var(--paper-text); line-height: 1.6; word-break: break-word; }
-@media (max-width: 1200px) { .detail-main { padding-right: 32px; } .detail-aside { padding-left: 32px; } }
-@media (max-width: 900px) { .detail-main { padding-right: 16px; } }
+.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
+.aside-card { border: 1px solid var(--paper-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+.aside-card-title { font-size: 16px; color: var(--paper-text); font-weight: 500; margin-bottom: 2px; }
+.aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.6; }
+@media (max-width: 1300px) { .detail-aside { width: 260px; padding: 18px 16px; } .detail-main { padding-right: 24px; } }
+@media (max-width: 1200px) { .detail-aside { width: 240px; padding: 16px 14px; } .detail-main { padding-right: 20px; } }
+@media (max-width: 1100px) { .detail-aside { width: 0; padding: 0; opacity: 0; overflow: hidden; } .detail-main { border-right: none; padding-right: 0; } }
+@media (max-width: 900px)  { .detail-main { padding-right: 16px; } }
 </style>

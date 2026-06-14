@@ -34,14 +34,7 @@
       <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="#c43d3d" />
     </div>
 
-    <!-- Right aside -->
-    <aside class="home-aside">
-      <p class="aside-tagline">记录思考，分享见闻</p>
-      <div class="aside-card"><div class="aside-card-title">社区公告</div>
-        <div class="aside-card-text">欢迎来到 point — 一个安静的思考角落。记录随想，发表文章，关注有趣的人。</div>
-      </div>
-      <div class="aside-card"><div class="aside-card-title">推荐阅读</div><div class="aside-card-text">暂无推荐</div></div>
-    </aside>
+    <PageAside />
   </div>
 </template>
 
@@ -50,6 +43,7 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import MomentCard from '@/components/MomentCard.vue'
+import PageAside from '@/components/PageAside.vue'
 
 const auth = useAuthStore()
 const moments = ref<any[]>([])
@@ -130,12 +124,7 @@ async function toggleLike(m: any) {
 <style scoped>
 .home-layout { display: flex; }
 .home-feed { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
-.home-aside { width: 366px; flex-shrink: 0; padding-left: 32px; transition: width .2s ease, padding .2s ease, opacity .2s ease; }
 .moments-list { display: flex; flex-direction: column; gap: 10px; }
-.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
-.aside-card { border: 1px solid var(--paper-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
-.aside-card-title { font-size: 16px; color: var(--paper-text); font-weight: 500; margin-bottom: 2px; }
-.aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.6; }
 .composer { border: 1px solid var(--paper-border); border-radius: 12px; padding: 16px; background: var(--paper-bg); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 .composer-input :deep(.v-field) { border: none !important; }
 .composer-input :deep(.v-field__input) { padding-top: 4px !important; padding-bottom: 4px !important; min-height: 40px !important; font-size: 15px; }
@@ -147,8 +136,8 @@ async function toggleLike(m: any) {
 .composer-img:hover .img-remove-btn { opacity: 1; }
 .post-btn { background: #c43d3d !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 20px; padding: 0 20px; font-weight: 500; }
 .post-btn:hover { background: #a83434 !important; }
-@media (max-width: 1300px) { .home-aside { width: 320px; padding-left: 24px; } .home-feed { padding-right: 24px; } }
-@media (max-width: 1200px) { .home-aside { width: 280px; padding-left: 20px; } .home-feed { padding-right: 20px; } }
-@media (max-width: 1100px) { .home-aside { width: 0; padding-left: 0; opacity: 0; overflow: hidden; } .home-feed { border-right: none; padding-right: 0; } }
+@media (max-width: 1300px) { .home-feed { padding-right: 24px; } }
+@media (max-width: 1200px) { .home-feed { padding-right: 20px; } }
+@media (max-width: 1100px) { .home-feed { border-right: none; padding-right: 0; } }
 @media (max-width: 900px)  { .home-feed { padding-right: 16px; } }
 </style>

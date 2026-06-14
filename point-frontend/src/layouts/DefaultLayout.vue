@@ -3,7 +3,7 @@
     <div class="app-shell">
       <AppSidebar :unread="unreadCount" />
       <main class="app-main">
-        <header class="main-header" :style="{ borderBottom: '1px solid ' + theme.border }">
+        <header class="main-header">
           <div class="header-tabs">
             <router-link to="/" class="header-tab" :class="{ active: $route.path === '/' }">推荐</router-link>
             <router-link to="/following" class="header-tab" :class="{ active: $route.path === '/following' }">关注</router-link>
@@ -92,7 +92,7 @@ html.dark .v-divider { border-color: #3a3530 !important; }
 
 .app-shell { display: flex; min-height: 100vh; }
 .app-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.main-header { display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: 48px; position: sticky; top: 0; background: var(--paper-bg); z-index: 10; }
+.main-header { display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: 48px; position: sticky; top: 0; background: var(--paper-nav); z-index: 10; border-bottom: 1px solid var(--paper-border); }
 .header-tabs { display: flex; }
 .header-tab { padding: 12px 16px; font-size: 18px; color: var(--paper-text2); text-decoration: none; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s, font-size .15s, padding .15s; white-space: nowrap; }
 .header-tab:hover { color: var(--paper-text); }

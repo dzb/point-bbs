@@ -8,8 +8,15 @@
           <div class="d-flex align-start">
             <UserAvatar :src="profile.avatar" :name="profile.nickname" :size="64" class="mr-4 flex-shrink-0" />
             <div class="flex-grow-1">
-              <h1 class="text-h5 mb-1" style="font-family:'Noto Serif SC',Georgia,serif;font-weight:700;color:var(--paper-text)">{{ profile.nickname }}</h1>
-              <div class="mb-2" style="font-size:13px;color:var(--paper-text2)">
+              <div class="d-flex align-center">
+                <h1 class="text-h5 mb-0" style="font-family:'Noto Serif SC',Georgia,serif;font-weight:700;color:var(--paper-text)">{{ profile.nickname }}</h1>
+                <v-btn v-if="auth.isLoggedIn && !isSelf" size="small" variant="outlined"
+                  :color="following ? '#c43d3d' : ''" :loading="followLoading"
+                  @click="toggleFollow" class="follow-btn ml-auto">
+                  {{ following ? '已关注' : '+ 关注' }}
+                </v-btn>
+              </div>
+              <div class="mt-1 mb-2" style="font-size:13px;color:var(--paper-text2)">
                 <span v-if="profile.email" class="mr-3">{{ profile.email }}</span>
                 <span v-if="profile.score>0" class="mr-3">{{ profile.score }} 积分</span>
               </div>
@@ -49,24 +56,23 @@
       </div>
 
       <!-- Right aside -->
-      <aside class="detail-aside">
-        <p class="aside-tagline">记录思考，分享见闻</p>
-        <div class="aside-card"><div class="aside-card-title">社区公告</div><div class="aside-card-text">point 正在建设中。</div></div>
-        <div class="aside-card"><div class="aside-card-title">推荐阅读</div><div class="aside-card-text">暂无推荐</div></div>
-      </aside>
+      <PageAside />
     </div>
   </div>
   <div v-else class="text-center py-16" style="color:var(--paper-text2)">用户不存在</div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import UserAvatar from '@/components/UserAvatar.vue'
 import MomentCard from '@/components/MomentCard.vue'
+import PageAside from '@/components/PageAside.vue'
 
 const route = useRoute()
+const auth = useAuthStore()
 const profile = ref<any>(null)
 const topics = ref<any[]>([])
 const articles = ref<any[]>([])
@@ -75,6 +81,9 @@ const page = ref(1)
 const hasMore = ref(false)
 const loadingMore = ref(false)
 const pageSize = 20
+const following = ref(false)
+const followLoading = ref(false)
+const isSelf = computed(() => auth.user?.id === Number(route.params.id))
 
 onMounted(loadAll)
 watch(() => route.params.id, resetAndLoad)
@@ -95,6 +104,30 @@ async function loadAll() {
     hasMore.value = newItems.length === pageSize
   }
   if (ar.data.code===0) articles.value = ar.data.data || []
+  if (auth.isLoggedIn && !isSelf.value) checkFollow()
+}
+
+async function checkFollow() {
+  try {
+    const { data } = await client.get(`/users/${route.params.id}/follow/status`)
+    following.value = data?.data?.following || false
+  } catch { /* */ }
+}
+
+async function toggleFollow() {
+  followLoading.value = true
+  try {
+    if (following.value) {
+      await client.post(`/users/${route.params.id}/unfollow`)
+      following.value = false
+      if (profile.value) profile.value.fansCount = Math.max(0, (profile.value.fansCount || 1) - 1)
+    } else {
+      await client.post(`/users/${route.params.id}/follow`)
+      following.value = true
+      if (profile.value) profile.value.fansCount = (profile.value.fansCount || 0) + 1
+    }
+  } catch { /* */ }
+  finally { followLoading.value = false }
 }
 
 async function loadMore() {
@@ -114,12 +147,10 @@ function fmt(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') 
 
 <style scoped>
 .detail-layout { display: flex; }
-.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); }
-.detail-aside { width: 300px; flex-shrink: 0; padding-left: 32px; }
-.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
-.aside-section { margin-bottom: 24px; }
-@media (max-width: 1300px) { .detail-aside { width: 260px; padding-left: 36px; } .detail-main { padding-right: 36px; } }
-@media (max-width: 1200px) { .detail-aside { width: 240px; padding-left: 20px; } .detail-main { padding-right: 20px; } }
-@media (max-width: 1100px) { .detail-aside { display: none; } .detail-main { border-right: none; padding-right: 0; } }
+.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
+.follow-btn { text-transform: none; letter-spacing: 0; border-radius: 20px; flex-shrink: 0; }
+@media (max-width: 1300px) { .detail-main { padding-right: 24px; } }
+@media (max-width: 1200px) { .detail-main { padding-right: 20px; } }
+@media (max-width: 1100px) { .detail-main { border-right: none; padding-right: 0; } }
 @media (max-width: 900px)  { .detail-main { padding-right: 16px; } }
 </style>

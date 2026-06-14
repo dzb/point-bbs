@@ -10,15 +10,14 @@
           <span style="font-size:14px;font-weight:500;color:var(--paper-text)">{{ m.title }}</span>
           <span style="font-size:12px;color:var(--paper-text2);margin-left:auto">{{ formatTime(m.createTime) }}</span>
         </div>
-        <div style="font-size:13px;color:var(--paper-text2);line-height:1.6">{{ m.content }}</div>
+        <div style="font-size:13px;color:var(--paper-text2);line-height:1.6">
+          <router-link v-if="m.fromId" :to="`/users/${m.fromId}`" class="msg-user-link">{{ userName(m) }}</router-link><template v-if="m.fromId">{{ ' ' + contentAfterName(m) }}</template><template v-else>{{ m.content }}</template>
+        </div>
       </div>
       <div v-if="messages.length===0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无通知</div>
       <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="#c43d3d" />
     </div>
-    <aside class="detail-aside">
-      <p class="aside-tagline">记录思考，分享见闻</p>
-      <div class="aside-card"><div class="aside-card-title">社区公告</div><div class="aside-card-text">point 正在建设中。</div></div>
-    </aside>
+    <PageAside />
   </div>
 </template>
 
@@ -26,6 +25,7 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
+import PageAside from '@/components/PageAside.vue'
 
 const auth = useAuthStore()
 const messages = ref<any[]>([])
@@ -49,17 +49,18 @@ function iconForType(type: number): string {
 }
 
 function formatTime(ts: number) { return ts ? new Date(ts).toLocaleString('zh-CN') : '' }
+function userName(m: any) { const space = (m.content || '').indexOf(' '); return space > 0 ? m.content.substring(0, space) : (m.content || '') }
+function contentAfterName(m: any) { const space = (m.content || '').indexOf(' '); return space > 0 ? m.content.substring(space + 1) : '' }
 </script>
 
 <style scoped>
 .detail-layout { display: flex; }
-.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); }
-.detail-aside { width: 366px; flex-shrink: 0; padding-left: 32px; }
-.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
-.aside-card { border: 1px solid var(--paper-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
-.aside-card-title { font-size: 16px; color: var(--paper-text); font-weight: 500; margin-bottom: 2px; }
-.aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.6; }
+.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
 .unread { background: rgba(196,61,61,.03); }
-@media (max-width: 1200px) { .detail-main { padding-right: 20px; } .detail-aside { width: 280px; padding-left: 20px; } }
-@media (max-width: 1100px) { .detail-aside { display: none; } .detail-main { border-right: none; padding-right: 0; } }
+.msg-user-link { color: var(--paper-text); font-weight: 500; text-decoration: none; }
+.msg-user-link:hover { color: #c43d3d; text-decoration: underline; }
+@media (max-width: 1300px) { .detail-main { padding-right: 24px; } }
+@media (max-width: 1200px) { .detail-main { padding-right: 20px; } }
+@media (max-width: 1100px) { .detail-main { border-right: none; padding-right: 0; } }
+@media (max-width: 900px)  { .detail-main { padding-right: 16px; } }
 </style>

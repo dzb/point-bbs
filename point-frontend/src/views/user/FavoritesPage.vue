@@ -10,10 +10,7 @@
       </div>
       <div v-else class="text-center py-16" style="color:var(--paper-text2)">暂无收藏</div>
     </div>
-    <aside class="detail-aside">
-      <p class="aside-tagline">记录思考，分享见闻</p>
-      <div class="aside-card"><div class="aside-card-title">社区公告</div><div class="aside-card-text">point 正在建设中。</div></div>
-    </aside>
+    <PageAside />
   </div>
 </template>
 
@@ -21,6 +18,7 @@
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
+import PageAside from '@/components/PageAside.vue'
 
 const auth = useAuthStore()
 const favorites = ref<any[]>([])
@@ -37,12 +35,9 @@ function fmt(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') 
 
 <style scoped>
 .detail-layout { display: flex; }
-.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); }
-.detail-aside { width: 366px; flex-shrink: 0; padding-left: 32px; }
-.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
-.aside-card { border: 1px solid var(--paper-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
-.aside-card-title { font-size: 16px; color: var(--paper-text); font-weight: 500; margin-bottom: 2px; }
-.aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.6; }
-@media (max-width: 1200px) { .detail-main { padding-right: 20px; } .detail-aside { width: 280px; padding-left: 20px; } }
-@media (max-width: 1100px) { .detail-aside { display: none; } .detail-main { border-right: none; padding-right: 0; } }
+.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
+@media (max-width: 1300px) { .detail-main { padding-right: 24px; } }
+@media (max-width: 1200px) { .detail-main { padding-right: 20px; } }
+@media (max-width: 1100px) { .detail-main { border-right: none; padding-right: 0; } }
+@media (max-width: 900px)  { .detail-main { padding-right: 16px; } }
 </style>

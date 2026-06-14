@@ -18,7 +18,7 @@
         <v-icon size="20">mdi-pen</v-icon>
         <span v-if="!collapsed" class="nav-label">创作</span>
       </router-link>
-      <router-link to="/favorites" class="nav-item">
+      <router-link to="/favorites" class="nav-item" :class="{ active: $route.path === '/favorites' }">
         <v-icon size="20">mdi-bookmark-outline</v-icon>
         <span v-if="!collapsed" class="nav-label">收藏</span>
       </router-link>
@@ -50,7 +50,7 @@ window.addEventListener('resize', () => {
 
 <style scoped>
 .sidebar {
-  width: 240px; min-height: 100vh; background: var(--paper-bg);
+  width: 240px; min-height: 100vh; background: var(--paper-nav);
   border-right: 1px solid var(--paper-border);
   display: flex; flex-direction: column; padding: 12px 0;
   transition: width .2s ease; position: sticky; top: 0;
