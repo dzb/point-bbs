@@ -3,7 +3,7 @@
       <div v-if="messages.length > 0" class="d-flex justify-end mb-3">
         <v-btn variant="text" size="small" @click="markAllRead">全部已读</v-btn>
       </div>
-      <div v-for="m in messages" :key="m.id" class="py-3" style="border-bottom:1px solid var(--paper-border)" :class="{ 'unread': m.status === 0 }">
+      <div v-for="m in messages" :key="m.id" class="msg-card" :class="{ 'unread': m.status === 0 }">
         <div class="d-flex align-center mb-1">
           <v-icon :color="m.status===0?'var(--paper-accent)':''" size="16" class="mr-2">{{ iconForType(m.type) }}</v-icon>
           <span style="font-size:14px;font-weight:500;color:var(--paper-text)">{{ m.title }}</span>
@@ -66,7 +66,9 @@ function contentAfterName(m: any) { const space = (m.content || '').indexOf(' ')
 </script>
 
 <style scoped>
-.unread { background: rgba(196,61,61,.03); }
+.msg-card { background: var(--paper-bg); border: 1px solid var(--paper-border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; transition: border-color .15s; }
+.msg-card:hover { border-color: var(--paper-accent); }
+.unread { border-left: 2px solid var(--paper-accent); }
 .msg-user-link { color: var(--paper-text); font-weight: 500; text-decoration: none; }
 .msg-user-link:hover { color: var(--paper-accent); text-decoration: underline; }
 </style>

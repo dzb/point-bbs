@@ -164,7 +164,7 @@ html.dark .auth-card { background: #252220; }
 
 /* Header tabs — align with content area */
 .header-tabs { display: flex; padding-left: 32px; }
-.header-tab { padding: 14px 16px 7px; font-size: 18px; color: var(--paper-text2); text-decoration: none;
+.header-tab { padding: 14px 16px 6px; font-size: 18px; color: var(--paper-text2); text-decoration: none;
   border-bottom: 2px solid transparent; transition: color .15s, border-color .15s, font-size .15s, padding .15s; white-space: nowrap; }
 .header-tab:hover { color: var(--paper-text); }
 .header-tab.active { color: var(--paper-accent); border-bottom-color: var(--paper-accent); }
@@ -172,8 +172,8 @@ html.dark .auth-card { background: #252220; }
 /* Search */
 .search-input { width: 200px; transition: width .3s ease; }
 .search-input.focused { width: 480px; }
-.search-input :deep(.v-field) { min-height: 28px !important; }
-.search-input :deep(.v-field__input) { font-size: 13px; min-height: 16px !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+.search-input :deep(.v-field) { min-height: 24px !important; }
+.search-input :deep(.v-field__input) { font-size: 13px; min-height: 15px !important; padding-top: 0 !important; padding-bottom: 0 !important; }
 
 /* Buttons */
 .btn-login { color: var(--paper-text) !important; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 14px; border: 1px solid var(--paper-accent) !important; border-radius: 6px; padding: 0 20px; transition: border-width .15s, box-shadow .15s; }
@@ -207,7 +207,7 @@ html.dark .auth-card { background: #252220; }
   .header-logo-area { width: 60px; }
   .header-logo .logo-text { display: none; }
   .header-tabs { padding-left: 20px; }
-  .header-tab { font-size: 16px; padding: 12px 12px 5px; }
+  .header-tab { font-size: 16px; padding: 12px 12px 6px; }
   .header-right { padding-right: 24px; }
   .app-main { padding: 24px 20px; }
   .app-aside { width: 280px; }
@@ -217,11 +217,11 @@ html.dark .auth-card { background: #252220; }
   .app-main { padding: 24px 20px; }
 }
 @media (max-width: 1000px) {
-  .header-tab { font-size: 15px; padding: 10px 10px 3px; }
+  .header-tab { font-size: 15px; padding: 10px 10px 6px; }
 }
 @media (max-width: 900px) {
   .header-tabs { padding-left: 16px; }
-  .header-tab { font-size: 14px; padding: 10px 8px 3px; }
+  .header-tab { font-size: 14px; padding: 10px 8px 6px; }
   .header-right { padding-right: 16px; }
   .app-main { padding: 20px 16px; }
 }
