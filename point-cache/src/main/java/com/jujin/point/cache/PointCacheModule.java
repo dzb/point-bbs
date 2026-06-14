@@ -1,6 +1,8 @@
 package com.jujin.point.cache;
 
 import com.jujin.point.domain.entity.SysConfig;
+import com.jujin.point.domain.entity.Tag;
+import com.jujin.point.domain.entity.Topic;
 import com.jujin.point.domain.entity.User;
 import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.Module;
@@ -32,11 +34,11 @@ public class PointCacheModule implements Module {
         public SysConfigCache(long ttlMs) { super(ttlMs); }
     }
 
-    public static class TopicCache extends SimpleCache<Long, Object> {
+    public static class TopicCache extends SimpleCache<Long, Topic> {
         public TopicCache(long ttlMs) { super(ttlMs); }
     }
 
-    public static class TagCache extends SimpleCache<Long, Object> {
+    public static class TagCache extends SimpleCache<Long, Tag> {
         public TagCache(long ttlMs) { super(ttlMs); }
     }
 }

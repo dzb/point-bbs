@@ -56,7 +56,9 @@ public class User {
     private String roles;
     @Column(nullable = false)
     private long forbiddenEndTime;
+    @Column(nullable = false)
     private long createTime;
+    @Column
     private long updateTime;
 
     public User() {}

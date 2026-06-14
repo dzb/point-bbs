@@ -48,29 +48,21 @@ public class ServiceModule implements Module {
         binder.bind(AuthService.class).to(AuthService.class).scope(Scope.SINGLETON);
 
         // --- Event subscribers for notifications ---
+        // At bind() time the Container isn't ready yet, but subscribers are lazy —
+        // they fire during runtime when AppContext is already initialized.
         binder.contribute(EventSubscriber.class)
             .add("notify-comment", EventSubscriber.of(CommentCreatedEvent.class,
                 e -> NotificationHandler.onCommentCreated(e,
-                    AppContextShim.container())));
+                    com.jujin.point.domain.AppContext.container())));
 
         binder.contribute(EventSubscriber.class)
             .add("notify-like", EventSubscriber.of(UserLikedEvent.class,
                 e -> NotificationHandler.onUserLiked(e,
-                    AppContextShim.container())));
+                    com.jujin.point.domain.AppContext.container())));
 
         binder.contribute(EventSubscriber.class)
             .add("notify-follow", EventSubscriber.of(UserFollowedEvent.class,
                 e -> NotificationHandler.onUserFollowed(e,
-                    AppContextShim.container())));
-    }
-
-    /**
-     * Temporary shim — EventSubscribers are registered at bind() time
-     * but need Container access at event time. AppContext provides that.
-     */
-    static final class AppContextShim {
-        static com.jujin.freeway.ioc.Container container() {
-            return com.jujin.point.domain.AppContext.container();
-        }
+                    com.jujin.point.domain.AppContext.container())));
     }
 }

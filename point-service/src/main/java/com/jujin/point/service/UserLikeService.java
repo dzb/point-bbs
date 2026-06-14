@@ -18,9 +18,9 @@ public class UserLikeService {
     private final Orm orm;
     private final EventBus bus;
 
-    public UserLikeService(Database db, EventBus bus) {
+    public UserLikeService(Database db, Orm orm, EventBus bus) {
         this.db = db;
-        this.orm = Orm.of(db);
+        this.orm = orm;
         this.bus = bus;
     }
 
@@ -62,10 +62,14 @@ public class UserLikeService {
 
     public List<Long> getLikedEntityIds(long userId, String entityType, List<Long> entityIds) {
         if (entityIds.isEmpty()) return List.of();
-        var inClause = entityIds.stream().map(Object::toString).reduce((a, b) -> a + "," + b).orElse("0");
+        var placeholders = entityIds.stream().map(id -> "?").reduce((a, b) -> a + "," + b).orElse("?");
+        var params = new Object[entityIds.size() + 2];
+        params[0] = userId;
+        params[1] = entityType;
+        for (int i = 0; i < entityIds.size(); i++) params[i + 2] = entityIds.get(i);
         var rows = db.query(
-            "SELECT entity_id FROM bbs_user_like WHERE user_id = ? AND entity_type = ? AND entity_id IN (" + inClause + ")",
-            userId, entityType).list(Row.class);
+            "SELECT entity_id FROM bbs_user_like WHERE user_id = ? AND entity_type = ? AND entity_id IN (" + placeholders + ")",
+            params).list(Row.class);
         return rows.stream().map(r -> r.integer("entity_id").longValue()).toList();
     }
 

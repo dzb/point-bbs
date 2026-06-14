@@ -62,7 +62,7 @@ public class SysConfigService {
 
     public void set(String key, String value) {
         db.transaction(() -> {
-            var existing = db.query("SELECT * FROM bbs_sys_config WHERE `key` = ?", key)
+            var existing = db.query("SELECT * FROM bbs_sys_config WHERE `key` = $key").param("key", key)
                 .one(SysConfig.class);
             if (existing.isPresent()) {
                 var c = existing.get();

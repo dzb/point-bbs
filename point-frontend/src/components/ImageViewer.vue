@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <div v-if="visible" class="viewer-overlay" @click.self="close" @keydown.esc="close">
-      <v-btn icon="mdi-close" variant="text" class="viewer-close-btn" @click="close" size="36" />
+      <v-btn icon="mdi-close" variant="text" class="viewer-close-btn" @click="close" size="36" aria-label="关闭" />
       <div class="viewer-layout">
         <div class="viewer-image-side">
           <v-btn v-if="images.length>1" icon="mdi-chevron-left" variant="text" class="viewer-arrow left" @click="prev" />

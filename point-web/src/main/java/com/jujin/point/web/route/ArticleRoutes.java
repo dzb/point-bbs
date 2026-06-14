@@ -18,30 +18,29 @@ public class ArticleRoutes {
     public static RouteGroup routes() {
         return RouteGroup.of("/api/articles",
             Route.get("", ctx -> {
-                int page = parseInt(ctx.queryParam("page"), 1);
-                var articles = svc().getRecent(page, parseInt(ctx.queryParam("pageSize"), 20));
-                ctx.sendJson(200, ApiResponse.ok(articles.stream().map(ResponseEnricher::enrichArticle).toList()));
+                int page = Math.max(1, ctx.queryParam("page", Integer.class));
+                int pageSize = Math.max(1, ctx.queryParam("pageSize", Integer.class));
+                var articles = svc().getRecent(page, pageSize);
+                ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichArticles(articles)));
             }),
             Route.get("/{id}", ctx -> {
                 var a = svc().findById(ctx.pathVar("id", Long.class)).orElse(null);
                 if (a == null) { ctx.sendJson(404, ApiResponse.error("文章不存在")); return; }
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichArticle(a)));
             }),
-            Route.post("", ctx -> {
+            Route.post("", CreateArticleRequest.class, (ctx, req) -> {
                 var user = AuthFilter.requireUser();
-                var req = ctx.bodyAsJson(CreateArticleRequest.class);
                 var a = svc().create(user.userId(), req.title(), req.summary(), req.content(), req.contentType());
                 if (req.cover() != null) svc().updateCover(a.getId(), req.cover());
                 if (req.tags() != null) svc().updateTags(a.getId(), req.tags());
                 if (req.sourceUrl() != null) svc().updateSourceUrl(a.getId(), req.sourceUrl());
                 ctx.sendJson(201, ApiResponse.ok(ResponseEnricher.enrichArticle(svc().findById(a.getId()).orElse(a))));
             }),
-            Route.post("/edit/{id}", ctx -> {
+            Route.post("/edit/{id}", UpdateArticleRequest.class, (ctx, req) -> {
                 var user = AuthFilter.requireUser();
                 long id = ctx.pathVar("id", Long.class);
                 var a = svc().findById(id).orElse(null);
                 if (a == null || a.getUserId() != user.userId()) { ctx.sendJson(403, ApiResponse.error("无权操作")); return; }
-                var req = ctx.bodyAsJson(UpdateArticleRequest.class);
                 svc().update(id, req.title(), req.summary(), req.content(), req.contentType(), req.cover(), req.sourceUrl());
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichArticle(svc().findById(id).orElse(a))));
             }),
@@ -75,10 +74,10 @@ public class ArticleRoutes {
             // Comments
             Route.get("/{id}/comments", ctx -> {
                 long articleId = ctx.pathVar("id", Long.class);
-                int page = TopicRoutes.parseInt(ctx.queryParam("page"), 1);
+                int page = Math.max(1, ctx.queryParam("page", Integer.class));
                 var comments = AppContext.get(com.jujin.point.service.CommentService.class)
                     .getComments("article", articleId, com.jujin.point.domain.dto.PageRequest.of(page, 20));
-                ctx.sendJson(200, ApiResponse.ok(comments.stream().map(com.jujin.point.web.ResponseEnricher::enrichComment).toList()));
+                ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichComments(comments)));
             }),
             Route.post("/{id}/comments", ctx -> {
                 var user = AuthFilter.requireUser();
@@ -95,8 +94,4 @@ public class ArticleRoutes {
     private static UserLikeService likeSvc() { return AppContext.get(UserLikeService.class); }
     private static FavoriteService favSvc() { return AppContext.get(FavoriteService.class); }
 
-    static int parseInt(String s, int def) {
-        if (s == null || s.isEmpty()) return def;
-        try { return Integer.parseInt(s); } catch (NumberFormatException e) { return def; }
-    }
 }

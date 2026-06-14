@@ -42,9 +42,10 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import MomentCard from '@/components/MomentCard.vue'
+import type { Topic } from '@/types'
 
 const auth = useAuthStore()
-const moments = ref<any[]>([])
+const moments = ref<Topic[]>([])
 const newMoment = ref('')
 const posting = ref(false)
 const uploading = ref(false)
@@ -60,7 +61,7 @@ function triggerUpload() { fileInput.value?.click() }
 
 async function uploadImage(file: Blob): Promise<string> {
   uploading.value = true
-  return new Promise((resolve) => {
+  return new Promise<string>((resolve) => {
     const reader = new FileReader()
     reader.onload = async () => {
       const base64 = reader.result as string
@@ -100,11 +101,11 @@ async function loadItems(reset = false) {
   try {
     const { data } = await client.get('/topics/moments', { params: { page: page.value, pageSize } })
     if (data.code === 0) {
-      const newItems = (data.data || []).map((m: any) => ({ ...m, liked: false }))
+      const newItems = (data.data || []).map((m: Topic) => ({ ...m, liked: false }))
       moments.value = page.value === 1 ? newItems : [...moments.value, ...newItems]
       hasMore.value = newItems.length === pageSize
     }
-  } catch { /* */ }
+  } catch { console.error('api error') }
   loading.value = false
 }
 
@@ -118,14 +119,14 @@ async function postMoment() {
     const imgs = images.value.map(i => `![](${i.url})`).join('\n')
     content = content ? content + '\n' + imgs : imgs
   }
-  try { await client.post('/topics', { title: '', content, type: 1 }) } catch { /* */ }
+  try { await client.post('/topics', { title: '', content, type: 1 }) } catch { console.error('api error') }
   posting.value = false
   newMoment.value = ''
   images.value = []
   await loadItems(true)
 }
 
-async function toggleLike(m: any) {
+async function toggleLike(m: Topic) {
   if (m.liked) { await client.post(`/topics/${m.id}/unlike`); m.liked = false; m.likeCount-- }
   else { await client.post(`/topics/${m.id}/like`); m.liked = true; m.likeCount++ }
 }

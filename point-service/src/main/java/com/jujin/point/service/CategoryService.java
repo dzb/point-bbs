@@ -2,10 +2,12 @@ package com.jujin.point.service;
 
 import com.jujin.point.domain.entity.Category;
 import com.jujin.freeway.db.Database;
+import com.jujin.freeway.db.Orm;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -13,9 +15,11 @@ import java.util.stream.Collectors;
  */
 public class CategoryService {
     private final Database db;
+    private final Orm orm;
 
-    public CategoryService(Database db) {
+    public CategoryService(Database db, Orm orm) {
         this.db = db;
+        this.orm = orm;
     }
 
     public List<Category> findAllActive() {
@@ -39,6 +43,23 @@ public class CategoryService {
             .map(child -> buildTree(child, byParent))
             .collect(Collectors.toList());
         return new CategoryTree(cat.getId(), cat.getName(), cat.getType(), cat.getDescription(), children);
+    }
+
+    public Optional<Category> findById(long id) {
+        return orm.findById(Category.class, id);
+    }
+
+    public Category create(Category cat) {
+        orm.insert(cat);
+        return cat;
+    }
+
+    public void update(Category cat) {
+        orm.update(cat);
+    }
+
+    public void delete(long id) {
+        db.execute("UPDATE bbs_category SET status = 0 WHERE id = ?", id);
     }
 
     public record CategoryTree(

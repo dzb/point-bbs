@@ -20,9 +20,9 @@ public class UploadService {
     private final Orm orm;
     private final Path uploadDir;
 
-    public UploadService(Database db, @Value("${bbs.upload.dir:./uploads}") String uploadDirPath) {
+    public UploadService(Database db, Orm orm, @Value("${bbs.upload.dir:./uploads}") String uploadDirPath) {
         this.db = db;
-        this.orm = Orm.of(db);
+        this.orm = orm;
         this.uploadDir = Path.of(uploadDirPath).toAbsolutePath().normalize();
         try { Files.createDirectories(this.uploadDir); } catch (IOException e) {
             throw new RuntimeException("Cannot create upload directory: " + uploadDir, e);

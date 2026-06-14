@@ -34,7 +34,9 @@ public class Article {
     private long commentCount;
     @Column(nullable = false)
     private long likeCount;
+    @Column(nullable = false)
     private long createTime;
+    @Column
     private long updateTime;
 
     public Article() {}

@@ -3,6 +3,7 @@ package com.jujin.point.service;
 import com.jujin.point.domain.entity.*;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
+import com.jujin.freeway.db.Row;
 
 import java.util.*;
 
@@ -13,9 +14,9 @@ public class PermissionService {
     private final Database db;
     private final Orm orm;
 
-    public PermissionService(Database db) {
+    public PermissionService(Database db, Orm orm) {
         this.db = db;
-        this.orm = Orm.of(db);
+        this.orm = orm;
     }
 
     /** Check if a user has a specific permission code. */
@@ -25,7 +26,7 @@ public class PermissionService {
             JOIN bbs_role_permission rp ON ur.role_id = rp.role_id
             JOIN bbs_permission p ON rp.permission_id = p.id
             WHERE ur.user_id = ? AND p.code = ? AND p.status = 1
-            """, userId, permCode).list(com.jujin.freeway.db.Row.class);
+            """, userId, permCode).list(Row.class);
         return !rows.isEmpty();
     }
 
@@ -36,7 +37,7 @@ public class PermissionService {
             JOIN bbs_role_permission rp ON ur.role_id = rp.role_id
             JOIN bbs_permission p ON rp.permission_id = p.id
             WHERE ur.user_id = ? AND p.status = 1
-            """, userId).list(com.jujin.freeway.db.Row.class);
+            """, userId).list(Row.class);
         Set<String> codes = new HashSet<>();
         for (var r : rows) {
             String code = r.string("code");

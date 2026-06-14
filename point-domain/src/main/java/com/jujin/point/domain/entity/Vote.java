@@ -28,6 +28,7 @@ public class Vote {
     private int optionCount;
     @Column(nullable = false)
     private int voteCount;
+    @Column(nullable = false)
     private long createTime;
 
     public Vote() {}

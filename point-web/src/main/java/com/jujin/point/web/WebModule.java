@@ -3,6 +3,7 @@ package com.jujin.point.web;
 import com.jujin.point.service.ServiceException;
 import com.jujin.point.web.filter.AuthException;
 import com.jujin.point.web.filter.AuthFilter;
+import com.jujin.point.web.filter.SpaFilter;
 import com.jujin.point.web.route.*;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.freeway.http.ExceptionMapper;
@@ -15,8 +16,10 @@ public class WebModule implements Module {
 
     @Override
     public void bind(Binder binder) {
+        // Serve SPA frontend before auth (skips /api paths)
+        binder.contribute(HttpFilter.class).add("spa-filter", new SpaFilter());
+
         binder.contribute(HttpFilter.class).add("auth-filter", new AuthFilter());
-        binder.contribute(HttpFilter.class).add(new CorsFilter());
 
         binder.contribute(ExceptionMapper.class).add((ctx, ex) -> {
             if (ex instanceof AuthException ae) { ctx.sendJson(ae.statusCode(), ApiResponse.error(ae.statusCode(), ae.getMessage())); return true; }

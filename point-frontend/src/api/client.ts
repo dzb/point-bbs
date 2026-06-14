@@ -1,4 +1,5 @@
 import axios from 'axios'
+import router from '@/router'
 
 const client = axios.create({
   baseURL: '/api',
@@ -21,7 +22,7 @@ client.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('point_token')
-      window.location.href = '/login'
+      router.push('/login')
     }
     return Promise.reject(err)
   },

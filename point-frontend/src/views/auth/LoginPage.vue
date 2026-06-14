@@ -4,8 +4,8 @@
       <router-link to="/" class="auth-logo">point</router-link>
       <p class="auth-subtitle">登录你的账号</p>
 
-      <v-text-field v-model="loginName" label="邮箱或用户名" variant="outlined" class="mb-3" hide-details="auto" />
-      <v-text-field v-model="password" label="密码" type="password" variant="outlined" class="mb-2" hide-details="auto"
+      <v-text-field v-model="loginName" placeholder="邮箱或用户名" variant="outlined" class="mb-3" hide-details="auto" />
+      <v-text-field v-model="password" placeholder="密码" type="password" variant="outlined" class="mb-2" hide-details="auto"
         @keyup.enter="doLogin" />
 
       <div v-if="error" class="auth-error">{{ error }}</div>

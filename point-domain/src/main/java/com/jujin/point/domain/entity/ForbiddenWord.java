@@ -15,7 +15,7 @@ public class ForbiddenWord {
     private String word;
     @Column(length = 256)
     private String remark;
-    @Column(nullable = false) long createTime;
+    @Column(nullable = false) private long createTime;
 
     public ForbiddenWord() {}
 

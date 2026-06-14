@@ -3,6 +3,8 @@ package com.jujin.point.db.repository;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
 import com.jujin.freeway.db.Query;
+import com.jujin.freeway.db.Row;
+import com.jujin.freeway.db.schema.SqlTypeMapping;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,9 +20,9 @@ public abstract class BaseRepository<T> {
     protected final Orm orm;
     protected final Class<T> entityType;
 
-    protected BaseRepository(Database db, Class<T> entityType) {
+    protected BaseRepository(Database db, Orm orm, Class<T> entityType) {
         this.db = db;
-        this.orm = Orm.of(db);
+        this.orm = orm;
         this.entityType = entityType;
     }
 
@@ -60,9 +62,11 @@ public abstract class BaseRepository<T> {
         return (int) result.rows();
     }
 
-    /** Count records */
+    /** Count records via SELECT COUNT(*). Uses freeway's SqlTypeMapping for table name resolution. */
     public long count() {
-        var list = orm.findAll(entityType);
-        return list.size();
+        var tableName = SqlTypeMapping.tableName(entityType);
+        var row = db.query("SELECT COUNT(*) AS cnt FROM " + tableName)
+            .one(Row.class).orElse(null);
+        return row != null ? row.integer("cnt").longValue() : 0;
     }
 }

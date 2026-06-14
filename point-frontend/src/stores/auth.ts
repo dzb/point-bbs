@@ -1,14 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import client from '@/api/client'
-
-interface UserInfo {
-  id: number
-  nickname: string
-  avatar: string
-  email: string
-  roles: string
-}
+import router from '@/router'
+import type { UserInfo } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('point_token'))
@@ -47,7 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (data.code === 0 && data.data) {
         user.value = data.data
       }
-    } catch {
+    } catch { /* network error */
       // ignore
     }
   }
@@ -56,7 +50,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     user.value = null
     localStorage.removeItem('point_token')
-    window.location.href = '/'
+    router.push('/')
   }
 
   return { token, user, isLoggedIn, login, register, fetchCurrentUser, logout }

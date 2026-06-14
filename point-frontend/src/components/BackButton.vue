@@ -1,5 +1,5 @@
 <template>
-  <v-btn icon="mdi-arrow-left" variant="text" size="34" class="mb-2 back-btn" @click="$router.back()" />
+  <v-btn icon="mdi-arrow-left" variant="text" size="34" class="mb-2 back-btn" @click="$router.back()" aria-label="返回" />
 </template>
 
 <style scoped>

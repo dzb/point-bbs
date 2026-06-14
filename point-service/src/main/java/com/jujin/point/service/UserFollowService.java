@@ -15,9 +15,9 @@ public class UserFollowService {
     private final Orm orm;
     private final EventBus bus;
 
-    public UserFollowService(Database db, EventBus bus) {
+    public UserFollowService(Database db, Orm orm, EventBus bus) {
         this.db = db;
-        this.orm = Orm.of(db);
+        this.orm = orm;
         this.bus = bus;
     }
 

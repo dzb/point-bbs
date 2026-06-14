@@ -8,6 +8,7 @@ import com.jujin.point.service.*;
 import com.jujin.point.web.filter.AuthFilter;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
+import com.jujin.freeway.db.Row;
 import com.jujin.freeway.http.Route;
 import com.jujin.freeway.http.RouteGroup;
 
@@ -22,7 +23,8 @@ public class AuthRoutes {
                 var user = userSvc().signUp(req);
                 var token = authSvc().createToken(user.getId(), user.getNickname(),
                     user.getAvatar() != null ? user.getAvatar() : "", null);
-                ctx.sendJson(201, ApiResponse.ok(Map.of("token", token, "userId", user.getId(), "nickname", user.getNickname())));
+                ctx.sendJson(201, ApiResponse.ok(Map.of("token", token, "userId", user.getId(),
+                    "nickname", user.getNickname(), "avatar", user.getAvatar() != null ? user.getAvatar() : "")));
             }),
             Route.post("/signin", ctx -> {
                 var req = ctx.bodyAsJson(SignInRequest.class);
@@ -90,7 +92,7 @@ public class AuthRoutes {
 
     private static void bindThirdUser(long userId, String provider, OAuthProvider.OAuthUserInfo info) {
         var db = AppContext.get(Database.class);
-        if (db.query("SELECT 1 FROM bbs_third_user WHERE open_id=? AND third_type=?", info.openId(), provider).list(com.jujin.freeway.db.Row.class).isEmpty()) {
+        if (db.query("SELECT 1 FROM bbs_third_user WHERE open_id=? AND third_type=?", info.openId(), provider).list(Row.class).isEmpty()) {
             var tu = new ThirdUser(); long now = System.currentTimeMillis();
             tu.setUserId(userId); tu.setOpenId(info.openId()); tu.setThirdType(provider);
             tu.setNickname(info.nickname()); tu.setAvatar(info.avatar());

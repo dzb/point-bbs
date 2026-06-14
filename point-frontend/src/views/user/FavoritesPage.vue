@@ -20,7 +20,12 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 const auth = useAuthStore()
+if (!auth.isLoggedIn) { router.replace('/login') }
+
 const favorites = ref<any[]>([])
 const loading = ref(true)
 const page = ref(1)
@@ -33,7 +38,7 @@ onMounted(() => loadItems())
 async function loadItems(reset = false) {
   if (reset) page.value = 1
   const uid = auth.user?.id
-  if (!uid) return
+  if (!uid) { loading.value = false; return }
   try {
     const { data } = await client.get(`/users/${uid}/favorites`, { params: { page: page.value, pageSize } })
     if (data.code===0) {
@@ -41,7 +46,7 @@ async function loadItems(reset = false) {
       favorites.value = page.value === 1 ? newItems : [...favorites.value, ...newItems]
       hasMore.value = newItems.length === pageSize
     }
-  } catch { /* */ }
+  } catch { console.error('api error') }
   loading.value = false
 }
 

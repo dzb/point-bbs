@@ -1,5 +1,7 @@
 package com.jujin.point.domain.dto;
 
+import com.jujin.freeway.commons.validation.NotBlank;
+
 /**
  * Topic-related request DTOs.
  */
@@ -9,7 +11,7 @@ public interface TopicDtos {
         int type,
         Long categoryId,
         String title,
-        String content,
+        @NotBlank String content,
         String contentType,
         java.util.List<String> tags,
         String imageList,

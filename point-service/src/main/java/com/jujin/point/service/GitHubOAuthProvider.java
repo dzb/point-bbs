@@ -16,14 +16,17 @@ import java.util.Map;
 public class GitHubOAuthProvider implements OAuthProvider {
     private final String clientId;
     private final String clientSecret;
+    private final String redirectUri;
     private final HttpClient http = HttpClient.newHttpClient();
 
     public GitHubOAuthProvider(
         @Value("${bbs.oauth.github.client-id:}") String clientId,
-        @Value("${bbs.oauth.github.client-secret:}") String clientSecret
+        @Value("${bbs.oauth.github.client-secret:}") String clientSecret,
+        @Value("${bbs.oauth.github.redirect-uri:http://localhost:8082/api/login/github/callback}") String redirectUri
     ) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
+        this.redirectUri = redirectUri;
     }
 
     @Override
@@ -72,7 +75,7 @@ public class GitHubOAuthProvider implements OAuthProvider {
     }
 
     private String redirectUri() {
-        return "http://localhost:8082/api/login/github/callback";
+        return redirectUri;
     }
 
     private static String encode(String s) {

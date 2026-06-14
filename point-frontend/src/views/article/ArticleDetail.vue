@@ -67,17 +67,15 @@ import client from '@/api/client'
 import BackButton from '@/components/BackButton.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import ImageViewer from '@/components/ImageViewer.vue'
-import MarkdownIt from 'markdown-it'
-import { groupConsecutiveImages } from '@/utils/markdown'
+import { renderMarkdown } from '@/utils/markdown'
 
-const md = new MarkdownIt({ html: true, breaks: true, linkify: true })
 const route = useRoute(); const auth = useAuthStore()
 const article = ref<any>(null); const comments = ref<any[]>([])
 const commentText = ref(''); const submitting = ref(false); const loading = ref(true)
 const commentPage = ref(1); const commentPageSize = 30
 const hasMoreComments = ref(false); const loadingMoreComments = ref(false)
 const viewerIndex = ref(0)
-const rendered = computed(() => article.value?.content ? md.render(groupConsecutiveImages(article.value.content)) : '')
+const rendered = computed(() => article.value?.content ? renderMarkdown(article.value.content) : '')
 const contentImages = computed(() => {
   const matches = article.value?.content?.matchAll(/!\[.*?\]\((.+?)\)/g) || []
   return Array.from(matches, (m: any) => m[1])
@@ -101,7 +99,7 @@ async function loadComments(reset = false) {
       comments.value = commentPage.value === 1 ? newItems : [...comments.value, ...newItems]
       hasMoreComments.value = newItems.length === commentPageSize
     }
-  } catch { /* */ }
+  } catch { console.error('api error') }
 }
 
 async function loadMoreComments() { commentPage.value++; loadingMoreComments.value = true; await loadComments(); loadingMoreComments.value = false }

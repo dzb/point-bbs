@@ -29,16 +29,31 @@ public class AdminCategoryRoutes {
                 cat.setSortNo(req.get("sortNo") != null ? ((Number) req.get("sortNo")).intValue() : 0);
                 cat.setStatus(1);
                 cat.setCreateTime(System.currentTimeMillis());
-                ctx.sendJson(201, ApiResponse.ok(Map.of("created", true)));
+                catSvc().create(cat);
+                ctx.sendJson(201, ApiResponse.ok(Map.of("created", true, "id", cat.getId())));
             }),
             // Update category
             Route.post("/{id}", ctx -> {
                 long id = ctx.pathVar("id", Long.class);
+                var existing = catSvc().findById(id);
+                if (existing.isEmpty()) { ctx.sendJson(404, ApiResponse.error("分类不存在")); return; }
+                var cat = existing.get();
+                var req = ctx.bodyAsJson(Map.class);
+                if (req.containsKey("name")) cat.setName((String) req.get("name"));
+                if (req.containsKey("parentId")) cat.setParentId(((Number) req.get("parentId")).longValue());
+                if (req.containsKey("type")) cat.setType((String) req.get("type"));
+                if (req.containsKey("description")) cat.setDescription((String) req.get("description"));
+                if (req.containsKey("sortNo")) cat.setSortNo(((Number) req.get("sortNo")).intValue());
+                if (req.containsKey("status")) cat.setStatus(((Number) req.get("status")).intValue());
+                catSvc().update(cat);
                 ctx.sendJson(200, ApiResponse.ok(Map.of("id", id, "updated", true)));
             }),
-            // Delete category
+            // Delete category (soft-delete)
             Route.post("/delete/{id}", ctx -> {
                 long id = ctx.pathVar("id", Long.class);
+                var existing = catSvc().findById(id);
+                if (existing.isEmpty()) { ctx.sendJson(404, ApiResponse.error("分类不存在")); return; }
+                catSvc().delete(id);
                 ctx.sendJson(200, ApiResponse.ok(Map.of("id", id, "deleted", true)));
             })
         );

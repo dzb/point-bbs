@@ -21,7 +21,7 @@ public class TagService {
     }
 
     public Tag getOrCreate(String name) {
-        var existing = db.query("SELECT * FROM bbs_tag WHERE name = ?", name)
+        var existing = db.query("SELECT * FROM bbs_tag WHERE name = $name").param("name", name)
             .one(Tag.class);
         if (existing.isPresent()) return existing.get();
 
@@ -34,6 +34,6 @@ public class TagService {
 
         db.execute("INSERT INTO bbs_tag (name, status, create_time, update_time) VALUES (?, 1, ?, ?)",
             name, now, now);
-        return db.query("SELECT * FROM bbs_tag WHERE name = ?", name).one(Tag.class).orElseThrow();
+        return db.query("SELECT * FROM bbs_tag WHERE name = $name").param("name", name).one(Tag.class).orElseThrow();
     }
 }

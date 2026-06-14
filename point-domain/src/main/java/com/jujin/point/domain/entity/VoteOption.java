@@ -20,6 +20,7 @@ public class VoteOption {
     private int sortNo;
     @Column(nullable = false)
     private int voteCount;
+    @Column(nullable = false)
     private long createTime;
 
     public VoteOption() {}

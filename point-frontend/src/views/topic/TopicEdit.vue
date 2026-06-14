@@ -22,19 +22,29 @@ const submitting = ref(false)
 const error = ref('')
 
 onMounted(async () => {
-  const id = route.params.id
-  const { data } = await client.get(`/topics/${id}`)
-  if (data.code === 0 && data.data) {
-    form.title = data.data.title
-    form.content = data.data.content
+  try {
+    const id = route.params.id
+    const { data } = await client.get(`/topics/${id}`)
+    if (data.code === 0 && data.data) {
+      form.title = data.data.title
+      form.content = data.data.content
+    } else {
+      error.value = data.message || '加载失败'
+    }
+  } catch (e: any) {
+    error.value = e.response?.data?.message || '加载失败'
   }
 })
 
 async function submit() {
+  if (!form.title.trim() || !form.content.trim()) {
+    error.value = '标题和内容不能为空'
+    return
+  }
   submitting.value = true
   try {
     const id = route.params.id
-    const { data } = await client.post(`/topics/${id}/edit`, form)
+    const { data } = await client.post(`/topics/edit/${id}`, form)
     if (data.code === 0) {
       router.push(`/topics/${id}`)
     } else {

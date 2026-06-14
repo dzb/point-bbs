@@ -1,7 +1,6 @@
 <template>
     <div class="home-feed">
-      <div v-if="!auth.isLoggedIn" class="text-center py-16" style="color:var(--paper-text2)">请先登录</div>
-      <div v-else>
+      <div v-if="auth.isLoggedIn">
         <div class="moments-list">
           <MomentCard v-for="m in moments" :key="m.id" :moment="m" @toggle-like="toggleLike" @delete-moment="removeMoment" />
         </div>
@@ -20,7 +19,12 @@ import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import MomentCard from '@/components/MomentCard.vue'
 
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 const auth = useAuthStore()
+if (!auth.isLoggedIn) { router.replace('/login') }
+
 const moments = ref<any[]>([])
 const loading = ref(true)
 const page = ref(1)
@@ -39,7 +43,7 @@ async function loadItems(reset = false) {
       moments.value = page.value === 1 ? newItems : [...moments.value, ...newItems]
       hasMore.value = newItems.length === pageSize
     }
-  } catch { /* */ }
+  } catch { console.error('api error') }
   loading.value = false
 }
 

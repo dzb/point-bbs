@@ -1,16 +1,19 @@
 package com.jujin.point.domain.dto;
 
+import com.jujin.freeway.commons.validation.NotBlank;
+import com.jujin.freeway.commons.validation.Size;
+
 /**
  * User-related request DTOs.
  */
 public interface UserDtos {
 
     record CreateUserRequest(
-        String nickname,
-        String email,
+        @NotBlank String nickname,
+        @NotBlank String email,
         String phone,
         String username,
-        String password,
+        @Size(min = 6) String password,
         String captchaToken,
         String captchaCode,
         String ref
@@ -25,9 +28,9 @@ public interface UserDtos {
         String backgroundImage
     ) {}
 
-    record SignInRequest(String loginName, String password, String captchaToken, String captchaCode) {}
+    record SignInRequest(@NotBlank String loginName, @NotBlank String password, String captchaToken, String captchaCode) {}
 
-    record SetPasswordRequest(String oldPassword, String newPassword) {}
+    record SetPasswordRequest(@NotBlank String oldPassword, @Size(min = 6) String newPassword) {}
 
     record ResetPasswordRequest(String email, String token, String newPassword) {}
 

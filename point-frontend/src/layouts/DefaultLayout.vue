@@ -22,7 +22,7 @@
             @focus="searchFocused = true" @blur="searchFocused = false"
             @keyup.enter="doSearch" />
           <v-btn :icon="isDark ? 'mdi-weather-night' : 'mdi-white-balance-sunny'" variant="text" size="small"
-            :style="{ color: theme.text2 }" @click="toggleTheme" />
+            :style="{ color: theme.text2 }" @click="toggleTheme" aria-label="切换主题" />
           <template v-if="auth.isLoggedIn">
             <v-menu>
               <template #activator="{ props }"><v-btn v-bind="props" icon variant="text" size="small"><UserAvatar :src="auth.user?.avatar" :name="auth.user?.nickname" :size="28" /></v-btn></template>
@@ -74,7 +74,7 @@ onMounted(async () => { if (auth.isLoggedIn) await fetchUnread() })
 auth.$subscribe(async () => { if (auth.isLoggedIn) await fetchUnread() })
 
 async function fetchUnread() {
-  try { const { data } = await client.get(`/users/${auth.user?.id}/messages/unread`); if (data.code===0) unreadCount.value = data.data?.count||0 } catch { /* */ }
+  try { const { data } = await client.get(`/users/${auth.user?.id}/messages/unread`); if (data.code===0) unreadCount.value = data.data?.count||0 } catch { console.error('unread fetch error') }
 }
 
 function doSearch() { if (searchQuery.value.trim()) router.push({ name: 'search', query: { q: searchQuery.value.trim() } }) }
@@ -124,8 +124,12 @@ html.dark .auth-card { background: #252220; }
 .img-grid.cols-2 { grid-template-columns: 1fr 1fr; }
 .img-grid.cols-3 { grid-template-columns: 1fr 1fr; }
 .img-grid.cols-3 img:first-child { grid-row: span 2; }
-.img-grid.cols-4 { grid-template-columns: 1fr 1fr; }
+.img-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
 .img-grid img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 1; border: 1px solid var(--paper-border); }
+
+/* Auth-required hint (shown on gated pages when not logged in) */
+.auth-hint { text-align: center; padding: 60px 20px; }
+.auth-hint-text { font-size: 15px; color: var(--paper-text2); margin-bottom: 16px; }
 
 /* Feed / detail content containers */
 .home-feed, .detail-main { max-width: 680px; min-width: 0; }
@@ -137,9 +141,10 @@ html.dark .auth-card { background: #252220; }
 /* Top header — full width */
 .top-header {
   display: flex; align-items: center;
-  height: 46px;
-  background: var(--paper-nav); border-bottom: 1px solid var(--paper-nav);
+  height: 48px;
+  background: var(--paper-nav); border-bottom: 1px solid var(--paper-border);
   position: sticky; top: 0; z-index: 10;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
 .header-logo-area { width: 240px; flex-shrink: 0; display: flex; align-items: center; padding-left: 12px; }
 .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 1; min-width: 0; margin-left: auto; padding-right: 32px; }
@@ -152,8 +157,8 @@ html.dark .auth-card { background: #252220; }
 .logo-text { font-family: 'Noto Serif SC', Georgia, serif; font-size: 20px; font-weight: 700; color: var(--paper-text); }
 
 /* Header tabs — align with content area */
-.header-tabs { display: flex; padding-left: 32px; }
-.header-tab { padding: 14px 16px 6px; font-size: 18px; color: var(--paper-text2); text-decoration: none;
+.header-tabs { display: flex; padding-left: 32px; align-self: flex-end; }
+.header-tab { padding: 6px 16px 2px; font-size: 18px; color: var(--paper-text2); text-decoration: none;
   border-bottom: 2px solid transparent; transition: color .15s, border-color .15s, font-size .15s, padding .15s; white-space: nowrap; }
 .header-tab:hover { color: var(--paper-text); }
 .header-tab.active { color: var(--paper-accent); border-bottom-color: var(--paper-accent); }
@@ -177,7 +182,9 @@ html.dark .auth-card { background: #252220; }
 .app-body { display: flex; flex: 1; }
 
 /* Main content area */
-.app-main { flex: 1; min-width: 0; padding: 24px 32px; }
+.app-main { flex: 1; min-width: 0; padding: 24px 32px; box-shadow: 2px 0 12px rgba(0,0,0,.04), 0 0 24px rgba(0,0,0,.02); }
+html.dark .app-main { box-shadow: 2px 0 12px rgba(0,0,0,.2), 0 0 24px rgba(0,0,0,.12); }
+html.dark .top-header { box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 
 /* Right aside */
 .app-aside {
@@ -196,7 +203,7 @@ html.dark .auth-card { background: #252220; }
   .header-logo-area { width: 60px; }
   .header-logo .logo-text { display: none; }
   .header-tabs { padding-left: 20px; }
-  .header-tab { font-size: 16px; padding: 12px 12px 6px; }
+  .header-tab { font-size: 16px; padding: 6px 12px 2px; }
   .header-right { padding-right: 24px; }
   .app-main { padding: 24px 20px; }
   .app-aside { width: 280px; }
@@ -206,11 +213,11 @@ html.dark .auth-card { background: #252220; }
   .app-main { padding: 24px 20px; }
 }
 @media (max-width: 1000px) {
-  .header-tab { font-size: 15px; padding: 10px 10px 6px; }
+  .header-tab { font-size: 15px; padding: 6px 10px 2px; }
 }
 @media (max-width: 900px) {
   .header-tabs { padding-left: 16px; }
-  .header-tab { font-size: 14px; padding: 10px 8px 6px; }
+  .header-tab { font-size: 14px; padding: 6px 8px 2px; }
   .header-right { padding-right: 16px; }
   .app-main { padding: 20px 16px; }
 }

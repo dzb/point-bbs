@@ -1,14 +1,16 @@
 package com.jujin.point.domain.dto;
 
+import com.jujin.freeway.commons.validation.NotBlank;
+
 /**
  * Article-related request DTOs.
  */
 public interface ArticleDtos {
 
     record CreateArticleRequest(
-        String title,
+        @NotBlank String title,
         String summary,
-        String content,
+        @NotBlank String content,
         String contentType,
         String cover,
         String sourceUrl,

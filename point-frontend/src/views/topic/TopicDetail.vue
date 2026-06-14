@@ -85,11 +85,9 @@ import client from '@/api/client'
 import UserAvatar from '@/components/UserAvatar.vue'
 import BackButton from '@/components/BackButton.vue'
 import ImageViewer from '@/components/ImageViewer.vue'
-import MarkdownIt from 'markdown-it'
-import { groupConsecutiveImages } from '@/utils/markdown'
+import { renderMarkdown } from '@/utils/markdown'
 import { topicAsideState } from '@/composables/useTopicAside'
 
-const md = new MarkdownIt({ html: true, breaks: true, linkify: true })
 const route = useRoute(); const auth = useAuthStore()
 const topic = ref<any>(null)
 const comments = ref<any[]>([])
@@ -100,7 +98,7 @@ const hasMoreComments = ref(false); const loadingMoreComments = ref(false)
 const liked = ref(false); const favorited = ref(false); const following = ref(false)
 const likeLoading = ref(false); const favLoading = ref(false); const followLoading = ref(false)
 const viewerIndex = ref(0)
-const renderedContent = computed(() => topic.value?.content ? md.render(groupConsecutiveImages(topic.value.content)) : '')
+const renderedContent = computed(() => topic.value?.content ? renderMarkdown(topic.value.content) : '')
 const contentImages = computed(() => {
   const matches = topic.value?.content?.matchAll(/!\[.*?\]\((.+?)\)/g) || []
   return Array.from(matches, (m: any) => m[1])
@@ -111,15 +109,17 @@ watch(() => route.params.id, loadAll)
 
 async function loadAll() {
   loading.value = true
-  const id = route.params.id as string
-  const tr = await client.get(`/topics/${id}`)
-  if (tr.data.code===0) {
-    topic.value = tr.data.data
-    syncAsideState()
-    if (auth.isLoggedIn) await Promise.all([checkLike(), checkFav(), checkFollow()])
-  }
-  await loadComments()
-  loading.value = false
+  try {
+    const id = route.params.id as string
+    const tr = await client.get(`/topics/${id}`)
+    if (tr.data.code===0) {
+      topic.value = tr.data.data
+      syncAsideState()
+      if (auth.isLoggedIn) await Promise.all([checkLike(), checkFav(), checkFollow()])
+    }
+    await loadComments()
+  } catch { console.error('api error') }
+  finally { loading.value = false }
 }
 
 async function loadComments(reset = false) {
@@ -132,7 +132,7 @@ async function loadComments(reset = false) {
       comments.value = commentPage.value === 1 ? newItems : [...comments.value, ...newItems]
       hasMoreComments.value = newItems.length === commentPageSize
     }
-  } catch { /* */ }
+  } catch { console.error('api error') }
 }
 
 async function loadMoreComments() { commentPage.value++; loadingMoreComments.value = true; await loadComments(); loadingMoreComments.value = false }

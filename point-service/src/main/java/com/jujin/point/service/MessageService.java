@@ -10,9 +10,9 @@ public class MessageService {
     private final Database db;
     private final Orm orm;
 
-    public MessageService(Database db) {
+    public MessageService(Database db, Orm orm) {
         this.db = db;
-        this.orm = Orm.of(db);
+        this.orm = orm;
     }
 
     public Message send(long fromId, long toUserId, String title, String content,
@@ -47,8 +47,11 @@ public class MessageService {
 
     public void markRead(long userId, List<Long> messageIds) {
         if (messageIds.isEmpty()) return;
-        var inClause = messageIds.stream().map(Object::toString).reduce((a, b) -> a + "," + b).orElse("0");
-        db.execute("UPDATE bbs_message SET status = 1 WHERE user_id = ? AND id IN (" + inClause + ")", userId);
+        var placeholders = messageIds.stream().map(id -> "?").reduce((a, b) -> a + "," + b).orElse("?");
+        var params = new Object[messageIds.size() + 1];
+        params[0] = userId;
+        for (int i = 0; i < messageIds.size(); i++) params[i + 1] = messageIds.get(i);
+        db.execute("UPDATE bbs_message SET status = 1 WHERE user_id = ? AND id IN (" + placeholders + ")", params);
     }
 
     public void markAllRead(long userId) {

@@ -2,6 +2,8 @@ package com.jujin.point.db.repository;
 
 import com.jujin.point.domain.entity.Comment;
 import com.jujin.freeway.db.Database;
+import com.jujin.freeway.db.Orm;
+import com.jujin.freeway.db.Row;
 
 import java.util.List;
 
@@ -10,17 +12,18 @@ import java.util.List;
  */
 public class CommentRepository extends BaseRepository<Comment> {
 
-    public CommentRepository(Database db) {
-        super(db, Comment.class);
+    public CommentRepository(Database db, Orm orm) {
+        super(db, orm, Comment.class);
     }
 
     public List<Comment> findByEntity(String entityType, long entityId, int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
         return query(
-            "SELECT * FROM bbs_comment WHERE entity_type = ? AND entity_id = ? AND status = 1 " +
-            "ORDER BY create_time ASC LIMIT ? OFFSET ?",
-            entityType, entityId, pageSize, offset
-        ).list(Comment.class);
+            "SELECT * FROM bbs_comment WHERE entity_type = $entityType AND entity_id = $entityId AND status = 1 " +
+            "ORDER BY create_time ASC LIMIT $limit OFFSET $offset")
+            .param("entityType", entityType).param("entityId", entityId)
+            .param("limit", pageSize).param("offset", offset)
+            .list(Comment.class);
     }
 
     public List<Comment> findReplies(long commentId, int page, int pageSize) {
@@ -30,16 +33,16 @@ public class CommentRepository extends BaseRepository<Comment> {
     public List<Comment> findByUserId(long userId, int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
         return query(
-            "SELECT * FROM bbs_comment WHERE user_id = ? AND status = 1 ORDER BY create_time DESC LIMIT ? OFFSET ?",
-            userId, pageSize, offset
-        ).list(Comment.class);
+            "SELECT * FROM bbs_comment WHERE user_id = $userId AND status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
+            .param("userId", userId).param("limit", pageSize).param("offset", offset)
+            .list(Comment.class);
     }
 
     public long countByEntity(String entityType, long entityId) {
-        var list = query(
-            "SELECT * FROM bbs_comment WHERE entity_type = ? AND entity_id = ? AND status = 1",
-            entityType, entityId
-        ).list(Comment.class);
-        return list.size();
+        var row = query(
+            "SELECT COUNT(*) AS cnt FROM bbs_comment WHERE entity_type = $entityType AND entity_id = $entityId AND status = 1")
+            .param("entityType", entityType).param("entityId", entityId)
+            .one(Row.class).orElse(null);
+        return row != null ? row.integer("cnt").longValue() : 0;
     }
 }

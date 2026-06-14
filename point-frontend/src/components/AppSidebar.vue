@@ -16,7 +16,7 @@
       <router-link to="/messages" class="nav-item" :class="{ active: $route.path === '/messages' }">
         <v-icon size="20">mdi-bell-outline</v-icon>
         <span v-if="!collapsed" class="nav-label">消息</span>
-        <v-badge v-if="unread" :model-value="unread" color="var(--paper-accent)" dot class="nav-badge" />
+        <v-badge v-if="unread" model-value color="var(--paper-accent)" dot class="nav-badge" />
       </router-link>
       <a class="nav-item" href="#">
         <v-icon size="20">mdi-rss</v-icon>
@@ -28,15 +28,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 defineProps<{ unread?: number }>()
 
 const collapsed = ref(window.innerWidth < 1200)
 
-window.addEventListener('resize', () => {
-  collapsed.value = window.innerWidth < 1200
-})
+function onResize() { collapsed.value = window.innerWidth < 1200 }
+onMounted(() => window.addEventListener('resize', onResize))
+onUnmounted(() => window.removeEventListener('resize', onResize))
 </script>
 
 <style scoped>

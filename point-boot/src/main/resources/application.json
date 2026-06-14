@@ -10,7 +10,9 @@
     },
     "cors": {
       "enabled": true,
-      "allowed-origins": "*"
+      "allowed-origins": "*",
+      "allowed-headers": "Content-Type, Authorization, X-User-Token",
+      "max-age": "86400"
     }
   },
   "freeway": {

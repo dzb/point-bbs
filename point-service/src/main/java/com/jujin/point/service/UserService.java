@@ -40,7 +40,7 @@ public class UserService {
         var now = System.currentTimeMillis();
         user.setEmail(req.email());
         user.setUsername(req.username() != null ? req.username() : req.email());
-        user.setNickname(req.nickname() != null ? req.nickname() : ("用户" + now % 100000));
+        user.setNickname(req.nickname() != null ? req.nickname() : ("用户" + Long.toHexString(now).substring(4)));
         user.setPassword(hashPassword(req.password()));
         user.setEmailVerified(false);
         user.setScore(0);

@@ -3,6 +3,7 @@ package com.jujin.point.boot;
 import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.entity.*;
 import com.jujin.freeway.db.Database;
+import com.jujin.freeway.db.Row;
 import com.jujin.freeway.db.schema.Schema;
 import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.Container;
@@ -46,6 +47,7 @@ public class PointModule implements Module {
                         long now = System.currentTimeMillis();
                         // Create default permissions
                         String[][] perms = {
+                            {"admin", "admin", "管理员权限", "系统"},
                             {"admin", "topic:manage", "帖子管理", "内容"},
                             {"admin", "user:manage", "用户管理", "用户"},
                             {"admin", "config:manage", "配置管理", "系统"},
@@ -58,7 +60,7 @@ public class PointModule implements Module {
                         // Create admin role
                         db.execute("INSERT INTO bbs_role (type, name, code, sort_no, status, create_time, update_time) VALUES (0,'管理员','admin',0,1,?,?)", now, now);
                         // Assign all permissions to admin role
-                        var rows = db.query("SELECT id FROM bbs_permission").list(com.jujin.freeway.db.Row.class);
+                        var rows = db.query("SELECT id FROM bbs_permission").list(Row.class);
                         for (var r : rows) {
                             long pid = r.integer("id").longValue();
                             db.execute("INSERT INTO bbs_role_permission (role_id, permission_id, create_time) VALUES (1,?,?)", pid, now);

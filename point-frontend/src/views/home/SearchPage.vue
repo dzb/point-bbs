@@ -44,7 +44,7 @@ async function loadItems(reset = false) {
       topics.value = page.value === 1 ? newItems : [...topics.value, ...newItems]
       hasMore.value = newItems.length === pageSize
     }
-  } catch { /* */ }
+  } catch { console.error('api error') }
   loading.value = false
 }
 

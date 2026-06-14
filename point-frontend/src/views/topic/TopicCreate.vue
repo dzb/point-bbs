@@ -37,7 +37,7 @@ onMounted(async () => {
   try {
     const { data } = await client.get('/categories')
     if (data.code === 0) categories.value = data.data || []
-  } catch { /* ignore */ }
+  } catch { console.error('api error') }
 })
 
 async function submit() {

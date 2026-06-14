@@ -29,37 +29,48 @@ public class UserRoutes {
                 ctx.sendJson(200, ApiResponse.ok(u.orElse(null)));
             }),
             Route.post("/edit/{id}", ctx -> {
-                AuthFilter.requireUser();
-                userSvc().updateUser(ctx.pathVar("id", Long.class), ctx.bodyAsJson(UpdateUserRequest.class));
+                var user = AuthFilter.requireUser();
+                long targetId = ctx.pathVar("id", Long.class);
+                if (user.userId() != targetId) {
+                    ctx.sendJson(403, ApiResponse.error(403, "只能编辑自己的资料"));
+                    return;
+                }
+                userSvc().updateUser(targetId, ctx.bodyAsJson(UpdateUserRequest.class));
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             Route.get("/{id}/topics", ctx -> {
                 long uid = ctx.pathVar("id", Long.class);
-                int page = TopicRoutes.parseInt(ctx.queryParam("page"), 1);
+                int page = Math.max(1, ctx.queryParam("page", Integer.class));
                 var r = topicSvc().getUserTopics(uid, PageRequest.of(page, 20));
-                ctx.sendJson(200, ApiResponse.ok(r.items().stream().map(ResponseEnricher::enrichTopic).toList()));
+                ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichTopics(r.items())));
             }),
             Route.get("/{id}/articles", ctx -> {
                 long uid = ctx.pathVar("id", Long.class);
-                int page = TopicRoutes.parseInt(ctx.queryParam("page"), 1);
+                int page = Math.max(1, ctx.queryParam("page", Integer.class));
                 var a = articleSvc().getByUser(uid, page, 20);
-                ctx.sendJson(200, ApiResponse.ok(a.stream().map(ResponseEnricher::enrichArticle).toList()));
+                ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichArticles(a)));
             }),
             Route.get("/{id}/messages", ctx -> {
-                AuthFilter.requireUser();
-                int page = TopicRoutes.parseInt(ctx.queryParam("page"), 1);
-                ctx.sendJson(200, ApiResponse.ok(msgSvc().getUserMessages(ctx.pathVar("id", Long.class), page, 20)));
+                var user = AuthFilter.requireUser();
+                long uid = ctx.pathVar("id", Long.class);
+                if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能查看自己的消息")); return; }
+                int page = Math.max(1, ctx.queryParam("page", Integer.class));
+                ctx.sendJson(200, ApiResponse.ok(msgSvc().getUserMessages(uid, page, 20)));
             }),
             Route.get("/{id}/messages/unread", ctx -> {
-                AuthFilter.requireUser();
-                ctx.sendJson(200, ApiResponse.ok(Map.of("count", msgSvc().unreadCount(ctx.pathVar("id", Long.class)))));
+                var user = AuthFilter.requireUser();
+                long uid = ctx.pathVar("id", Long.class);
+                if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能查看自己的消息")); return; }
+                ctx.sendJson(200, ApiResponse.ok(Map.of("count", msgSvc().unreadCount(uid))));
             }),
             Route.post("/{id}/messages/read", ctx -> {
-                AuthFilter.requireUser();
+                var user = AuthFilter.requireUser();
+                long uid = ctx.pathVar("id", Long.class);
+                if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能操作自己的消息")); return; }
                 var req = ctx.bodyAsJson(Map.class);
                 @SuppressWarnings("unchecked")
                 var ids = ((List<Number>) req.get("ids")).stream().map(Number::longValue).toList();
-                msgSvc().markRead(ctx.pathVar("id", Long.class), ids);
+                msgSvc().markRead(uid, ids);
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             Route.post("/{id}/follow", ctx -> {
@@ -78,15 +89,15 @@ public class UserRoutes {
                 ctx.sendJson(200, ApiResponse.ok(Map.of("following", f)));
             }),
             Route.get("/{id}/followers", ctx -> {
-                int page = TopicRoutes.parseInt(ctx.queryParam("page"), 1);
+                int page = Math.max(1, ctx.queryParam("page", Integer.class));
                 ctx.sendJson(200, ApiResponse.ok(followSvc().getFollowers(ctx.pathVar("id", Long.class), page, 20)));
             }),
             Route.get("/{id}/following", ctx -> {
-                int page = TopicRoutes.parseInt(ctx.queryParam("page"), 1);
+                int page = Math.max(1, ctx.queryParam("page", Integer.class));
                 ctx.sendJson(200, ApiResponse.ok(followSvc().getFollowing(ctx.pathVar("id", Long.class), page, 20)));
             }),
             Route.get("/{id}/favorites", ctx -> {
-                int page = TopicRoutes.parseInt(ctx.queryParam("page"), 1);
+                int page = Math.max(1, ctx.queryParam("page", Integer.class));
                 ctx.sendJson(200, ApiResponse.ok(favSvc().getUserFavorites(ctx.pathVar("id", Long.class), page, 20)));
             })
         );

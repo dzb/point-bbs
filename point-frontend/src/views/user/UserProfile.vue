@@ -99,7 +99,7 @@ function resetAndLoad() {
 
 async function loadProfile() {
   const id = route.params.id as string
-  try { const { data } = await client.get(`/users/${id}`); if (data.code===0) profile.value = data.data } catch { /* */ }
+  try { const { data } = await client.get(`/users/${id}`); if (data.code===0) profile.value = data.data } catch { console.error('api error') }
   await Promise.all([loadTopics(), loadArticles()])
   loading.value = false
   if (auth.isLoggedIn && !isSelf.value) checkFollow()
@@ -115,7 +115,7 @@ async function loadTopics(reset = false) {
       topics.value = pageTopics.value === 1 ? newItems : [...topics.value, ...newItems]
       hasMoreTopics.value = newItems.length === pageSize
     }
-  } catch { /* */ }
+  } catch { console.error('api error') }
 }
 
 async function loadArticles(reset = false) {
@@ -128,7 +128,7 @@ async function loadArticles(reset = false) {
       articles.value = pageArticles.value === 1 ? newItems : [...articles.value, ...newItems]
       hasMoreArticles.value = newItems.length === pageSize
     }
-  } catch { /* */ }
+  } catch { console.error('api error') }
 }
 
 async function loadMoreTopics() { pageTopics.value++; loadingMore.value = true; await loadTopics(); loadingMore.value = false }
@@ -138,7 +138,7 @@ async function checkFollow() {
   try {
     const { data } = await client.get(`/users/${route.params.id}/follow/status`)
     following.value = data?.data?.following || false
-  } catch { /* */ }
+  } catch { console.error('api error') }
 }
 
 async function toggleFollow() {
@@ -153,7 +153,7 @@ async function toggleFollow() {
       following.value = true
       if (profile.value) profile.value.fansCount = (profile.value.fansCount || 0) + 1
     }
-  } catch { /* */ }
+  } catch { console.error('api error') }
   finally { followLoading.value = false }
 }
 

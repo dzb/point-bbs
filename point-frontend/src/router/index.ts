@@ -1,11 +1,11 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 const PageAside = () => import('@/components/PageAside.vue')
 const TopicAside = () => import('@/components/TopicAside.vue')
 const CreateAside = () => import('@/components/CreateAside.vue')
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/',

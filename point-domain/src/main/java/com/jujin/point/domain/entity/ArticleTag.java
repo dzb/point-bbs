@@ -10,10 +10,10 @@ public record ArticleTag(
     @Id @Generated Long id,
     @Column(nullable = false) Long articleId,
     @Column(nullable = false) Long tagId,
-    @Column(nullable = false) long status,
+    @Column(nullable = false) int status,
     @Column(nullable = false) long createTime
 ) {
-    public ArticleTag(Long articleId, Long tagId, long status, long createTime) {
+    public ArticleTag(Long articleId, Long tagId, int status, long createTime) {
         this(null, articleId, tagId, status, createTime);
     }
 }

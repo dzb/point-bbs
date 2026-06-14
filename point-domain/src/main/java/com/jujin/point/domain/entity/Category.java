@@ -26,6 +26,7 @@ public class Category {
     private int sortNo;
     @Column(nullable = false)
     private int status;
+    @Column(nullable = false)
     private long createTime;
 
     public Category() {}

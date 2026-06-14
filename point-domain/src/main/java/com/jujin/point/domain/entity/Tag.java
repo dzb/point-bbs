@@ -18,7 +18,9 @@ public class Tag {
     private String description;
     @Column(nullable = false)
     private int status;
+    @Column(nullable = false)
     private long createTime;
+    @Column
     private long updateTime;
 
     public Tag() {}

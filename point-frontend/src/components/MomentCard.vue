@@ -40,7 +40,7 @@
   <!-- Image Viewer — Twitter-style -->
   <Teleport to="body">
     <div v-if="viewer" class="viewer-overlay" @click.self="closeViewer" @keydown.esc="closeViewer">
-      <v-btn icon="mdi-close" variant="text" class="viewer-close-btn" @click="closeViewer" size="36" />
+      <v-btn icon="mdi-close" variant="text" class="viewer-close-btn" @click="closeViewer" size="36" aria-label="关闭" />
 
       <div class="viewer-layout">
         <!-- Left: Image -->
@@ -102,15 +102,14 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import UserAvatar from './UserAvatar.vue'
-import MarkdownIt from 'markdown-it'
 import client from '@/api/client'
-import { groupConsecutiveImages } from '@/utils/markdown'
+import { renderMarkdown, md } from '@/utils/markdown'
+import type { Topic, Comment } from '@/types'
 
 const router = useRouter()
 const auth = useAuthStore()
-const md = new MarkdownIt({ html: true, breaks: true, linkify: true })
-const props = defineProps<{ moment: any }>()
-const emit = defineEmits<{ 'toggle-like': [moment: any]; 'delete-moment': [id: number] }>()
+const props = defineProps<{ moment: Topic }>()
+const emit = defineEmits<{ 'toggle-like': [moment: Topic]; 'delete-moment': [id: number] }>()
 const isOwner = computed(() => auth.user?.id === props.moment.userId)
 const confirming = ref(false)
 const deleting = ref(false)
@@ -118,12 +117,12 @@ const deleting = ref(false)
 function goToTopic() { router.push(`/topics/${props.moment.id}`) }
 
 const viewer = ref(0)
-const comments = ref<any[]>([])
+const comments = ref<Comment[]>([])
 const newComment = ref('')
 const posting = ref(false)
 const liked = ref(false)
 const likeCount = ref(0)
-const commentCount = ref(0)
+const commentCount = ref(props.moment?.commentCount || 0)
 const showReply = ref(false)
 const replyText = ref('')
 const replying = ref(false)
@@ -138,8 +137,8 @@ onMounted(() => window.addEventListener('keydown', onKey))
 onUnmounted(() => window.removeEventListener('keydown', onKey))
 
 const rendered = computed(() => {
-  let c = groupConsecutiveImages(props.moment?.content || '')
-  let html = md.render(c)
+  const c = props.moment?.content || ''
+  let html = renderMarkdown(c)
   if (html.length > 600) html = html.substring(0, 600) + '…'
   return html
 })
@@ -193,7 +192,7 @@ async function loadComments(reset = false) {
       comments.value = commentPage.value === 1 ? newItems : [...comments.value, ...newItems]
       hasMoreComments.value = newItems.length === commentPageSize
     }
-  } catch { comments.value = [] }
+  } catch { console.error('api error'); comments.value = [] }
   loadingComments.value = false
 }
 
@@ -204,7 +203,7 @@ async function toggleLike() {
     if (liked.value) { liked.value = false; likeCount.value-- }
     else { liked.value = true; likeCount.value++ }
     emit('toggle-like', props.moment)
-  } catch { /* */ }
+  } catch { console.error('api error') }
 }
 
 async function doReply() {
@@ -213,9 +212,9 @@ async function doReply() {
   try {
     await client.post(`/topics/${props.moment.id}/comments`, { content: replyText.value, contentType: 'markdown' })
     replyText.value = ''
-    props.moment.commentCount = (props.moment.commentCount || 0) + 1
+    commentCount.value++
     showReply.value = false
-  } catch { /* */ }
+  } catch { console.error('api error') }
   replying.value = false
 }
 
@@ -227,7 +226,7 @@ async function postComment() {
     newComment.value = ''
     commentCount.value++
     await loadComments(true)
-  } catch { /* */ }
+  } catch { console.error('api error') }
   posting.value = false
 }
 
@@ -239,7 +238,7 @@ async function confirmDelete() {
   try {
     await client.post(`/topics/delete/${props.moment.id}`)
     emit('delete-moment', props.moment.id)
-  } catch { /* */ }
+  } catch { console.error('api error') }
   finally { deleting.value = false; confirming.value = false }
 }
 </script>
@@ -252,6 +251,7 @@ async function confirmDelete() {
 .mc-body { font-size: 15px; color: var(--paper-text); line-height: 1.7; word-break: break-word; }
 .mc-body :deep(p) { margin: .3em 0; }
 .mc-body :deep(img) { max-width: 100%; max-height: 400px; border-radius: 8px; cursor: pointer; vertical-align: top; }
+.mc-body :deep(.img-grid img) { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 1; max-height: none; border-radius: 0; }
 /* Multi-image grid via container */
 .mc-actions { gap: 20px; font-size: 12px; color: var(--paper-text2); }
 .mc-actions span { cursor: pointer; display: flex; align-items: center; gap: 3px; }
@@ -276,7 +276,7 @@ async function confirmDelete() {
 .viewer-arrow.left { left: 8px; }
 .viewer-arrow.right { right: 8px; }
 .viewer-counter { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.5); font-size: 13px; }
-.viewer-context { width: 360px; flex-shrink: 0; background: #fff; display: flex; flex-direction: column; padding: 48px 24px 24px; }
+.viewer-context { width: 360px; flex-shrink: 0; background: var(--paper-bg); display: flex; flex-direction: column; padding: 48px 24px 24px; }
 .viewer-text { font-size: 15px; color: var(--paper-text); line-height: 1.7; word-break: break-word; max-height: 200px; overflow-y: auto; }
 .viewer-text :deep(p) { margin: .3em 0; }
 .viewer-divider { height: 1px; background: var(--paper-border); margin: 20px 0; }

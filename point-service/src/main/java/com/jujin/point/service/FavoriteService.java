@@ -10,9 +10,9 @@ public class FavoriteService {
     private final Database db;
     private final Orm orm;
 
-    public FavoriteService(Database db) {
+    public FavoriteService(Database db, Orm orm) {
         this.db = db;
-        this.orm = Orm.of(db);
+        this.orm = orm;
     }
 
     public boolean isFavorited(long userId, String entityType, long entityId) {

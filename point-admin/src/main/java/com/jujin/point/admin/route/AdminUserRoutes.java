@@ -1,5 +1,6 @@
 package com.jujin.point.admin.route;
 
+import com.jujin.point.db.repository.UserRepository;
 import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.domain.dto.PageRequest;
@@ -10,24 +11,22 @@ import com.jujin.freeway.http.Route;
 import com.jujin.freeway.http.RouteGroup;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class AdminUserRoutes {
 
     public static RouteGroup routes() {
         return RouteGroup.of("/api/admin/user",
-            // List all users
+            // List users (paginated)
             Route.get("", ctx -> {
                 int page = parseInt(ctx.queryParam("page"), 1);
                 int pageSize = parseInt(ctx.queryParam("pageSize"), 20);
-                // Simplified: get all users (no dedicated admin list query yet)
-                var userId = ctx.queryParam("userId");
-                Map<String, Object> result = new HashMap<>();
-                if (userId != null) {
-                    var user = userSvc().findById(Long.parseLong(userId));
-                    user.ifPresent(u -> u.setPassword(null));
-                    result.put("user", user.orElse(null));
-                }
+                var repo = userRepo();
+                var users = repo.findPage(page, pageSize);
+                users.forEach(u -> u.setPassword(null));
+                var result = Map.of("items", (Object) users, "total", repo.countAll(),
+                    "page", page, "pageSize", pageSize);
                 ctx.sendJson(200, ApiResponse.ok(result));
             }),
             // Get user detail
@@ -74,6 +73,7 @@ public class AdminUserRoutes {
     }
 
     private static UserService userSvc() { return AppContext.get(UserService.class); }
+    private static UserRepository userRepo() { return AppContext.get(UserRepository.class); }
 
     private static int parseInt(String s, int def) {
         if (s == null || s.isEmpty()) return def;

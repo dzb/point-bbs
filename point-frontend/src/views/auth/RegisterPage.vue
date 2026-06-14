@@ -4,10 +4,10 @@
       <router-link to="/" class="auth-logo">point</router-link>
       <p class="auth-subtitle">创建你的账号</p>
 
-      <v-text-field v-model="form.nickname" label="昵称" variant="outlined" class="mb-3" hide-details="auto" />
-      <v-text-field v-model="form.email" label="邮箱" variant="outlined" class="mb-3" hide-details="auto" />
-      <v-text-field v-model="form.username" label="用户名" variant="outlined" class="mb-3" hide-details="auto" />
-      <v-text-field v-model="form.password" label="密码" type="password" variant="outlined" class="mb-2" hide-details="auto" />
+      <v-text-field v-model="form.nickname" placeholder="昵称" variant="outlined" class="mb-3" hide-details="auto" />
+      <v-text-field v-model="form.email" placeholder="邮箱" variant="outlined" class="mb-3" hide-details="auto" />
+      <v-text-field v-model="form.username" placeholder="用户名" variant="outlined" class="mb-3" hide-details="auto" />
+      <v-text-field v-model="form.password" placeholder="密码" type="password" variant="outlined" class="mb-2" hide-details="auto" />
 
       <div v-if="error" class="auth-error">{{ error }}</div>
 

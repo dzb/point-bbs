@@ -11,13 +11,15 @@ import java.util.Optional;
  */
 public class ArticleService {
     private final Database db;
+    private final TagService tagSvc;
 
-    public ArticleService(Database db) {
+    public ArticleService(Database db, TagService tagSvc) {
         this.db = db;
+        this.tagSvc = tagSvc;
     }
 
     public Optional<Article> findById(long id) {
-        return db.query("SELECT * FROM bbs_article WHERE id = ? AND status = 1", id).one(Article.class);
+        return db.query("SELECT * FROM bbs_article WHERE id = $id AND status = 1").param("id", id).one(Article.class);
     }
 
     public Article create(long userId, String title, String summary, String content, String contentType) {
@@ -37,14 +39,14 @@ public class ArticleService {
             "VALUES (?, ?, ?, ?, ?, 1, 0, 0, 0, ?, ?)",
             userId, title, summary, content, contentType != null ? contentType : "markdown", now, now
         );
-        return db.query("SELECT * FROM bbs_article WHERE user_id = ? ORDER BY create_time DESC LIMIT 1", userId)
-            .one(Article.class).orElseThrow();
+        return db.query("SELECT * FROM bbs_article WHERE user_id = $userId ORDER BY create_time DESC LIMIT 1")
+            .param("userId", userId).one(Article.class).orElseThrow();
     }
 
     public List<Article> getRecent(int page, int pageSize) {
         int offset = (page - 1) * pageSize;
-        return db.query("SELECT * FROM bbs_article WHERE status = 1 ORDER BY create_time DESC LIMIT ? OFFSET ?",
-            pageSize, offset).list(Article.class);
+        return db.query("SELECT * FROM bbs_article WHERE status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
+            .param("limit", pageSize).param("offset", offset).list(Article.class);
     }
 
     public void update(long id, String title, String summary, String content,
@@ -62,7 +64,6 @@ public class ArticleService {
         // Clear existing tags
         db.execute("DELETE FROM bbs_article_tag WHERE article_id = ?", articleId);
         // Add new tags via TagService
-        var tagSvc = com.jujin.point.domain.AppContext.get(TagService.class);
         long now = System.currentTimeMillis();
         for (String tagName : tags) {
             var tag = tagSvc.getOrCreate(tagName);
@@ -78,8 +79,8 @@ public class ArticleService {
     public List<Article> getByUser(long userId, int page, int pageSize) {
         int offset = (page - 1) * pageSize;
         return db.query(
-            "SELECT * FROM bbs_article WHERE user_id = ? AND status = 1 ORDER BY create_time DESC LIMIT ? OFFSET ?",
-            userId, pageSize, offset).list(Article.class);
+            "SELECT * FROM bbs_article WHERE user_id = $userId AND status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
+            .param("userId", userId).param("limit", pageSize).param("offset", offset).list(Article.class);
     }
 
     public void delete(long userId, long articleId) {

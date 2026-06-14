@@ -5,6 +5,7 @@ import com.jujin.point.domain.event.*;
 import com.jujin.point.service.DbQuery;
 import com.jujin.point.service.MessageService;
 import com.jujin.freeway.db.Database;
+import com.jujin.freeway.db.Row;
 import com.jujin.freeway.ioc.Container;
 
 public final class NotificationHandler {
@@ -15,7 +16,7 @@ public final class NotificationHandler {
         var msgSvc = c.get(MessageService.class);
         var nickname = getNickname(db, e.userId());
         if ("topic".equals(e.entityType())) {
-            db.query("SELECT user_id, title FROM bbs_topic WHERE id = ?", e.entityId())
+            db.query("SELECT user_id, title FROM bbs_topic WHERE id = $id").param("id", e.entityId())
                 .one(Topic.class)
                 .ifPresent(topic ->
                     msgSvc.send(e.userId(), topic.getUserId(),
@@ -45,15 +46,15 @@ public final class NotificationHandler {
     }
 
     private static String getNickname(com.jujin.freeway.db.Database db, long userId) {
-        return db.query("SELECT nickname FROM bbs_user WHERE id = ?", userId)
-            .list(com.jujin.freeway.db.Row.class).stream()
+        return db.query("SELECT nickname FROM bbs_user WHERE id = $id").param("id", userId)
+            .list(Row.class).stream()
             .findFirst().map(r -> r.string("nickname")).orElse("有人");
     }
 
     public static void onUserFollowed(UserFollowedEvent e, Container c) {
         var db = c.get(Database.class);
-        var nickname = db.query("SELECT nickname FROM bbs_user WHERE id = ?", e.userId())
-            .list(com.jujin.freeway.db.Row.class).stream()
+        var nickname = db.query("SELECT nickname FROM bbs_user WHERE id = $id").param("id", e.userId())
+            .list(Row.class).stream()
             .findFirst().map(r -> r.string("nickname")).orElse("有人");
         c.get(MessageService.class).send(e.userId(), e.otherId(),
             "新粉丝", nickname + " 关注了你", null, 2, "user:" + e.userId());

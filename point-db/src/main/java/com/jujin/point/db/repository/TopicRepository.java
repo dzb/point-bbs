@@ -2,6 +2,7 @@ package com.jujin.point.db.repository;
 
 import com.jujin.point.domain.entity.Topic;
 import com.jujin.freeway.db.Database;
+import com.jujin.freeway.db.Orm;
 
 import java.util.List;
 
@@ -10,47 +11,47 @@ import java.util.List;
  */
 public class TopicRepository extends BaseRepository<Topic> {
 
-    public TopicRepository(Database db) {
-        super(db, Topic.class);
+    public TopicRepository(Database db, Orm orm) {
+        super(db, orm, Topic.class);
     }
 
     public List<Topic> findByUserId(long userId, int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
         return query(
-            "SELECT * FROM bbs_topic WHERE user_id = ? AND status = 1 ORDER BY create_time DESC LIMIT ? OFFSET ?",
-            userId, pageSize, offset
-        ).list(Topic.class);
+            "SELECT * FROM bbs_topic WHERE user_id = $userId AND status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
+            .param("userId", userId).param("limit", pageSize).param("offset", offset)
+            .list(Topic.class);
     }
 
     public List<Topic> findByCategoryId(long categoryId, int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
         return query(
-            "SELECT * FROM bbs_topic WHERE category_id = ? AND status = 1 ORDER BY last_comment_time DESC LIMIT ? OFFSET ?",
-            categoryId, pageSize, offset
-        ).list(Topic.class);
+            "SELECT * FROM bbs_topic WHERE category_id = $catId AND status = 1 ORDER BY last_comment_time DESC LIMIT $limit OFFSET $offset")
+            .param("catId", categoryId).param("limit", pageSize).param("offset", offset)
+            .list(Topic.class);
     }
 
     public List<Topic> findRecentTopics(int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
         return query(
-            "SELECT * FROM bbs_topic WHERE status = 1 AND type = 0 ORDER BY last_comment_time DESC LIMIT ? OFFSET ?",
-            pageSize, offset
-        ).list(Topic.class);
+            "SELECT * FROM bbs_topic WHERE status = 1 AND type = 0 ORDER BY last_comment_time DESC LIMIT $limit OFFSET $offset")
+            .param("limit", pageSize).param("offset", offset)
+            .list(Topic.class);
     }
 
     public List<Topic> findTweets(int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
         return query(
-            "SELECT * FROM bbs_topic WHERE status = 1 AND type = 1 ORDER BY create_time DESC LIMIT ? OFFSET ?",
-            pageSize, offset
-        ).list(Topic.class);
+            "SELECT * FROM bbs_topic WHERE status = 1 AND type = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
+            .param("limit", pageSize).param("offset", offset)
+            .list(Topic.class);
     }
 
     public List<Topic> findRecommended(int limit) {
         return query(
-            "SELECT * FROM bbs_topic WHERE recommend = TRUE AND status = 1 ORDER BY recommend_time DESC LIMIT ?",
-            limit
-        ).list(Topic.class);
+            "SELECT * FROM bbs_topic WHERE recommend = TRUE AND status = 1 ORDER BY recommend_time DESC LIMIT $limit")
+            .param("limit", limit)
+            .list(Topic.class);
     }
 
     public List<Topic> findSticky() {
@@ -63,17 +64,18 @@ public class TopicRepository extends BaseRepository<Topic> {
         long offset = (long) (page - 1) * pageSize;
         return query(
             "SELECT t.* FROM bbs_topic t INNER JOIN bbs_topic_tag tt ON t.id = tt.topic_id " +
-            "WHERE tt.tag_id = ? AND t.status = 1 ORDER BY t.last_comment_time DESC LIMIT ? OFFSET ?",
-            tagId, pageSize, offset
-        ).list(Topic.class);
+            "WHERE tt.tag_id = $tagId AND t.status = 1 ORDER BY t.last_comment_time DESC LIMIT $limit OFFSET $offset")
+            .param("tagId", tagId).param("limit", pageSize).param("offset", offset)
+            .list(Topic.class);
     }
 
     public List<Topic> searchByTitle(String keyword, int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
+        var escaped = keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
         return query(
-            "SELECT * FROM bbs_topic WHERE status = 1 AND title LIKE ? ORDER BY last_comment_time DESC LIMIT ? OFFSET ?",
-            "%" + keyword + "%", pageSize, offset
-        ).list(Topic.class);
+            "SELECT * FROM bbs_topic WHERE status = 1 AND title LIKE $keyword ESCAPE '\\' ORDER BY last_comment_time DESC LIMIT $limit OFFSET $offset")
+            .param("keyword", "%" + escaped + "%").param("limit", pageSize).param("offset", offset)
+            .list(Topic.class);
     }
 
     public int incrViewCount(long topicId) {

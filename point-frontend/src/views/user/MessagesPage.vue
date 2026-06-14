@@ -26,7 +26,12 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 const auth = useAuthStore()
+if (!auth.isLoggedIn) { router.replace('/login') }
+
 const messages = ref<any[]>([])
 const loading = ref(true)
 const page = ref(1)
@@ -45,7 +50,7 @@ async function loadItems(reset = false) {
       messages.value = page.value === 1 ? newItems : [...messages.value, ...newItems]
       hasMore.value = newItems.length === pageSize
     }
-  } catch { /* ignore */ }
+  } catch { console.error('api error') }
   loading.value = false
 }
 

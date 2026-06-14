@@ -3,13 +3,17 @@
     "server": {
       "host": "0.0.0.0",
       "port": 8080
+    },
+    "cors": {
+      "enabled": true,
+      "allowed-origins": "https://your-domain.com"
     }
   },
   "freeway": {
     "db": {
-      "url": "jdbc:mysql://localhost:3306/bbs?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai",
-      "username": "",
-      "password": "",
+      "url": "jdbc:mysql://localhost:3306/bbs?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai",
+      "username": "SET_DB_USERNAME",
+      "password": "SET_DB_PASSWORD",
       "pool": {
         "max-size": 30,
         "min-idle": 5
@@ -18,7 +22,7 @@
   },
   "bbs": {
     "jwt": {
-      "secret": "",
+      "secret": "SET_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS",
       "expire-days": 7
     },
     "upload": {

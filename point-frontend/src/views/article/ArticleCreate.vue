@@ -1,5 +1,5 @@
 <template>
-    <div class="detail-main">
+  <div class="detail-main">
     <v-text-field v-model="form.title" placeholder="文章标题..." variant="plain" hide-details class="title-input mb-3" density="compact" />
 
     <!-- Markdown toolbar -->
@@ -33,11 +33,14 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 
 const router = useRouter()
+const auth = useAuthStore()
+if (!auth.isLoggedIn) { router.replace('/login') }
 const contentArea = ref<any>(null)
-const form = reactive({ title: '', content: '', contentType: 'markdown' as string, summary: '', cover: '', sourceUrl: '', tags: [] as string[] })
+const form = reactive({ title: '', content: '', contentType: 'markdown' as string })
 const submitting = ref(false)
 const error = ref('')
 
