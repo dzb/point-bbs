@@ -21,19 +21,8 @@
             :class="['search-input', { focused: searchFocused }]"
             @focus="searchFocused = true" @blur="searchFocused = false"
             @keyup.enter="doSearch" />
-          <v-menu>
-            <template #activator="{ props }">
-              <v-btn v-bind="props" icon="mdi-palette-outline" variant="text" size="small" :style="{ color: theme.text2 }" />
-            </template>
-            <v-list density="compact" min-width="140">
-              <v-list-item v-for="t in themes" :key="t.key" :active="paperTheme === t.key"
-                @click="setTheme(t.key)" :title="t.label">
-                <template #prepend>
-                  <span :style="{ display:'inline-block',width:16,height:16,borderRadius:3,background:t.bg,border:'1px solid '+t.border }" />
-                </template>
-              </v-list-item>
-            </v-list>
-          </v-menu>
+          <v-btn :icon="isDark ? 'mdi-weather-night' : 'mdi-white-balance-sunny'" variant="text" size="small"
+            :style="{ color: theme.text2 }" @click="toggleTheme" />
           <template v-if="auth.isLoggedIn">
             <v-menu>
               <template #activator="{ props }"><v-btn v-bind="props" icon variant="text" size="small"><UserAvatar :src="auth.user?.avatar" :name="auth.user?.nickname" :size="28" /></v-btn></template>
@@ -74,7 +63,7 @@ import AppSidebar from '@/components/AppSidebar.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { usePaperTheme } from '@/composables/usePaperTheme'
 
-const { current: theme, setTheme, themes, activeKey: paperTheme } = usePaperTheme()
+const { current: theme, isDark, toggleTheme } = usePaperTheme()
 const auth = useAuthStore()
 const router = useRouter()
 const searchQuery = ref('')
