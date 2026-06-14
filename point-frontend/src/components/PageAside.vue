@@ -11,12 +11,5 @@
 </template>
 
 <style scoped>
-.page-aside { width: 366px; flex-shrink: 0; padding: 20px 24px; background: var(--paper-nav); transition: width .2s ease, padding .2s ease, opacity .2s ease; }
-.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
-.aside-card { border: 1px solid var(--paper-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
-.aside-card-title { font-size: 16px; color: var(--paper-text); font-weight: 500; margin-bottom: 2px; }
-.aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.6; }
-@media (max-width: 1300px) { .page-aside { width: 320px; padding: 18px 20px; } }
-@media (max-width: 1200px) { .page-aside { width: 280px; padding: 16px 16px; } }
-@media (max-width: 1100px) { .page-aside { display: none; } }
+.page-aside { padding: 20px 24px; }
 </style>

@@ -1,8 +1,8 @@
 <template>
   <div v-if="profile">
-    <div class="detail-layout">
-      <!-- Left: profile + topics/articles -->
       <div class="detail-main">
+        <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="var(--paper-accent)" />
+        <div v-else>
         <!-- Profile header -->
         <section class="mb-6">
           <div class="d-flex align-start">
@@ -11,7 +11,7 @@
               <div class="d-flex align-center">
                 <h1 class="text-h5 mb-0" style="font-family:'Noto Serif SC',Georgia,serif;font-weight:700;color:var(--paper-text)">{{ profile.nickname }}</h1>
                 <v-btn v-if="auth.isLoggedIn && !isSelf" size="small" variant="outlined"
-                  :color="following ? '#c43d3d' : ''" :loading="followLoading"
+                  :color="following ? 'var(--paper-accent)' : ''" :loading="followLoading"
                   @click="toggleFollow" class="follow-btn ml-auto">
                   {{ following ? '已关注' : '+ 关注' }}
                 </v-btn>
@@ -30,17 +30,17 @@
           </div>
         </section>
 
-        <v-tabs v-model="tab" density="compact" color="#c43d3d" class="mb-4" style="border-bottom:1px solid var(--paper-border)">
+        <v-tabs v-model="tab" density="compact" color="var(--paper-accent)" class="mb-4" style="border-bottom:1px solid var(--paper-border)">
           <v-tab value="topics" style="font-size:14px;text-transform:none;letter-spacing:0">帖子</v-tab>
           <v-tab value="articles" style="font-size:14px;text-transform:none;letter-spacing:0">文章</v-tab>
         </v-tabs>
 
         <div v-if="tab==='topics'">
           <div class="moments-list mb-4">
-            <MomentCard v-for="t in topics" :key="t.id" :moment="t" @toggle-like="toggleLike" />
+            <MomentCard v-for="t in topics" :key="t.id" :moment="t" @toggle-like="toggleLike" @delete-moment="removeTopic" />
           </div>
-          <div v-if="hasMore" class="text-center mb-4">
-            <v-btn variant="text" :loading="loadingMore" @click="loadMore" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
+          <div v-if="hasMoreTopics" class="text-center mb-4">
+            <v-btn variant="text" :loading="loadingMore" @click="loadMoreTopics" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
           </div>
           <div v-if="topics.length===0" class="text-center py-16" style="color:var(--paper-text2)">暂无帖子</div>
         </div>
@@ -51,13 +51,14 @@
             <div style="font-size:15px;color:var(--paper-text);font-weight:500;line-height:1.4">{{ a.title || '无标题' }}</div>
             <div style="font-size:12px;color:var(--paper-text2);margin-top:4px">{{ a.summary?.substring(0,80) }} · {{ fmt(a.createTime) }}</div>
           </div>
+          <div v-if="hasMoreArticles" class="text-center mb-4">
+            <v-btn variant="text" :loading="loadingMore" @click="loadMoreArticles" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
+          </div>
           <div v-if="articles.length===0" class="text-center py-16" style="color:var(--paper-text2)">暂无文章</div>
         </div>
       </div>
+        </div>
 
-      <!-- Right aside -->
-      <PageAside />
-    </div>
   </div>
   <div v-else class="text-center py-16" style="color:var(--paper-text2)">用户不存在</div>
 </template>
@@ -69,43 +70,69 @@ import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import UserAvatar from '@/components/UserAvatar.vue'
 import MomentCard from '@/components/MomentCard.vue'
-import PageAside from '@/components/PageAside.vue'
 
 const route = useRoute()
 const auth = useAuthStore()
 const profile = ref<any>(null)
 const topics = ref<any[]>([])
 const articles = ref<any[]>([])
+const loading = ref(true)
 const tab = ref('topics')
-const page = ref(1)
-const hasMore = ref(false)
+const pageTopics = ref(1)
+const pageArticles = ref(1)
+const pageSize = 30
+const hasMoreTopics = ref(false)
+const hasMoreArticles = ref(false)
 const loadingMore = ref(false)
-const pageSize = 20
 const following = ref(false)
 const followLoading = ref(false)
 const isSelf = computed(() => auth.user?.id === Number(route.params.id))
 
-onMounted(loadAll)
+onMounted(loadProfile)
 watch(() => route.params.id, resetAndLoad)
 
-function resetAndLoad() { page.value = 1; topics.value = []; articles.value = []; loadAll() }
+function resetAndLoad() {
+  pageTopics.value = 1; pageArticles.value = 1
+  topics.value = []; articles.value = []; loading.value = true
+  loadProfile()
+}
 
-async function loadAll() {
+async function loadProfile() {
   const id = route.params.id as string
-  const [ur, tr, ar] = await Promise.all([
-    client.get(`/users/${id}`),
-    client.get(`/users/${id}/topics`, { params: { page: page.value, pageSize } }),
-    client.get(`/users/${id}/articles`, { params: { pageSize: 50 } })
-  ])
-  if (ur.data.code===0) profile.value = ur.data.data
-  if (tr.data.code===0) {
-    const newItems = (tr.data.data || []).map((m:any)=>({...m,liked:false}))
-    topics.value = page.value === 1 ? newItems : [...topics.value, ...newItems]
-    hasMore.value = newItems.length === pageSize
-  }
-  if (ar.data.code===0) articles.value = ar.data.data || []
+  try { const { data } = await client.get(`/users/${id}`); if (data.code===0) profile.value = data.data } catch { /* */ }
+  await Promise.all([loadTopics(), loadArticles()])
+  loading.value = false
   if (auth.isLoggedIn && !isSelf.value) checkFollow()
 }
+
+async function loadTopics(reset = false) {
+  if (reset) pageTopics.value = 1
+  const id = route.params.id as string
+  try {
+    const { data } = await client.get(`/users/${id}/topics`, { params: { page: pageTopics.value, pageSize } })
+    if (data.code===0) {
+      const newItems = (data.data || []).map((m:any)=>({...m,liked:false}))
+      topics.value = pageTopics.value === 1 ? newItems : [...topics.value, ...newItems]
+      hasMoreTopics.value = newItems.length === pageSize
+    }
+  } catch { /* */ }
+}
+
+async function loadArticles(reset = false) {
+  if (reset) pageArticles.value = 1
+  const id = route.params.id as string
+  try {
+    const { data } = await client.get(`/users/${id}/articles`, { params: { page: pageArticles.value, pageSize } })
+    if (data.code===0) {
+      const newItems = data.data || []
+      articles.value = pageArticles.value === 1 ? newItems : [...articles.value, ...newItems]
+      hasMoreArticles.value = newItems.length === pageSize
+    }
+  } catch { /* */ }
+}
+
+async function loadMoreTopics() { pageTopics.value++; loadingMore.value = true; await loadTopics(); loadingMore.value = false }
+async function loadMoreArticles() { pageArticles.value++; loadingMore.value = true; await loadArticles(); loadingMore.value = false }
 
 async function checkFollow() {
   try {
@@ -130,27 +157,16 @@ async function toggleFollow() {
   finally { followLoading.value = false }
 }
 
-async function loadMore() {
-  page.value++
-  loadingMore.value = true
-  await loadAll()
-  loadingMore.value = false
-}
-
 async function toggleLike(m: any) {
   if (m.liked) { await client.post(`/topics/${m.id}/unlike`); m.liked=false; m.likeCount-- }
   else { await client.post(`/topics/${m.id}/like`); m.liked=true; m.likeCount++ }
 }
 
+function removeTopic(id: number) { topics.value = topics.value.filter(t => t.id !== id) }
+
 function fmt(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') : '' }
 </script>
 
 <style scoped>
-.detail-layout { display: flex; }
-.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
 .follow-btn { text-transform: none; letter-spacing: 0; border-radius: 20px; flex-shrink: 0; }
-@media (max-width: 1300px) { .detail-main { padding-right: 24px; } }
-@media (max-width: 1200px) { .detail-main { padding-right: 20px; } }
-@media (max-width: 1100px) { .detail-main { border-right: none; padding-right: 0; } }
-@media (max-width: 900px)  { .detail-main { padding-right: 16px; } }
 </style>

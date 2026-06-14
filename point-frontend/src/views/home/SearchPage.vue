@@ -12,6 +12,9 @@
     </v-card>
     <div v-if="topics.length === 0 && !loading" class="text-center py-8 text-grey">没有找到相关帖子</div>
     <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" />
+    <div v-if="hasMore" class="text-center mt-4 mb-2">
+      <v-btn variant="text" :loading="loadingMore" @click="loadMore" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
+    </div>
   </div>
 </template>
 
@@ -24,14 +27,28 @@ const route = useRoute()
 const query = ref(route.query.q as string || '')
 const topics = ref<any[]>([])
 const loading = ref(true)
+const page = ref(1)
+const pageSize = 30
+const hasMore = ref(false)
+const loadingMore = ref(false)
 
-onMounted(async () => {
-  if (query.value) {
-    const { data } = await client.get('/topics/search', { params: { q: query.value, pageSize: 50 } })
-    if (data.code === 0) topics.value = data.data?.items || []
-  }
+onMounted(() => loadItems())
+
+async function loadItems(reset = false) {
+  if (reset) page.value = 1
+  if (!query.value) { loading.value = false; return }
+  try {
+    const { data } = await client.get('/topics/search', { params: { q: query.value, page: page.value, pageSize } })
+    if (data.code === 0) {
+      const newItems = data.data?.items || []
+      topics.value = page.value === 1 ? newItems : [...topics.value, ...newItems]
+      hasMore.value = newItems.length === pageSize
+    }
+  } catch { /* */ }
   loading.value = false
-})
+}
+
+async function loadMore() { page.value++; loadingMore.value = true; await loadItems(); loadingMore.value = false }
 
 function formatTime(ts: number) {
   return ts ? new Date(ts).toLocaleDateString('zh-CN') : ''

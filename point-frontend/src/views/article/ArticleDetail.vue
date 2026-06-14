@@ -1,7 +1,5 @@
 <template>
   <div v-if="article">
-    <div class="detail-layout">
-      <!-- Left: article + comments -->
       <div class="detail-main">
         <BackButton />
         <article>
@@ -20,7 +18,7 @@
               <v-icon size="14" class="mr-1">mdi-eye-outline</v-icon>{{ article.viewCount }} 阅读
             </div>
           </header>
-          <div v-html="rendered" class="article-body" />
+          <div v-html="rendered" class="article-body" @click="onContentClick" />
         </article>
 
         <div style="height:1px;background:var(--paper-border);margin:48px 0" />
@@ -47,12 +45,13 @@
               </div>
             </div>
           </div>
+          <div v-if="hasMoreComments" class="text-center mt-3 mb-2">
+            <v-btn variant="text" size="small" :loading="loadingMoreComments" @click="loadMoreComments" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">更多评论</v-btn>
+          </div>
         </section>
-      </div>
 
-      <!-- Right: announcements -->
-      <PageAside />
-    </div>
+      </div>
+      <ImageViewer :images="contentImages" v-model="viewerIndex" />
   </div>
   <div v-else class="text-center py-16" style="color:var(--paper-text2)">
     <v-progress-circular v-if="loading" indeterminate color="#ccc" />
@@ -67,57 +66,81 @@ import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import BackButton from '@/components/BackButton.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
-import PageAside from '@/components/PageAside.vue'
+import ImageViewer from '@/components/ImageViewer.vue'
 import MarkdownIt from 'markdown-it'
+import { groupConsecutiveImages } from '@/utils/markdown'
 
-const md = new MarkdownIt({ breaks: true, linkify: true })
+const md = new MarkdownIt({ html: true, breaks: true, linkify: true })
 const route = useRoute(); const auth = useAuthStore()
 const article = ref<any>(null); const comments = ref<any[]>([])
 const commentText = ref(''); const submitting = ref(false); const loading = ref(true)
-const rendered = computed(() => article.value?.content ? md.render(article.value.content) : '')
+const commentPage = ref(1); const commentPageSize = 30
+const hasMoreComments = ref(false); const loadingMoreComments = ref(false)
+const viewerIndex = ref(0)
+const rendered = computed(() => article.value?.content ? md.render(groupConsecutiveImages(article.value.content)) : '')
+const contentImages = computed(() => {
+  const matches = article.value?.content?.matchAll(/!\[.*?\]\((.+?)\)/g) || []
+  return Array.from(matches, (m: any) => m[1])
+})
 
 onMounted(async () => {
   const id = route.params.id as string
-  const [ar, cr] = await Promise.all([
-    client.get(`/articles/${id}`),
-    client.get(`/articles/${id}/comments`).catch(() => ({ data: { code: -1, data: [] } }))
-  ])
+  const ar = await client.get(`/articles/${id}`)
   if (ar.data.code === 0) article.value = ar.data.data
-  if (cr.data.code === 0) comments.value = cr.data.data || []
+  await loadComments()
   loading.value = false
 })
+
+async function loadComments(reset = false) {
+  if (reset) commentPage.value = 1
+  const id = route.params.id as string
+  try {
+    const { data } = await client.get(`/articles/${id}/comments`, { params: { page: commentPage.value, pageSize: commentPageSize } })
+    if (data.code === 0) {
+      const newItems = data.data || []
+      comments.value = commentPage.value === 1 ? newItems : [...comments.value, ...newItems]
+      hasMoreComments.value = newItems.length === commentPageSize
+    }
+  } catch { /* */ }
+}
+
+async function loadMoreComments() { commentPage.value++; loadingMoreComments.value = true; await loadComments(); loadingMoreComments.value = false }
 
 async function postComment() {
   if (!commentText.value.trim()) return
   submitting.value = true
   await client.post(`/articles/${route.params.id}/comments`, { content: commentText.value, contentType: 'markdown' })
   commentText.value = ''
-  const { data } = await client.get(`/articles/${route.params.id}/comments`)
-  if (data.code === 0) comments.value = data.data || []
+  await loadComments(true)
   submitting.value = false
 }
 
 function formatDate(ts: number) { return ts ? new Date(ts).toLocaleDateString('zh-CN') : '' }
 function formatTime(ts: number) { return ts ? new Date(ts).toLocaleString('zh-CN') : '' }
+
+function onContentClick(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  if (target.tagName === 'IMG') {
+    const src = target.getAttribute('src')
+    if (src) {
+      const idx = contentImages.value.indexOf(src)
+      viewerIndex.value = idx >= 0 ? idx + 1 : 1
+    }
+  }
+}
 </script>
 
 <style scoped>
-.detail-layout { display: flex; }
-.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
 .article-body { font-size:17px; line-height:1.9; color:var(--paper-text); word-break:break-word; }
 .article-body :deep(h2) { font-family:'Noto Serif SC',Georgia,serif; font-size:1.4em; font-weight:700; margin:1.8em 0 .6em; color:var(--paper-text); }
 .article-body :deep(h3) { font-family:'Noto Serif SC',Georgia,serif; font-size:1.15em; font-weight:600; margin:1.5em 0 .4em; color:var(--paper-text); }
 .article-body :deep(p) { margin:.6em 0; }
-.article-body :deep(blockquote) { border-left:2px solid #c43d3d; padding:0 0 0 1em; margin:1em 0; color:var(--paper-text2); background:rgba(196,61,61,0.04); }
+.article-body :deep(blockquote) { border-left:2px solid var(--paper-accent); padding:0 0 0 1em; margin:1em 0; color:var(--paper-text2); background:rgba(196,61,61,0.04); }
 .article-body :deep(pre) { background:#f5f0ea; padding:1.2em; border-radius:4px; overflow-x:auto; font-size:14px; line-height:1.6; }
-.article-body :deep(code) { background:#f5f0ea; padding:0 .3em; font-size:.9em; border-radius:2px; color:#c43d3d; }
+.article-body :deep(code) { background:#f5f0ea; padding:0 .3em; font-size:.9em; border-radius:2px; color:var(--paper-accent); }
 .article-body :deep(img) { max-width:100%; margin:1em 0; }
-.article-body :deep(a) { color:#c43d3d; }
+.article-body :deep(a) { color:var(--paper-accent); }
 .comment-body { font-size:15px; line-height:1.7; color:var(--paper-text); word-break:break-word; }
 .comment-body :deep(p) { margin:.2em 0; }
 .comment-body :deep(img) { max-width:100%; }
-@media (max-width: 1300px) { .detail-main { padding-right: 24px; } }
-@media (max-width: 1200px) { .detail-main { padding-right: 20px; } }
-@media (max-width: 1100px) { .detail-main { border-right: none; padding-right: 0; } }
-@media (max-width: 900px)  { .detail-main { padding-right: 16px; } }
 </style>

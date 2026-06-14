@@ -1,5 +1,4 @@
 <template>
-  <div class="detail-layout">
     <div class="detail-main">
     <v-text-field v-model="form.title" placeholder="文章标题..." variant="plain" hide-details class="title-input mb-3" density="compact" />
 
@@ -27,21 +26,8 @@
     <div class="d-flex justify-end mt-4">
       <v-btn class="post-btn" variant="flat" size="large" :loading="submitting" @click="submit">发布文章</v-btn>
     </div>
-    </div><!-- .detail-main -->
 
-    <aside class="detail-aside">
-      <p class="aside-tagline">记录思考，分享见闻</p>
-      <div class="aside-card"><div class="aside-card-title">Markdown 语法参考</div>
-        <div class="aside-card-text" style="font-size:12px;line-height:2">
-          **粗体** · *斜体* · ## 标题<br />
-          &gt; 引用 · `代码` · [链接](url)<br />
-          ![](图片) · --- 分割线<br />
-          | 表格 | 列 |
-        </div>
-      </div>
-      <div class="aside-card"><div class="aside-card-title">社区公告</div><div class="aside-card-text">point 正在建设中。</div></div>
-    </aside>
-  </div><!-- .detail-layout -->
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -97,17 +83,6 @@ async function submit() {
 .title-input :deep(input) { font-family: 'Noto Serif SC', Georgia, serif; font-size: 28px; font-weight: 700; }
 .md-toolbar { display: flex; align-items: center; gap: 2px; padding: 4px 0; border-top: 1px solid var(--paper-border); border-bottom: 1px solid var(--paper-border); margin-bottom: 8px; }
 .content-area :deep(textarea) { font-size: 17px; line-height: 1.9; font-family: 'Noto Serif SC', Georgia, serif; }
-.post-btn { background: #c43d3d !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 8px; font-weight: 500; padding: 0 32px; }
-.post-btn:hover { background: #a83434 !important; }
-.detail-layout { display: flex; }
-.detail-main { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
-.detail-aside { width: 366px; flex-shrink: 0; padding: 20px 24px; background: var(--paper-nav); transition: width .2s ease, padding .2s ease, opacity .2s ease; }
-.aside-tagline { font-size: 14px; color: var(--paper-text2); line-height: 1.8; margin-bottom: 20px; }
-.aside-card { border: 1px solid var(--paper-border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
-.aside-card-title { font-size: 16px; color: var(--paper-text); font-weight: 500; margin-bottom: 2px; }
-.aside-card-text { font-size: 14px; color: var(--paper-text2); line-height: 1.6; }
-@media (max-width: 1300px) { .detail-aside { width: 320px; padding: 18px 20px; } .detail-main { padding-right: 24px; } }
-@media (max-width: 1200px) { .detail-aside { width: 280px; padding: 16px 16px; } .detail-main { padding-right: 20px; } }
-@media (max-width: 1100px) { .detail-aside { width: 0; padding: 0; opacity: 0; overflow: hidden; } .detail-main { border-right: none; padding-right: 0; } }
-@media (max-width: 900px)  { .detail-main { padding-right: 16px; } }
+.post-btn { background: var(--paper-accent) !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 8px; font-weight: 500; padding: 0 32px; }
+.post-btn:hover { background: var(--paper-accent-hover) !important; }
 </style>

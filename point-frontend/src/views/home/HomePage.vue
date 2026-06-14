@@ -1,5 +1,4 @@
 <template>
-  <div class="home-layout">
     <div class="home-feed">
       <!-- Composer -->
       <div v-if="auth.isLoggedIn" class="composer mb-4">
@@ -13,7 +12,7 @@
                 <v-btn icon="mdi-close" variant="flat" size="x-small" class="img-remove-btn" @click="images.splice(i,1)" />
               </div>
               <div v-if="uploading" class="composer-img uploading">
-                <v-progress-circular indeterminate size="20" color="#c43d3d" />
+                <v-progress-circular indeterminate size="20" color="var(--paper-accent)" />
               </div>
             </div>
             <div class="d-flex align-center mt-2 composer-bar">
@@ -28,13 +27,13 @@
 
       <!-- Moments -->
       <div class="moments-list">
-        <MomentCard v-for="m in moments" :key="m.id" :moment="m" @toggle-like="toggleLike" />
+        <MomentCard v-for="m in moments" :key="m.id" :moment="m" @toggle-like="toggleLike" @delete-moment="removeMoment" />
       </div>
       <div v-if="moments.length===0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无随想</div>
-      <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="#c43d3d" />
-    </div>
-
-    <PageAside />
+      <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="var(--paper-accent)" />
+      <div v-if="hasMore" class="text-center mt-4 mb-2">
+        <v-btn variant="text" :loading="loadingMore" @click="loadMore" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
+      </div>
   </div>
 </template>
 
@@ -43,7 +42,6 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import MomentCard from '@/components/MomentCard.vue'
-import PageAside from '@/components/PageAside.vue'
 
 const auth = useAuthStore()
 const moments = ref<any[]>([])
@@ -51,6 +49,10 @@ const newMoment = ref('')
 const posting = ref(false)
 const uploading = ref(false)
 const loading = ref(true)
+const page = ref(1)
+const pageSize = 30
+const hasMore = ref(false)
+const loadingMore = ref(false)
 const images = ref<{ url: string }[]>([])
 const fileInput = ref<HTMLInputElement>()
 
@@ -91,13 +93,22 @@ async function onFileChange(e: Event) {
   if (fileInput.value) fileInput.value.value = ''
 }
 
-onMounted(async () => {
+onMounted(() => loadItems())
+
+async function loadItems(reset = false) {
+  if (reset) page.value = 1
   try {
-    const { data } = await client.get('/topics/moments', { params: { pageSize: 50 } })
-    if (data.code === 0) moments.value = (data.data || []).map((m: any) => ({ ...m, liked: false }))
+    const { data } = await client.get('/topics/moments', { params: { page: page.value, pageSize } })
+    if (data.code === 0) {
+      const newItems = (data.data || []).map((m: any) => ({ ...m, liked: false }))
+      moments.value = page.value === 1 ? newItems : [...moments.value, ...newItems]
+      hasMore.value = newItems.length === pageSize
+    }
   } catch { /* */ }
   loading.value = false
-})
+}
+
+async function loadMore() { page.value++; loadingMore.value = true; await loadItems(); loadingMore.value = false }
 
 async function postMoment() {
   if (!newMoment.value.trim() && !images.value.length) return
@@ -111,20 +122,20 @@ async function postMoment() {
   posting.value = false
   newMoment.value = ''
   images.value = []
-  const { data } = await client.get('/topics/moments', { params: { pageSize: 50 } })
-  if (data.code === 0) moments.value = (data.data || []).map((m: any) => ({ ...m, liked: false }))
+  await loadItems(true)
 }
 
 async function toggleLike(m: any) {
   if (m.liked) { await client.post(`/topics/${m.id}/unlike`); m.liked = false; m.likeCount-- }
   else { await client.post(`/topics/${m.id}/like`); m.liked = true; m.likeCount++ }
 }
+
+function removeMoment(id: number) {
+  moments.value = moments.value.filter(m => m.id !== id)
+}
 </script>
 
 <style scoped>
-.home-layout { display: flex; }
-.home-feed { flex: 1; max-width: 680px; min-width: 0; padding-right: 32px; border-right: 1px solid var(--paper-border); transition: padding .2s ease; }
-.moments-list { display: flex; flex-direction: column; gap: 10px; }
 .composer { border: 1px solid var(--paper-border); border-radius: 12px; padding: 16px; background: var(--paper-bg); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 .composer-input :deep(.v-field) { border: none !important; }
 .composer-input :deep(.v-field__input) { padding-top: 4px !important; padding-bottom: 4px !important; min-height: 40px !important; font-size: 15px; }
@@ -134,10 +145,6 @@ async function toggleLike(m: any) {
 .composer-img.uploading { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.03); }
 .img-remove-btn { opacity: 0; position: absolute; top: 4px; right: 4px; transition: opacity .15s; background: rgba(0,0,0,.5) !important; color: #fff !important; }
 .composer-img:hover .img-remove-btn { opacity: 1; }
-.post-btn { background: #c43d3d !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 20px; padding: 0 20px; font-weight: 500; }
-.post-btn:hover { background: #a83434 !important; }
-@media (max-width: 1300px) { .home-feed { padding-right: 24px; } }
-@media (max-width: 1200px) { .home-feed { padding-right: 20px; } }
-@media (max-width: 1100px) { .home-feed { border-right: none; padding-right: 0; } }
-@media (max-width: 900px)  { .home-feed { padding-right: 16px; } }
+.post-btn { background: var(--paper-accent) !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 20px; padding: 0 20px; font-weight: 500; }
+.post-btn:hover { background: var(--paper-accent-hover) !important; }
 </style>

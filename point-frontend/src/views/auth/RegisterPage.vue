@@ -45,15 +45,3 @@ async function doRegister() {
 }
 </script>
 
-<style scoped>
-.auth-page { min-height: 80vh; display: flex; align-items: center; justify-content: center; }
-.auth-card { width: 380px; background: var(--paper-bg); border-radius: 12px; padding: 40px 36px 32px; border-top: 3px solid #c43d3d; box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04); }
-.auth-logo { display: block; text-align: center; font-family: 'Noto Serif SC', 'Source Han Serif SC', Georgia, serif; font-size: 28px; font-weight: 700; color: var(--paper-text); text-decoration: none; margin-bottom: 6px; }
-.auth-subtitle { text-align: center; font-size: 14px; color: var(--paper-text2); margin-bottom: 28px; }
-.auth-btn { background: #c43d3d !important; color: #fff !important; font-weight: 500; text-transform: none; letter-spacing: 0; border-radius: 6px; margin-top: 8px; }
-.auth-btn:hover { background: #a83434 !important; }
-.auth-error { font-size: 13px; color: #c43d3d; background: rgba(196,61,61,.06); padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; border-left: 2px solid #c43d3d; }
-.auth-link { text-align: center; margin-top: 20px; font-size: 13px; }
-.auth-link a { color: #c43d3d; text-decoration: none; }
-html.dark .auth-card { background: #252220; }
-</style>
