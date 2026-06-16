@@ -48,7 +48,7 @@
           </div>
 
           <div v-for="(c, i) in comments" :key="c.id">
-            <div v-if="i > 0 && c.user?.id === topic.userId" class="op-connector" />
+            <div v-if="i > 0 && comments[i-1].user?.id !== c.user?.id && (c.user?.id === topic.userId || comments[i-1].user?.id === topic.userId)" class="op-connector" />
             <div class="py-3" :style="i > 0 && c.user?.id === topic.userId ? 'padding-top:4px' : 'border-top:1px solid var(--paper-border)'">
               <div class="d-flex">
                 <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
@@ -214,6 +214,6 @@ function onContentClick(e: MouseEvent) {
 .topic-content { font-size: 17px; line-height: 1.9; color: var(--paper-text); word-break: break-word; }
 .topic-content :deep(img) { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 .topic-content :deep(p) { margin: .5em 0; }
-.op-connector { width: 1px; height: 14px; background: var(--paper-border); margin: 0 auto; }
+.op-connector { width: 2px; height: 24px; background: var(--paper-border); margin-left: 16px; }
 .comment-body { font-size: 14px; color: var(--paper-text); line-height: 1.6; word-break: break-word; }
 </style>

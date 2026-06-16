@@ -80,7 +80,7 @@
               </div>
             </div>
             <div v-for="(c, i) in comments" :key="c.id" class="mb-2">
-              <div v-if="i > 0 && c.user?.id === moment.userId" class="op-connector" />
+              <div v-if="i > 0 && comments[i-1].user?.id !== c.user?.id && (c.user?.id === moment.userId || comments[i-1].user?.id === moment.userId)" class="op-connector" />
               <div class="d-flex">
                 <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0" />
                 <div>
@@ -286,7 +286,7 @@ async function confirmDelete() {
 .viewer-text :deep(p) { margin: .3em 0; }
 .viewer-divider { height: 1px; background: var(--paper-border); margin: 20px 0; }
 .viewer-actions-row { gap: 24px; font-size: 13px; color: var(--paper-text2); }
-.op-connector { width: 1px; height: 12px; background: var(--paper-border); margin: 0 auto; }
+.op-connector { width: 2px; height: 20px; background: var(--paper-border); margin-left: 12px; }
 .viewer-composer { margin-bottom: 12px; }
 .viewer-composer :deep(.v-field__field) { padding: 0 !important; }
 .viewer-composer-btn { background: var(--paper-accent) !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 16px; padding: 2px 14px; font-size: 11px; }
