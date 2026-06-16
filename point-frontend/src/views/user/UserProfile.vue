@@ -9,7 +9,7 @@
             <UserAvatar :src="profile.avatar" :name="profile.nickname" :size="64" class="mr-4 flex-shrink-0" />
             <div class="flex-grow-1">
               <div class="d-flex align-center">
-                <h1 class="text-h5 mb-0" style="font-family:'Noto Serif SC',Georgia,serif;font-weight:700;color:var(--paper-text)">{{ profile.nickname }} <span style="font-size:14px;font-weight:400;color:var(--paper-text2)">@{{ profile.id }}</span></h1>
+                <h1 class="text-h5 mb-0" style="font-family:'Noto Serif SC',Georgia,serif;font-weight:700;color:var(--paper-text)">{{ profile.nickname }} <span style="font-size:14px;font-weight:400;color:var(--paper-text2)">@{{ profile.username || profile.id }}</span></h1>
                 <v-btn v-if="auth.isLoggedIn && !isSelf" size="small" variant="outlined"
                   :color="following ? 'var(--paper-accent)' : ''" :loading="followLoading"
                   @click="toggleFollow" class="follow-btn ml-auto">

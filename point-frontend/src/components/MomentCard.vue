@@ -6,7 +6,7 @@
       </router-link>
       <div class="flex-grow-1" style="min-width:0">
         <div class="d-flex align-center mb-1">
-          <router-link :to="`/users/${moment.userId}`" class="mc-name" @click.stop>{{ moment.user?.nickname }}</router-link>
+          <router-link :to="`/users/${moment.userId}`" class="mc-name" @click.stop>{{ moment.user?.nickname }}<span class="mc-username">@{{ moment.user?.username || moment.userId }}</span></router-link>
           <span class="mc-time">{{ fmt(moment.createTime) }}</span>
           <span v-if="isOwner && !confirming" class="mc-delete" @click.stop="confirming = true">
             <v-icon size="14">mdi-trash-can-outline</v-icon>
@@ -58,7 +58,7 @@
               <UserAvatar :src="moment.user?.avatar" :name="moment.user?.nickname" :size="36" />
             </router-link>
             <div class="ml-3">
-              <div style="font-size:14px;font-weight:600;color:var(--paper-text)">{{ moment.user?.nickname }}</div>
+              <div style="font-size:14px;font-weight:600;color:var(--paper-text)">{{ moment.user?.nickname }}<span style="font-size:12px;font-weight:400;color:var(--paper-text2)"> @{{ moment.user?.username || moment.userId }}</span></div>
             </div>
           </div>
           <div v-html="textOnly" class="viewer-text" />
@@ -248,6 +248,7 @@ async function confirmDelete() {
 .mc-link { display: block; background: var(--paper-bg); border: 1px solid var(--paper-border); border-radius: 8px; padding: 16px 18px; text-decoration: none; }
 .mc-link:hover { border-color: var(--paper-accent); }
 .mc-name { text-decoration: none; color: var(--paper-text); font-weight: 500; font-size: 14px; }
+.mc-username { font-size: 12px; color: var(--paper-text2); font-weight: 400; }
 .mc-time { font-size: 12px; color: var(--paper-text2); margin-left: auto; }
 .mc-body { font-size: 15px; color: var(--paper-text); line-height: 1.7; word-break: break-word; }
 .mc-body :deep(p) { margin: .3em 0; }

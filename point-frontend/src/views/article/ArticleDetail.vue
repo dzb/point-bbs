@@ -10,7 +10,7 @@
             <div class="d-flex align-center text-caption" style="color:var(--paper-text2)">
               <router-link :to="`/users/${article.userId}`" class="d-flex align-center" style="color:var(--paper-text2);text-decoration:none">
                 <UserAvatar :src="article.user?.avatar" :name="article.user?.nickname" :size="22" class="mr-2" />
-                {{ article.user?.nickname }}
+                {{ article.user?.nickname }}<span style="font-size:11px;margin-left:4px;color:var(--paper-text2)">@{{ article.user?.username || article.userId }}</span>
               </router-link>
               <span class="mx-2">·</span>
               {{ formatDate(article.createTime) }}
@@ -38,7 +38,7 @@
               <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" class="mr-3 flex-shrink-0 mt-1" />
               <div class="flex-grow-1">
                 <div class="d-flex align-center mb-1">
-                  <span style="font-size:14px;color:var(--paper-text);font-weight:500">{{ c.user?.nickname }}</span>
+                  <span style="font-size:14px;color:var(--paper-text);font-weight:500">{{ c.user?.nickname }}<span style="font-size:11px;color:var(--paper-text2);font-weight:400"> @{{ c.user?.username || c.user?.id }}</span></span>
                   <span style="font-size:12px;color:var(--paper-text2);margin-left:8px">{{ formatTime(c.createTime) }}</span>
                 </div>
                 <div v-html="renderMarkdown(c.content)" class="comment-body" />

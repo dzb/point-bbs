@@ -10,7 +10,7 @@
             </router-link>
             <div class="ml-3">
               <router-link :to="`/users/${topic.userId}`" class="text-decoration-none" style="color:var(--paper-text);font-weight:600;font-size:15px">
-                {{ topic.user?.nickname }}
+                {{ topic.user?.nickname }}<span style="font-size:12px;color:var(--paper-text2);font-weight:400"> @{{ topic.user?.username || topic.userId }}</span>
               </router-link>
               <div style="font-size:12px;color:var(--paper-text2)">{{ formatTime(topic.createTime) }}</div>
             </div>
@@ -55,7 +55,7 @@
               <div>
                 <div class="mb-1">
                   <router-link :to="`/users/${c.user?.id}`" class="text-decoration-none" style="font-size:13px;font-weight:500;color:var(--paper-text)">
-                    {{ c.user?.nickname }}
+                    {{ c.user?.nickname }}<span style="font-size:11px;color:var(--paper-text2);font-weight:400"> @{{ c.user?.username || c.user?.id }}</span>
                   </router-link>
                   <span style="font-size:12px;color:var(--paper-text2);margin-left:8px">{{ formatTime(c.createTime) }}</span>
                 </div>

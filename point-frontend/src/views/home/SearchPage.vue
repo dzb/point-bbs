@@ -5,7 +5,7 @@
       <v-card-item>
         <v-card-title class="text-body-1">{{ t.title }}</v-card-title>
         <v-card-subtitle>
-          {{ t.user?.nickname }} · {{ formatTime(t.createTime) }}
+          {{ t.user?.nickname }}<span style="font-size:11px;color:var(--paper-text2)">@{{ t.user?.username }}</span> · {{ formatTime(t.createTime) }}
           <span class="ml-2">评论 {{ t.commentCount }}</span>
         </v-card-subtitle>
       </v-card-item>
