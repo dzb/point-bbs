@@ -43,6 +43,6 @@ public class CommentRepository extends BaseRepository<Comment> {
             "SELECT COUNT(*) AS cnt FROM bbs_comment WHERE entity_type = $entityType AND entity_id = $entityId AND status = 1")
             .param("entityType", entityType).param("entityId", entityId)
             .one(Row.class).orElse(null);
-        return row != null ? row.get("cnt", long.class) : 0;
+        return row != null ? row.longVal("cnt") : 0;
     }
 }

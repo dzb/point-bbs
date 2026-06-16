@@ -42,7 +42,7 @@ public class TopicRoutes {
                 var followedIds = db.query(
                     "SELECT other_id FROM bbs_user_follow WHERE user_id = ? AND status = 1", user.userId()
                 ).list(Row.class).stream()
-                    .map(r -> r.get("other_id", Long.class)).toList();
+                    .map(r -> r.longVal("other_id")).toList();
                 if (followedIds.isEmpty()) {
                     ctx.sendJson(200, ApiResponse.ok(java.util.List.of()));
                     return;

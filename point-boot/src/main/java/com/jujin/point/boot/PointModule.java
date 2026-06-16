@@ -62,7 +62,7 @@ public class PointModule implements Module2 {
                         // Assign all permissions to admin role
                         var rows = db.query("SELECT id FROM bbs_permission").list(Row.class);
                         for (var r : rows) {
-                            long pid = r.get("id", long.class);
+                            long pid = r.longVal("id");
                             db.execute("INSERT INTO bbs_role_permission (role_id, permission_id, create_time) VALUES (1,?,?)", pid, now);
                         }
                     }
