@@ -11,11 +11,32 @@
       autocorrect="off"
       spellcheck="false"
     />
+    <Teleport to="body">
+      <div v-if="show" class="mention-dropdown" :style="dropdownStyle">
+        <div v-if="suggestions.length > 0">
+          <div
+            v-for="(user, i) in suggestions"
+            :key="user.id"
+            :class="['mention-item', { active: i === selectedIndex }]"
+            @click="select(user)"
+            @mouseenter="selectedIndex = i"
+          >
+            <UserAvatar :src="user.avatar" :name="user.nickname" :size="24" class="mr-2" />
+            <span class="mention-username">@{{ user.username }}</span>
+            <span class="mention-nickname">{{ user.nickname }}</span>
+          </div>
+        </div>
+        <div v-else class="mention-item dimmed">
+          {{ term.length > 0 ? '无匹配用户' : '输入用户名搜索...' }}
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick } from 'vue'
+import UserAvatar from './UserAvatar.vue'
 import { searchUsers } from '@/api/user'
 import type { UserInfo } from '@/types'
 
@@ -29,67 +50,13 @@ const term = ref('')
 const atPos = ref(-1)
 const selectedIndex = ref(0)
 let timer: ReturnType<typeof setTimeout> | null = null
-let dropdownEl: HTMLDivElement | null = null
 
-onUnmounted(() => { removeDropdown() })
-
-function removeDropdown() {
-  if (dropdownEl) { dropdownEl.remove(); dropdownEl = null }
-}
-
-function getOrCreateDropdown(): HTMLDivElement {
-  if (!dropdownEl) {
-    dropdownEl = document.createElement('div')
-    dropdownEl.className = 'mention-dropdown-global'
-    document.body.appendChild(dropdownEl)
-  }
-  return dropdownEl
-}
-
-function updatePosition() {
-  const el = textareaRef.value?.$el?.querySelector('textarea') as HTMLTextAreaElement | null
-  if (!el || !dropdownEl) return
+const dropdownStyle = computed(() => {
+  const el = (textareaRef.value?.$el?.querySelector('textarea') ?? null) as HTMLTextAreaElement | null
+  if (!el) return { display: 'none' as const }
   const r = el.getBoundingClientRect()
-  dropdownEl.style.top = (r.bottom + 4) + 'px'
-  dropdownEl.style.left = r.left + 'px'
-  dropdownEl.style.width = r.width + 'px'
-}
-
-function renderDropdown() {
-  const d = getOrCreateDropdown()
-  if (!show.value) { d.style.display = 'none'; return }
-  d.style.display = ''
-  let html = ''
-  const dark = document.documentElement.classList.contains('dark')
-  const bg = dark ? '#1e1e1e' : '#fff'
-  const border = dark ? '#444' : '#ccc'
-  const hover = dark ? '#2a2a2a' : '#f5f5f5'
-  const text2 = dark ? '#aaa' : '#666'
-  d.style.background = bg; d.style.borderColor = border
-  for (let i = 0; i < suggestions.value.length; i++) {
-    const u = suggestions.value[i]
-    const active = i === selectedIndex.value
-    const itemBg = active ? hover : bg
-    const avatarHtml = u.avatar
-      ? `<div style="width:24px;height:24px;border-radius:50%;background:center/cover url(${u.avatar});margin-right:8px;flex-shrink:0"></div>`
-      : `<div style="width:24px;height:24px;border-radius:50%;background:#c43d3d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;margin-right:8px;flex-shrink:0">${(u.nickname||'?')[0]}</div>`
-    html += `<div class="mention-item-global" style="display:flex;align-items:center;padding:8px 12px;cursor:pointer;background:${itemBg}" data-idx="${i}">${avatarHtml}<span style="font-weight:600;font-size:13px;color:#c43d3d">@${u.username||''}</span><span style="font-size:12px;color:${text2};margin-left:6px">${u.nickname||''}</span></div>`
-  }
-  if (suggestions.value.length === 0) {
-    const hint = term.value.length > 0 ? '无匹配用户' : '输入用户名搜索...'
-    html = `<div style="display:flex;align-items:center;padding:8px 12px;color:${text2};cursor:default;min-height:36px">${hint}</div>`
-  }
-  d.innerHTML = html
-  // Attach click handlers
-  d.querySelectorAll('.mention-item-global').forEach(item => {
-    const idx = parseInt(item.getAttribute('data-idx') || '0')
-    item.addEventListener('click', () => select(suggestions.value[idx]))
-    item.addEventListener('mouseenter', () => { selectedIndex.value = idx; renderDropdown() })
-  })
-  updatePosition()
-}
-
-watch([show, suggestions, selectedIndex, term], () => renderDropdown())
+  return { top: (r.bottom + 4) + 'px', left: r.left + 'px', width: r.width + 'px' }
+})
 
 function onInput(value: string) {
   emit('update:model-value', value)
@@ -97,7 +64,7 @@ function onInput(value: string) {
 }
 
 function detect(value: string) {
-  const el = textareaRef.value?.$el?.querySelector('textarea') as HTMLTextAreaElement | null
+  const el = (textareaRef.value?.$el?.querySelector('textarea') ?? null) as HTMLTextAreaElement | null
   if (!el) return
   const pos = el.selectionStart
   const before = value.substring(0, pos)
@@ -117,7 +84,7 @@ function detect(value: string) {
 }
 
 async function doSearch(q: string) {
-  if (!q) { suggestions.value = []; show.value = true; return }
+  if (!q) { suggestions.value = []; show.value = true; selectedIndex.value = 0; return }
   try {
     suggestions.value = await searchUsers(q)
     show.value = true
@@ -133,7 +100,7 @@ function select(user: UserInfo) {
   emit('update:model-value', before + replacement + after)
   show.value = false
   nextTick(() => {
-    const el = textareaRef.value?.$el?.querySelector('textarea') as HTMLTextAreaElement | null
+    const el = (textareaRef.value?.$el?.querySelector('textarea') ?? null) as HTMLTextAreaElement | null
     if (el) {
       const p = atPos.value + replacement.length
       el.focus()
@@ -153,11 +120,18 @@ function onKeydown(e: KeyboardEvent) {
 </script>
 
 <style>
-.mention-dropdown-global {
+.mention-dropdown {
   position: fixed; z-index: 99999;
-  max-height: 200px; overflow-y: auto;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.15);
-  border: 1px solid;
+  min-width: 200px; max-height: 200px; overflow-y: auto;
+  background: var(--paper-bg); border: 1px solid var(--paper-border);
+  border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.12);
 }
+.mention-item {
+  display: flex; align-items: center;
+  padding: 8px 12px; cursor: pointer;
+}
+.mention-item:hover, .mention-item.active { background: var(--paper-nav); }
+.mention-item.dimmed { color: var(--paper-text2); cursor: default; padding: 8px 12px; }
+.mention-username { font-weight: 600; font-size: 13px; color: var(--paper-accent); }
+.mention-nickname { font-size: 12px; color: var(--paper-text2); margin-left: 6px; }
 </style>
