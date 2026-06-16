@@ -7,13 +7,18 @@ import com.jujin.freeway.http.RouteHandler;
 import java.io.InputStream;
 
 /**
- * Serves the SPA frontend from classpath:/static for non-API GET requests.
- * StaticResourceMount is not suitable here — it matches before routes and would
- * consume API requests when mounted at "/".
+ * SPA fallback: serves index.html for client-side navigation routes.
+ *
+ * Static file requests (assets, favicon, etc.) are handled natively by
+ * freeway's {@link com.jujin.freeway.http.StaticResourceMount} with proper
+ * ETag/304 caching — this filter only handles the SPA entry-point.
  */
 public class SpaFilter implements HttpFilter {
 
-    private static final String STATIC_ROOT = "/static";
+    private static final String INDEX_PATH = "/static/index.html";
+
+    private byte[] indexHtml;
+    private volatile boolean loaded;
 
     @Override
     public void doFilter(HttpContext ctx, RouteHandler next) throws Exception {
@@ -22,34 +27,39 @@ public class SpaFilter implements HttpFilter {
             return;
         }
 
-        var resourcePath = STATIC_ROOT + (ctx.path().equals("/") ? "/index.html" : ctx.path());
-        var stream = SpaFilter.class.getResourceAsStream(resourcePath);
-
-        if (stream == null) {
-            stream = SpaFilter.class.getResourceAsStream(STATIC_ROOT + "/index.html");
-        }
-
-        if (stream == null) {
+        // Paths with a file extension are static assets — let StaticResourceMount handle them
+        var path = ctx.path();
+        int lastSlash = path.lastIndexOf('/');
+        if (lastSlash >= 0 && path.indexOf('.', lastSlash) > lastSlash) {
             next.handle(ctx);
             return;
         }
 
-        var bytes = stream.readAllBytes();
-        stream.close();
-        ctx.headerSet("Content-Type", guessMime(resourcePath));
-        ctx.headerSet("Cache-Control", "public, max-age=3600");
+        // SPA navigation route — serve index.html
+        var bytes = getIndexHtml();
+        if (bytes == null) {
+            next.handle(ctx);
+            return;
+        }
+        ctx.headerSet("Content-Type", "text/html; charset=utf-8");
+        ctx.headerSet("Cache-Control", "no-cache");
         ctx.status(200).output(bytes);
     }
 
-    private static String guessMime(String path) {
-        var lower = path.toLowerCase();
-        if (lower.endsWith(".html")) return "text/html; charset=utf-8";
-        if (lower.endsWith(".css"))  return "text/css; charset=utf-8";
-        if (lower.endsWith(".js"))   return "application/javascript; charset=utf-8";
-        if (lower.endsWith(".svg"))  return "image/svg+xml";
-        if (lower.endsWith(".png"))  return "image/png";
-        if (lower.endsWith(".ico"))  return "image/x-icon";
-        if (lower.endsWith(".woff2")) return "font/woff2";
-        return "application/octet-stream";
+    private byte[] getIndexHtml() {
+        if (!loaded) {
+            synchronized (this) {
+                if (!loaded) {
+                    try (var stream = SpaFilter.class.getResourceAsStream(INDEX_PATH)) {
+                        if (stream != null) {
+                            indexHtml = stream.readAllBytes();
+                        }
+                    } catch (Exception ignored) {
+                    }
+                    loaded = true;
+                }
+            }
+        }
+        return indexHtml;
     }
 }

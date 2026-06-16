@@ -9,6 +9,7 @@ import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.freeway.http.ExceptionMapper;
 import com.jujin.freeway.http.HttpFilter;
 import com.jujin.freeway.http.RouteGroup;
+import com.jujin.freeway.http.StaticResourceMount;
 import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.Module2;
 
@@ -16,6 +17,18 @@ public class WebModule implements Module2 {
 
     @Override
     public void bind(Binder binder) {
+        // Serve hashed JS/CSS assets with immutable caching (Vite content-hash filenames)
+        binder.contribute(StaticResourceMount.class)
+            .add(StaticResourceMount.classpath("/assets", "static/assets")
+                .immutable(true)
+                .cacheMaxAgeSeconds(31536000)); // 1 year
+
+        // Serve root-level static files (favicon, etc.) — fallthrough for SPA routes
+        binder.contribute(StaticResourceMount.class)
+            .add(StaticResourceMount.classpath("/", "static")
+                .fallthrough(true)
+                .cacheMaxAgeSeconds(86400)); // 1 day
+
         // Serve SPA frontend before auth (skips /api paths)
         binder.contribute(HttpFilter.class).add("spa-filter", new SpaFilter());
 
