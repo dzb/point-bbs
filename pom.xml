@@ -27,7 +27,7 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <freeway.version>1.1.0</freeway.version>
+        <freeway.version>1.1.2-SNAPSHOT</freeway.version>
         <slf4j.version>2.0.17</slf4j.version>
         <h2.version>2.3.232</h2.version>
         <!-- JWT library for auth -->
