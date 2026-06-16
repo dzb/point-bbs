@@ -117,13 +117,14 @@ public final class ResponseEnricher {
         var placeholders = userIds.stream().map(id -> "?").collect(Collectors.joining(","));
         var params = userIds.toArray();
         var rows = AppContext.get(Database.class)
-            .query("SELECT id, nickname, avatar FROM bbs_user WHERE id IN (" + placeholders + ")", params)
+            .query("SELECT id, nickname, username, avatar FROM bbs_user WHERE id IN (" + placeholders + ")", params)
             .list(Row.class);
         Map<Long, Map<String, Object>> result = new HashMap<>();
         for (var r : rows) {
             var m = new LinkedHashMap<String, Object>();
             m.put("id", r.longVal("id"));
             m.put("nickname", r.string("nickname"));
+            m.put("username", r.string("username"));
             m.put("avatar", r.string("avatar"));
             result.put(r.longVal("id"), m);
         }
@@ -147,13 +148,14 @@ public final class ResponseEnricher {
 
     private static Map<String, Object> queryUser(long userId) {
         var rows = AppContext.get(Database.class)
-            .query("SELECT id, nickname, avatar FROM bbs_user WHERE id = ?", userId)
+            .query("SELECT id, nickname, username, avatar FROM bbs_user WHERE id = ?", userId)
             .list(Row.class);
         if (rows.isEmpty()) return new LinkedHashMap<>();
         var r = rows.getFirst();
         var m = new LinkedHashMap<String, Object>();
         m.put("id", r.longVal("id"));
         m.put("nickname", r.string("nickname"));
+        m.put("username", r.string("username"));
         m.put("avatar", r.string("avatar"));
         return m;
     }
