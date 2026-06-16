@@ -36,7 +36,13 @@ public class UserRoutes {
                 ctx.sendJson(200, ApiResponse.ok(users));
             }),
             Route.get("/{id}", ctx -> {
-                var u = userSvc().findById(ctx.pathVar("id", Long.class));
+                var idStr = ctx.pathVar("id", String.class);
+                java.util.Optional<com.jujin.point.domain.entity.User> u;
+                try {
+                    u = userSvc().findById(Long.parseLong(idStr));
+                } catch (NumberFormatException e) {
+                    u = userSvc().findByUsername(idStr);
+                }
                 u.ifPresent(x -> x.setPassword(null));
                 ctx.sendJson(200, ApiResponse.ok(u.orElse(null)));
             }),

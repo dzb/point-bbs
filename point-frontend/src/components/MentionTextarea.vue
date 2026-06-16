@@ -11,27 +11,29 @@
       autocorrect="off"
       spellcheck="false"
     />
-    <div v-if="show" class="mention-dropdown">
-      <div
-        v-for="(user, i) in suggestions"
-        :key="user.id"
-        :class="['mention-item', { active: i === selectedIndex }]"
-        @click="select(user)"
-        @mouseenter="selectedIndex = i"
-      >
-        <UserAvatar :src="user.avatar" :name="user.nickname" :size="24" class="mr-2" />
-        <span class="mention-username">@{{ user.username }}</span>
-        <span class="mention-nickname">{{ user.nickname }}</span>
+    <Teleport to="body">
+      <div v-if="show" class="mention-dropdown" :style="dropdownStyle">
+        <div
+          v-for="(user, i) in suggestions"
+          :key="user.id"
+          :class="['mention-item', { active: i === selectedIndex }]"
+          @click="select(user)"
+          @mouseenter="selectedIndex = i"
+        >
+          <UserAvatar :src="user.avatar" :name="user.nickname" :size="24" class="mr-2" />
+          <span class="mention-username">@{{ user.username }}</span>
+          <span class="mention-nickname">{{ user.nickname }}</span>
+        </div>
+        <div v-if="suggestions.length === 0 && term.length > 0" class="mention-item dimmed">
+          无匹配用户
+        </div>
       </div>
-      <div v-if="suggestions.length === 0 && term.length > 0" class="mention-item dimmed">
-        无匹配用户
-      </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, reactive, nextTick } from 'vue'
 import UserAvatar from './UserAvatar.vue'
 import { searchUsers } from '@/api/user'
 import type { UserInfo } from '@/types'
@@ -45,10 +47,20 @@ const suggestions = ref<UserInfo[]>([])
 const term = ref('')
 const atPos = ref(-1)
 const selectedIndex = ref(0)
+const dropdownStyle = reactive<Record<string, string>>({})
 let timer: ReturnType<typeof setTimeout> | null = null
 
 function getTextarea(): HTMLTextAreaElement | null {
   return textareaRef.value?.$el?.querySelector('textarea') ?? null
+}
+
+function updatePosition() {
+  const el = getTextarea()
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  dropdownStyle.top = (rect.bottom + 4) + 'px'
+  dropdownStyle.left = rect.left + 'px'
+  dropdownStyle.width = rect.width + 'px'
 }
 
 function onInput(value: string) {
@@ -77,9 +89,10 @@ function detect(value: string) {
 }
 
 async function doSearch(q: string) {
-  if (!q) { suggestions.value = []; show.value = true; return }
+  if (!q) { suggestions.value = []; updatePosition(); show.value = true; return }
   try {
     suggestions.value = await searchUsers(q)
+    updatePosition()
     show.value = true
     selectedIndex.value = 0
   } catch { suggestions.value = [] }
@@ -112,14 +125,12 @@ function onKeydown(e: KeyboardEvent) {
 }
 </script>
 
-<style scoped>
-.mention-wrapper { position: relative; }
+<style>
 .mention-dropdown {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+  position: fixed; z-index: 9999;
   max-height: 200px; overflow-y: auto;
   background: var(--paper-bg); border: 1px solid var(--paper-border);
-  border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.12);
-  margin-top: 4px;
+  border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.15);
 }
 .mention-item {
   display: flex; align-items: center;
