@@ -73,15 +73,15 @@
           <div style="border-top:1px solid var(--paper-border);padding-top:12px;overflow-y:auto;flex:1">
             <v-progress-circular v-if="loadingComments" indeterminate size="20" class="d-block mx-auto my-4" color="var(--paper-accent)" />
             <div v-else>
-            <div class="d-flex mb-3">
-              <MentionTextarea v-model="newComment" placeholder="发表评论..." rows="1" density="compact" hide-details variant="outlined" class="mr-2" style="font-size:13px" />
-              <v-btn variant="text" size="small" :loading="posting" @click.stop="postComment" style="color:var(--paper-accent);text-transform:none;letter-spacing:0;min-width:auto">发布</v-btn>
+            <div class="viewer-composer">
+              <MentionTextarea v-model="newComment" placeholder="发表评论..." rows="1" density="compact" hide-details variant="plain" style="font-size:13px" />
+              <v-btn v-if="newComment.trim()" variant="flat" size="x-small" :loading="posting" @click.stop="postComment" class="viewer-composer-btn">发布</v-btn>
             </div>
             <div v-for="c in comments" :key="c.id" class="mb-2">
               <div class="d-flex">
                 <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0" />
                 <div>
-                  <span style="font-size:12px;font-weight:500;color:var(--paper-text);margin-right:6px">{{ c.user?.nickname }}</span>
+                  <span style="font-size:12px;font-weight:500;color:var(--paper-text);margin-right:6px">{{ c.user?.nickname }}<span style="font-size:11px;font-weight:400;color:var(--paper-text2)"> @{{ c.user?.username || c.user?.id }}</span></span>
                   <span style="font-size:12px;color:var(--paper-text2)">{{ c.content }}</span>
                 </div>
               </div>
@@ -283,5 +283,8 @@ async function confirmDelete() {
 .viewer-text :deep(p) { margin: .3em 0; }
 .viewer-divider { height: 1px; background: var(--paper-border); margin: 20px 0; }
 .viewer-actions-row { gap: 24px; font-size: 13px; color: var(--paper-text2); }
+.viewer-composer { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; border: 1px solid var(--paper-border); border-radius: 10px; background: var(--paper-nav); margin-bottom: 12px; }
+.viewer-composer .v-textarea { flex: 1; }
+.viewer-composer-btn { background: var(--paper-accent) !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 16px; padding: 0 14px; flex-shrink: 0; }
 @media (max-width: 800px) { .viewer-context { display: none; } }
 </style>
