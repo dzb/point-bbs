@@ -1,5 +1,5 @@
 <template>
-  <div class="mention-wrapper">
+  <div class="mention-wrapper" style="overflow:visible">
     <v-textarea
       :model-value="modelValue"
       @update:model-value="onInput"
@@ -11,29 +11,27 @@
       autocorrect="off"
       spellcheck="false"
     />
-    <Teleport to="body">
-      <div v-if="show" class="mention-dropdown" :style="dropdownStyle">
-        <div
-          v-for="(user, i) in suggestions"
-          :key="user.id"
-          :class="['mention-item', { active: i === selectedIndex }]"
-          @click="select(user)"
-          @mouseenter="selectedIndex = i"
-        >
-          <UserAvatar :src="user.avatar" :name="user.nickname" :size="24" class="mr-2" />
-          <span class="mention-username">@{{ user.username }}</span>
-          <span class="mention-nickname">{{ user.nickname }}</span>
-        </div>
-        <div v-if="suggestions.length === 0 && term.length > 0" class="mention-item dimmed">
-          无匹配用户
-        </div>
+    <div v-if="show" class="mention-dropdown" :style="dropdownStyle">
+      <div
+        v-for="(user, i) in suggestions"
+        :key="user.id"
+        :class="['mention-item', { active: i === selectedIndex }]"
+        @click="select(user)"
+        @mouseenter="selectedIndex = i"
+      >
+        <UserAvatar :src="user.avatar" :name="user.nickname" :size="24" class="mr-2" />
+        <span class="mention-username">@{{ user.username }}</span>
+        <span class="mention-nickname">{{ user.nickname }}</span>
       </div>
-    </Teleport>
+      <div v-if="suggestions.length === 0 && term.length > 0" class="mention-item dimmed">
+        无匹配用户
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import UserAvatar from './UserAvatar.vue'
 import { searchUsers } from '@/api/user'
 import type { UserInfo } from '@/types'
@@ -47,22 +45,14 @@ const suggestions = ref<UserInfo[]>([])
 const term = ref('')
 const atPos = ref(-1)
 const selectedIndex = ref(0)
-const dropdownStyle = reactive<Record<string, string>>({})
+const dropdownStyle = computed(() => {
+  const el = textareaRef.value?.$el?.querySelector('textarea') as HTMLTextAreaElement | null
+  const def = { position: 'fixed' as const, top: '0px', left: '0px', width: '0px', zIndex: '99999' }
+  if (!el) return def
+  const r = el.getBoundingClientRect()
+  return { ...def, top: (r.bottom + 4) + 'px', left: r.left + 'px', width: r.width + 'px' }
+})
 let timer: ReturnType<typeof setTimeout> | null = null
-
-function getTextarea(): HTMLTextAreaElement | null {
-  return textareaRef.value?.$el?.querySelector('textarea') ?? null
-}
-
-function updatePosition() {
-  const el = getTextarea()
-  if (!el) return
-  const rect = el.getBoundingClientRect()
-  // Show above the input to avoid v-textarea overlay occlusion
-  dropdownStyle.bottom = (window.innerHeight - rect.top + 4) + 'px'
-  dropdownStyle.left = rect.left + 'px'
-  dropdownStyle.width = rect.width + 'px'
-}
 
 function onInput(value: string) {
   emit('update:model-value', value)
@@ -70,7 +60,7 @@ function onInput(value: string) {
 }
 
 function detect(value: string) {
-  const el = getTextarea()
+  const el = textareaRef.value?.$el?.querySelector('textarea') as HTMLTextAreaElement | null
   if (!el) return
   const pos = el.selectionStart
   const before = value.substring(0, pos)
@@ -90,10 +80,9 @@ function detect(value: string) {
 }
 
 async function doSearch(q: string) {
-  if (!q) { suggestions.value = []; updatePosition(); show.value = true; return }
+  if (!q) { suggestions.value = []; show.value = true; return }
   try {
     suggestions.value = await searchUsers(q)
-    updatePosition()
     show.value = true
     selectedIndex.value = 0
   } catch { suggestions.value = [] }
@@ -107,7 +96,7 @@ function select(user: UserInfo) {
   emit('update:model-value', before + replacement + after)
   show.value = false
   nextTick(() => {
-    const el = getTextarea()
+    const el = textareaRef.value?.$el?.querySelector('textarea') as HTMLTextAreaElement | null
     if (el) {
       const p = atPos.value + replacement.length
       el.focus()
@@ -126,19 +115,22 @@ function onKeydown(e: KeyboardEvent) {
 }
 </script>
 
-<style>
+<style scoped>
 .mention-dropdown {
-  position: fixed; z-index: 99999;
   max-height: 200px; overflow-y: auto;
-  background: var(--paper-bg); border: 1px solid var(--paper-border);
-  border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.15);
+  background: #ffffff; border: 1px solid #ccc;
+  border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.2);
 }
+.dark .mention-dropdown { background: #1e1e1e; border-color: #444; }
 .mention-item {
   display: flex; align-items: center;
   padding: 8px 12px; cursor: pointer; transition: background .1s;
+  background: inherit;
 }
-.mention-item:hover, .mention-item.active { background: var(--paper-nav); }
-.mention-item.dimmed { color: var(--paper-text2); cursor: default; }
-.mention-username { font-weight: 600; font-size: 13px; color: var(--paper-accent); }
-.mention-nickname { font-size: 12px; color: var(--paper-text2); margin-left: 6px; }
+.mention-item:hover, .mention-item.active { background: #f5f5f5; }
+.dark .mention-item:hover, .dark .mention-item.active { background: #2a2a2a; }
+.mention-item.dimmed { color: #999; cursor: default; }
+.mention-username { font-weight: 600; font-size: 13px; color: #c43d3d; }
+.mention-nickname { font-size: 12px; color: #666; margin-left: 6px; }
+.dark .mention-nickname { color: #aaa; }
 </style>
