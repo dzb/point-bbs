@@ -79,7 +79,9 @@
                 <v-btn v-if="newComment.trim()" variant="flat" size="x-small" :loading="posting" @click.stop="postComment" class="viewer-composer-btn">发布</v-btn>
               </div>
             </div>
-            <div v-for="c in comments" :key="c.id" class="mb-2">
+            <div v-for="c in comments" :key="c.id" class="mb-2"
+              :style="c.user?.id === moment.userId ? 'border-left:2px solid var(--paper-accent);padding-left:10px' : ''">
+              <span v-if="c.user?.id === moment.userId" style="font-size:10px;color:var(--paper-accent);font-weight:500;margin-bottom:2px;display:inline-block">作者</span>
               <div class="d-flex">
                 <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0" />
                 <div>

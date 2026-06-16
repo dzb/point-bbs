@@ -47,7 +47,10 @@
             </div>
           </div>
 
-          <div v-for="c in comments" :key="c.id" class="py-3" style="border-top:1px solid var(--paper-border)">
+          <div v-for="c in comments" :key="c.id" class="py-3"
+            :class="{ 'op-reply': c.user?.id === topic.userId }"
+            :style="c.user?.id === topic.userId ? 'border-left:2px solid var(--paper-accent);padding-left:14px' : 'border-top:1px solid var(--paper-border)'">
+            <span v-if="c.user?.id === topic.userId" class="op-badge">作者</span>
             <div class="d-flex">
               <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
                 <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" />
@@ -211,5 +214,7 @@ function onContentClick(e: MouseEvent) {
 .topic-content { font-size: 17px; line-height: 1.9; color: var(--paper-text); word-break: break-word; }
 .topic-content :deep(img) { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 .topic-content :deep(p) { margin: .5em 0; }
+.op-badge { font-size: 11px; color: #fff; background: var(--paper-accent); padding: 1px 6px; border-radius: 4px; margin-bottom: 6px; display: inline-block; }
+.op-reply { background: rgba(196,61,61,.03); }
 .comment-body { font-size: 14px; color: var(--paper-text); line-height: 1.6; word-break: break-word; }
 </style>
