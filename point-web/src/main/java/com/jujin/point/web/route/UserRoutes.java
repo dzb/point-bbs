@@ -36,13 +36,7 @@ public class UserRoutes {
                 ctx.sendJson(200, ApiResponse.ok(users));
             }),
             Route.get("/{id}", ctx -> {
-                var idStr = ctx.pathVar("id", String.class);
-                java.util.Optional<com.jujin.point.domain.entity.User> u;
-                try {
-                    u = userSvc().findById(Long.parseLong(idStr));
-                } catch (NumberFormatException e) {
-                    u = userSvc().findByUsername(idStr);
-                }
+                var u = userSvc().findById(resolveUserId(ctx));
                 u.ifPresent(x -> x.setPassword(null));
                 ctx.sendJson(200, ApiResponse.ok(u.orElse(null)));
             }),
@@ -57,13 +51,13 @@ public class UserRoutes {
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             Route.get("/{id}/topics", ctx -> {
-                long uid = ctx.pathVar("id", Long.class);
+                long uid = resolveUserId(ctx);
                 int page = intParam(ctx, "page", 1);
                 var r = topicSvc().getUserTopics(uid, PageRequest.of(page, 20));
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichTopics(r.items())));
             }),
             Route.get("/{id}/articles", ctx -> {
-                long uid = ctx.pathVar("id", Long.class);
+                long uid = resolveUserId(ctx);
                 int page = intParam(ctx, "page", 1);
                 var a = articleSvc().getByUser(uid, page, 20);
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichArticles(a)));
@@ -103,22 +97,32 @@ public class UserRoutes {
             }),
             Route.get("/{id}/follow/status", ctx -> {
                 var user = AuthFilter.currentUser();
-                boolean f = user != null && followSvc().isFollowing(user.userId(), ctx.pathVar("id", Long.class));
+                boolean f = user != null && followSvc().isFollowing(user.userId(), resolveUserId(ctx));
                 ctx.sendJson(200, ApiResponse.ok(Map.of("following", f)));
             }),
             Route.get("/{id}/followers", ctx -> {
                 int page = intParam(ctx, "page", 1);
-                ctx.sendJson(200, ApiResponse.ok(followSvc().getFollowers(ctx.pathVar("id", Long.class), page, 20)));
+                ctx.sendJson(200, ApiResponse.ok(followSvc().getFollowers(resolveUserId(ctx), page, 20)));
             }),
             Route.get("/{id}/following", ctx -> {
                 int page = intParam(ctx, "page", 1);
-                ctx.sendJson(200, ApiResponse.ok(followSvc().getFollowing(ctx.pathVar("id", Long.class), page, 20)));
+                ctx.sendJson(200, ApiResponse.ok(followSvc().getFollowing(resolveUserId(ctx), page, 20)));
             }),
             Route.get("/{id}/favorites", ctx -> {
                 int page = intParam(ctx, "page", 1);
-                ctx.sendJson(200, ApiResponse.ok(favSvc().getUserFavorites(ctx.pathVar("id", Long.class), page, 20)));
+                ctx.sendJson(200, ApiResponse.ok(favSvc().getUserFavorites(resolveUserId(ctx), page, 20)));
             })
         );
+    }
+
+    /** Resolve a path variable to a user ID, accepting both numeric IDs and usernames. */
+    private static long resolveUserId(HttpContext ctx) {
+        var idStr = ctx.pathVar("id", String.class);
+        try { return Long.parseLong(idStr); }
+        catch (NumberFormatException e) {
+            return AppContext.get(UserService.class).findByUsername(idStr)
+                .map(com.jujin.point.domain.entity.User::getId).orElse(0L);
+        }
     }
 
     private static UserService userSvc() { return AppContext.get(UserService.class); }

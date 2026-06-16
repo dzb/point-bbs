@@ -127,7 +127,7 @@ function onKeydown(e: KeyboardEvent) {
 
 <style>
 .mention-dropdown {
-  position: fixed; z-index: 9999;
+  position: fixed; z-index: 99999;
   max-height: 200px; overflow-y: auto;
   background: var(--paper-bg); border: 1px solid var(--paper-border);
   border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.15);
