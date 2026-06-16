@@ -48,10 +48,8 @@
           </div>
 
           <div v-for="(c, i) in comments" :key="c.id">
-            <div v-if="i > 0 && c.user?.id === topic.userId" class="op-connector">
-              <span class="op-connector-tag">作者回复</span>
-            </div>
-            <div class="py-3" :style="i > 0 && c.user?.id === topic.userId ? '' : 'border-top:1px solid var(--paper-border)'">
+            <div v-if="i > 0 && c.user?.id === topic.userId" class="op-connector" />
+            <div class="py-3" :style="i > 0 && c.user?.id === topic.userId ? 'padding-top:4px' : 'border-top:1px solid var(--paper-border)'">
               <div class="d-flex">
                 <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
                   <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" />
@@ -216,8 +214,6 @@ function onContentClick(e: MouseEvent) {
 .topic-content { font-size: 17px; line-height: 1.9; color: var(--paper-text); word-break: break-word; }
 .topic-content :deep(img) { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 .topic-content :deep(p) { margin: .5em 0; }
-.op-connector { display: flex; align-items: center; gap: 8px; padding: 0 0 0 48px; }
-.op-connector::before { content: ''; width: 1px; height: 16px; background: var(--paper-border); }
-.op-connector-tag { font-size: 11px; color: var(--paper-text2); }
+.op-connector { width: 1px; height: 14px; background: var(--paper-border); margin: 0 auto; }
 .comment-body { font-size: 14px; color: var(--paper-text); line-height: 1.6; word-break: break-word; }
 </style>
