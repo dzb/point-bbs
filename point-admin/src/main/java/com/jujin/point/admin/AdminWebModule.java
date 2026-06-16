@@ -5,7 +5,7 @@ import com.jujin.point.admin.route.*;
 import com.jujin.freeway.http.HttpFilter;
 import com.jujin.freeway.http.RouteGroup;
 import com.jujin.freeway.ioc.Binder;
-import com.jujin.freeway.ioc.Module;
+import com.jujin.freeway.ioc.Module2;
 
 /**
  * Admin web module — contributes admin API routes with auth + admin filtering.
@@ -14,7 +14,7 @@ import com.jujin.freeway.ioc.Module;
  * 1. AuthFilter (from WebModule) — resolves CurrentUser
  * 2. AdminFilter — checks admin roles
  */
-public class AdminWebModule implements Module {
+public class AdminWebModule implements Module2 {
 
     @Override
     public void bind(Binder binder) {

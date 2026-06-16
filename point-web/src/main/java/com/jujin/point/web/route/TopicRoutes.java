@@ -10,6 +10,7 @@ import com.jujin.point.web.ResponseEnricher;
 import com.jujin.point.web.filter.AuthFilter;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Row;
+import com.jujin.freeway.http.HttpContext;
 import com.jujin.freeway.http.Route;
 import com.jujin.freeway.http.RouteGroup;
 
@@ -21,8 +22,8 @@ public class TopicRoutes {
         return RouteGroup.of("/api/topics",
             // List recent topics
             Route.get("", ctx -> {
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
-                int pageSize = Math.max(1, ctx.queryParam("pageSize", Integer.class));
+                int page = intParam(ctx, "page", 1);
+                int pageSize = intParam(ctx, "pageSize", 1);
                 var result = topicSvc().getRecentTopics(PageRequest.of(page, pageSize));
                 var enriched = ResponseEnricher.enrichTopics(result.items());
                 var resp = new LinkedHashMap<String, Object>();
@@ -33,8 +34,8 @@ public class TopicRoutes {
             // Following feed
             Route.get("/following", ctx -> {
                 var user = AuthFilter.requireUser();
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
-                int pageSize = Math.max(1, ctx.queryParam("pageSize", Integer.class));
+                int page = intParam(ctx, "page", 1);
+                int pageSize = intParam(ctx, "pageSize", 1);
                 var db = AppContext.get(Database.class);
                 int offset = (page - 1) * pageSize;
                 // Get followed user IDs
@@ -60,8 +61,8 @@ public class TopicRoutes {
             }),
             // Moments (tweets — type=1)
             Route.get("/moments", ctx -> {
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
-                int pageSize = Math.max(1, ctx.queryParam("pageSize", Integer.class));
+                int page = intParam(ctx, "page", 1);
+                int pageSize = intParam(ctx, "pageSize", 1);
                 var db = AppContext.get(Database.class);
                 int offset = (page - 1) * pageSize;
                 var tweets = db.query(
@@ -73,7 +74,7 @@ public class TopicRoutes {
             }),
             // Recommended topics
             Route.get("/recommended", ctx -> {
-                int limit = ctx.queryParam("limit", Integer.class); if (limit < 1) limit = 10;
+                int limit = intParam(ctx, "limit", 10);
                 var topics = topicSvc().getRecommended(limit);
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichTopics(topics)));
             }),
@@ -81,7 +82,7 @@ public class TopicRoutes {
             Route.get("/search", ctx -> {
                 String q = ctx.queryParam("q");
                 if (q == null || q.isBlank()) { ctx.sendJson(200, ApiResponse.ok(List.of())); return; }
-                var r = topicSvc().search(q, PageRequest.of(Math.max(1, ctx.queryParam("page", Integer.class)), 20));
+                var r = topicSvc().search(q, PageRequest.of(intParam(ctx, "page", 1), 20));
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichTopics(r.items())));
             }),
             // Topic detail
@@ -114,7 +115,7 @@ public class TopicRoutes {
             // --- Comments (nested under topic) ---
             Route.get("/{id}/comments", ctx -> {
                 long topicId = ctx.pathVar("id", Long.class);
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
+                int page = intParam(ctx, "page", 1);
                 var comments = commentSvc().getComments("topic", topicId, PageRequest.of(page, 20));
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichComments(comments)));
             }),
@@ -167,5 +168,10 @@ public class TopicRoutes {
     private static CommentService commentSvc() { return AppContext.get(CommentService.class); }
     private static UserLikeService likeSvc() { return AppContext.get(UserLikeService.class); }
     private static FavoriteService favSvc() { return AppContext.get(FavoriteService.class); }
+
+    private static int intParam(HttpContext ctx, String name, int defaultVal) {
+        Integer v = ctx.queryParam(name, Integer.class);
+        return v != null ? v : defaultVal;
+    }
 
 }

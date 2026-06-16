@@ -8,6 +8,7 @@ import com.jujin.point.service.FavoriteService;
 import com.jujin.point.service.UserLikeService;
 import com.jujin.point.web.ResponseEnricher;
 import com.jujin.point.web.filter.AuthFilter;
+import com.jujin.freeway.http.HttpContext;
 import com.jujin.freeway.http.Route;
 import com.jujin.freeway.http.RouteGroup;
 
@@ -18,8 +19,8 @@ public class ArticleRoutes {
     public static RouteGroup routes() {
         return RouteGroup.of("/api/articles",
             Route.get("", ctx -> {
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
-                int pageSize = Math.max(1, ctx.queryParam("pageSize", Integer.class));
+                int page = intParam(ctx, "page", 1);
+                int pageSize = intParam(ctx, "pageSize", 1);
                 var articles = svc().getRecent(page, pageSize);
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichArticles(articles)));
             }),
@@ -74,7 +75,7 @@ public class ArticleRoutes {
             // Comments
             Route.get("/{id}/comments", ctx -> {
                 long articleId = ctx.pathVar("id", Long.class);
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
+                int page = intParam(ctx, "page", 1);
                 var comments = AppContext.get(com.jujin.point.service.CommentService.class)
                     .getComments("article", articleId, com.jujin.point.domain.dto.PageRequest.of(page, 20));
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichComments(comments)));
@@ -93,5 +94,10 @@ public class ArticleRoutes {
     private static ArticleService svc() { return AppContext.get(ArticleService.class); }
     private static UserLikeService likeSvc() { return AppContext.get(UserLikeService.class); }
     private static FavoriteService favSvc() { return AppContext.get(FavoriteService.class); }
+
+    private static int intParam(HttpContext ctx, String name, int defaultVal) {
+        Integer v = ctx.queryParam(name, Integer.class);
+        return v != null ? v : defaultVal;
+    }
 
 }

@@ -7,7 +7,7 @@ import com.jujin.freeway.db.schema.Schema;
 import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.Container;
 import com.jujin.freeway.ioc.Freeway;
-import com.jujin.freeway.ioc.Module;
+import com.jujin.freeway.ioc.Module2;
 import com.jujin.point.db.repository.TopicRepository;
 import com.jujin.point.domain.dto.TopicDtos.CreateTopicRequest;
 import com.jujin.point.domain.entity.Comment;

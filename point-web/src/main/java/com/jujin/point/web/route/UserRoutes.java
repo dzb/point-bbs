@@ -7,6 +7,7 @@ import com.jujin.point.domain.dto.UserDtos.*;
 import com.jujin.point.service.*;
 import com.jujin.point.web.ResponseEnricher;
 import com.jujin.point.web.filter.AuthFilter;
+import com.jujin.freeway.http.HttpContext;
 import com.jujin.freeway.http.Route;
 import com.jujin.freeway.http.RouteGroup;
 
@@ -40,13 +41,13 @@ public class UserRoutes {
             }),
             Route.get("/{id}/topics", ctx -> {
                 long uid = ctx.pathVar("id", Long.class);
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
+                int page = intParam(ctx, "page", 1);
                 var r = topicSvc().getUserTopics(uid, PageRequest.of(page, 20));
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichTopics(r.items())));
             }),
             Route.get("/{id}/articles", ctx -> {
                 long uid = ctx.pathVar("id", Long.class);
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
+                int page = intParam(ctx, "page", 1);
                 var a = articleSvc().getByUser(uid, page, 20);
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichArticles(a)));
             }),
@@ -54,7 +55,7 @@ public class UserRoutes {
                 var user = AuthFilter.requireUser();
                 long uid = ctx.pathVar("id", Long.class);
                 if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能查看自己的消息")); return; }
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
+                int page = intParam(ctx, "page", 1);
                 ctx.sendJson(200, ApiResponse.ok(msgSvc().getUserMessages(uid, page, 20)));
             }),
             Route.get("/{id}/messages/unread", ctx -> {
@@ -89,15 +90,15 @@ public class UserRoutes {
                 ctx.sendJson(200, ApiResponse.ok(Map.of("following", f)));
             }),
             Route.get("/{id}/followers", ctx -> {
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
+                int page = intParam(ctx, "page", 1);
                 ctx.sendJson(200, ApiResponse.ok(followSvc().getFollowers(ctx.pathVar("id", Long.class), page, 20)));
             }),
             Route.get("/{id}/following", ctx -> {
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
+                int page = intParam(ctx, "page", 1);
                 ctx.sendJson(200, ApiResponse.ok(followSvc().getFollowing(ctx.pathVar("id", Long.class), page, 20)));
             }),
             Route.get("/{id}/favorites", ctx -> {
-                int page = Math.max(1, ctx.queryParam("page", Integer.class));
+                int page = intParam(ctx, "page", 1);
                 ctx.sendJson(200, ApiResponse.ok(favSvc().getUserFavorites(ctx.pathVar("id", Long.class), page, 20)));
             })
         );
@@ -109,4 +110,9 @@ public class UserRoutes {
     private static MessageService msgSvc() { return AppContext.get(MessageService.class); }
     private static UserFollowService followSvc() { return AppContext.get(UserFollowService.class); }
     private static FavoriteService favSvc() { return AppContext.get(FavoriteService.class); }
+
+    private static int intParam(HttpContext ctx, String name, int defaultVal) {
+        Integer v = ctx.queryParam(name, Integer.class);
+        return v != null ? v : defaultVal;
+    }
 }

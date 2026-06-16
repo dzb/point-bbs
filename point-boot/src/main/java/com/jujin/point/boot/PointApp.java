@@ -1,6 +1,6 @@
 package com.jujin.point.boot;
 
-import com.jujin.freeway.boot.Launcher;
+import com.jujin.freeway.boot.FreewayApp;
 
 /**
  * point application entry point.
@@ -22,10 +22,10 @@ public class PointApp {
             ||P ||||O ||||I ||||N ||||T ||
             ||__||||__||||__||||__||||__||
             |/__\\\\||/__\\\\||/__\\\\||/__\\\\||/__\\\\|
-            point v1.0.0 -- powered by freeway 1.1.0 + JDK %s
+            point v1.0.0 -- powered by freeway 1.1.2-SNAPSHOT + JDK %s
             """.formatted(Runtime.version().feature()));
 
-        var runtime = Launcher.run(PointModule.class, args);
+        var runtime = FreewayApp.run(args, new PointModule());
 
         var port = runtime.config().get("web.server.port");
         System.out.println("point running on http://localhost:" + (port != null ? port : 8082));

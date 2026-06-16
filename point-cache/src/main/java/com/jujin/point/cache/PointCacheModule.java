@@ -5,13 +5,13 @@ import com.jujin.point.domain.entity.Tag;
 import com.jujin.point.domain.entity.Topic;
 import com.jujin.point.domain.entity.User;
 import com.jujin.freeway.ioc.Binder;
-import com.jujin.freeway.ioc.Module;
+import com.jujin.freeway.ioc.Module2;
 import com.jujin.freeway.ioc.Scope;
 
 /**
  * Cache module — binds typed caches as singletons.
  */
-public class PointCacheModule implements Module {
+public class PointCacheModule implements Module2 {
 
     @Override
     public void bind(Binder binder) {

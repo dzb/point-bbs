@@ -10,9 +10,9 @@ import com.jujin.freeway.http.ExceptionMapper;
 import com.jujin.freeway.http.HttpFilter;
 import com.jujin.freeway.http.RouteGroup;
 import com.jujin.freeway.ioc.Binder;
-import com.jujin.freeway.ioc.Module;
+import com.jujin.freeway.ioc.Module2;
 
-public class WebModule implements Module {
+public class WebModule implements Module2 {
 
     @Override
     public void bind(Binder binder) {

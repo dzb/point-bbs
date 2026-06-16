@@ -7,7 +7,7 @@ import com.jujin.freeway.db.Row;
 import com.jujin.freeway.db.schema.Schema;
 import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.Container;
-import com.jujin.freeway.ioc.Module;
+import com.jujin.freeway.ioc.Module2;
 import com.jujin.freeway.ioc.RuntimeHook;
 
 /**
@@ -16,7 +16,7 @@ import com.jujin.freeway.ioc.RuntimeHook;
  * Pass this to Launcher.run(PointModule.class, args).
  * Freeway's DbModule and HttpModule are auto-discovered via ServiceLoader.
  */
-public class PointModule implements Module {
+public class PointModule implements Module2 {
 
     @Override
     public void bind(Binder binder) {
