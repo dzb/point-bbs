@@ -220,6 +220,6 @@ function onContentClick(e: MouseEvent) {
 .topic-content { font-size: 17px; line-height: 1.9; color: var(--paper-text); word-break: break-word; }
 .topic-content :deep(img) { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 .topic-content :deep(p) { margin: .5em 0; }
-.op-connector { width: 2px; height: 24px; background: var(--paper-border); margin-left: 16px; }
+.op-connector { width: 2px; height: 24px; background: var(--paper-border); margin-left: 16px; margin-top: -8px; }
 .comment-body { font-size: 14px; color: var(--paper-text); line-height: 1.6; word-break: break-word; }
 </style>
