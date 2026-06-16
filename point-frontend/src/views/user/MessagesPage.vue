@@ -3,10 +3,11 @@
       <div v-if="messages.length > 0" class="d-flex justify-end mb-3">
         <v-btn variant="text" size="small" @click="markAllRead">全部已读</v-btn>
       </div>
-      <div v-for="m in messages" :key="m.id" class="msg-card" :class="{ unread: m.status === 0 }" @click="openEntity(m)">
+      <div v-for="m in messages" :key="m.id" class="msg-card" :class="{ unread: m.status === 0 }">
         <div class="d-flex align-center mb-2">
           <v-icon :color="m.status===0?'var(--paper-accent)':''" size="16" class="mr-2 flex-shrink-0">{{ iconForType(m.type) }}</v-icon>
-          <span style="font-size:14px;font-weight:500;color:var(--paper-text)" class="text-truncate">{{ titleFor(m) }}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--paper-text)">{{ sender(m) }}</span>
+          <span style="font-size:13px;color:var(--paper-text2)"> · {{ actionText(m) }}</span>
           <span style="font-size:12px;color:var(--paper-text2);margin-left:auto;flex-shrink:0" class="ml-2">{{ time(m.createTime) }}</span>
         </div>
         <div v-if="m.quoteContent" style="font-size:13px;color:var(--paper-text2);line-height:1.6;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">
@@ -17,7 +18,11 @@
             <v-icon size="14" class="mr-1">mdi-reply-outline</v-icon>回复
           </v-btn>
           <v-spacer />
-          <span style="font-size:11px;color:var(--paper-text2)">{{ entityLabel(m) }}</span>
+          <div v-if="canOpen(m)">
+            <v-btn variant="text" size="x-small" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)" @click.stop="openEntity(m)">
+              查看{{ entityLabel(m) }}<v-icon size="12" class="ml-1">mdi-arrow-right</v-icon>
+            </v-btn>
+          </div>
         </div>
         <!-- Inline reply box -->
         <div v-if="replyId === m.id" class="mt-2">
@@ -82,9 +87,12 @@ function parseExtra(m: any): { type: string; id: string } | null {
   return t && id ? { type: t, id } : null
 }
 
+function canOpen(m: any): boolean {
+  const e = parseExtra(m); return !!(e && (e.type === 'topic' || e.type === 'article' || e.type === 'user'))
+}
+
 function openEntity(m: any) {
-  const e = parseExtra(m)
-  if (!e) return
+  const e = parseExtra(m); if (!e) return
   if (m.status === 0) client.post(`/users/${auth.user?.id}/messages/read`, { ids: [m.id] }).catch(()=>{})
   m.status = 1
   if (e.type === 'topic') router.push(`/topics/${e.id}`)
@@ -93,16 +101,20 @@ function openEntity(m: any) {
 }
 
 function entityLabel(m: any): string {
-  const e = parseExtra(m)
-  if (!e) return ''
-  return e.type === 'topic' ? '查看帖子' : e.type === 'article' ? '查看文章' : e.type === 'user' ? '查看用户' : ''
+  const e = parseExtra(m); if (!e) return ''
+  return e.type === 'topic' ? '帖子' : e.type === 'article' ? '文章' : '用户'
 }
 
-function titleFor(m: any): string {
-  if (m.type === 3) return '提到了你'
+function sender(m: any): string {
+  const c = m.content || ''; const space = c.indexOf(' ')
+  return space > 0 ? c.substring(0, space) : (m.fromId ? '用户' + m.fromId : '有人')
+}
+
+function actionText(m: any): string {
   if (m.type === 1) return '赞了你'
   if (m.type === 2) return '关注了你'
-  return m.title || '新评论'
+  if (m.type === 3) return '提到了你'
+  return m.title || '评论了你'
 }
 
 function canReply(m: any): boolean {
