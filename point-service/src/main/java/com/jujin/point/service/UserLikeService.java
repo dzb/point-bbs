@@ -70,7 +70,7 @@ public class UserLikeService {
         var rows = db.query(
             "SELECT entity_id FROM bbs_user_like WHERE user_id = ? AND entity_type = ? AND entity_id IN (" + placeholders + ")",
             params).list(Row.class);
-        return rows.stream().map(r -> r.integer("entity_id").longValue()).toList();
+        return rows.stream().map(r -> r.get("entity_id", Long.class)).toList();
     }
 
     public List<UserLike> getUserLikes(long userId, int page, int pageSize) {

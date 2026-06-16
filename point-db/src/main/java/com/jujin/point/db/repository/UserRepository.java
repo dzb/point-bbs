@@ -60,7 +60,7 @@ public class UserRepository extends BaseRepository<User> {
     public long countAll() {
         var row = query("SELECT COUNT(*) AS cnt FROM bbs_user WHERE status <> 0")
             .one(Row.class).orElse(null);
-        return row != null ? row.integer("cnt").longValue() : 0;
+        return row != null ? row.get("cnt", long.class) : 0;
     }
 
     public void incrCommentCount(long userId) {

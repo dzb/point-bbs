@@ -122,10 +122,10 @@ public final class ResponseEnricher {
         Map<Long, Map<String, Object>> result = new HashMap<>();
         for (var r : rows) {
             var m = new LinkedHashMap<String, Object>();
-            m.put("id", r.integer("id"));
+            m.put("id", r.get("id", Long.class));
             m.put("nickname", r.string("nickname"));
             m.put("avatar", r.string("avatar"));
-            result.put(r.integer("id").longValue(), m);
+            result.put(r.get("id", Long.class), m);
         }
         return result;
     }
@@ -139,7 +139,7 @@ public final class ResponseEnricher {
             .list(Row.class);
         Map<Long, List<String>> result = new HashMap<>();
         for (var r : rows) {
-            long aid = r.integer("article_id").longValue();
+            long aid = r.get("article_id", long.class);
             result.computeIfAbsent(aid, k -> new ArrayList<>()).add(r.string("name"));
         }
         return result;
@@ -152,7 +152,7 @@ public final class ResponseEnricher {
         if (rows.isEmpty()) return new LinkedHashMap<>();
         var r = rows.getFirst();
         var m = new LinkedHashMap<String, Object>();
-        m.put("id", r.integer("id"));
+        m.put("id", r.get("id", Long.class));
         m.put("nickname", r.string("nickname"));
         m.put("avatar", r.string("avatar"));
         return m;

@@ -42,14 +42,14 @@ public class TopicRoutes {
                 var followedIds = db.query(
                     "SELECT other_id FROM bbs_user_follow WHERE user_id = ? AND status = 1", user.userId()
                 ).list(Row.class).stream()
-                    .map(r -> r.integer("other_id").toString()).toList();
+                    .map(r -> r.get("other_id", Long.class)).toList();
                 if (followedIds.isEmpty()) {
                     ctx.sendJson(200, ApiResponse.ok(java.util.List.of()));
                     return;
                 }
                 var placeholders = followedIds.stream().map(id -> "?").reduce((a, b) -> a + "," + b).orElse("?");
                 var params = new Object[followedIds.size() + 2];
-                for (int i = 0; i < followedIds.size(); i++) params[i] = Long.parseLong(followedIds.get(i));
+                for (int i = 0; i < followedIds.size(); i++) params[i] = followedIds.get(i);
                 params[followedIds.size()] = pageSize;
                 params[followedIds.size() + 1] = offset;
                 var tweets = db.query(
