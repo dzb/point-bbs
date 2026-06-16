@@ -1,13 +1,16 @@
 package com.jujin.point.service;
 
 import com.jujin.point.db.repository.CommentRepository;
+import com.jujin.point.db.repository.UserRepository;
 import com.jujin.point.domain.dto.PageRequest;
 import com.jujin.point.domain.dto.PageResult;
 import com.jujin.point.domain.entity.Comment;
 import com.jujin.point.domain.event.CommentCreatedEvent;
+import com.jujin.point.domain.event.UserMentionedEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.ioc.EventBus;
 
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -16,11 +19,13 @@ import java.util.List;
 public class CommentService {
     private final Database db;
     private final CommentRepository commentRepo;
+    private final UserRepository userRepo;
     private final EventBus eventBus;
 
-    public CommentService(Database db, CommentRepository commentRepo, EventBus eventBus) {
+    public CommentService(Database db, CommentRepository commentRepo, UserRepository userRepo, EventBus eventBus) {
         this.db = db;
         this.commentRepo = commentRepo;
+        this.userRepo = userRepo;
         this.eventBus = eventBus;
     }
 
@@ -42,6 +47,17 @@ public class CommentService {
             commentRepo.insert(comment);
             incrCommentCount(entityType, entityId, 1);
             eventBus.publish(new CommentCreatedEvent(userId, comment.getId(), entityId, entityType, now));
+            // Notify @mentioned users
+            var mentioned = MentionParser.extractMentions(content);
+            var notified = new HashSet<Long>();
+            for (String username : mentioned) {
+                userRepo.findByUsername(username).ifPresent(u -> {
+                    if (u.getId() != userId && notified.add(u.getId())) {
+                        eventBus.publish(new UserMentionedEvent(userId, u.getId(),
+                            entityType, comment.getId(), truncate(content, 100), now));
+                    }
+                });
+            }
         });
 
         return comment;
@@ -74,6 +90,11 @@ public class CommentService {
 
     public List<Comment> getReplies(long commentId, PageRequest page) {
         return commentRepo.findReplies(commentId, page.page(), page.pageSize());
+    }
+
+    private static String truncate(String s, int maxLen) {
+        if (s == null) return "";
+        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
     }
 
     public PageResult<Comment> getUserComments(long userId, PageRequest page) {

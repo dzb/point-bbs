@@ -28,7 +28,7 @@
         <!-- Inline reply box -->
         <div v-if="showReply" class="reply-box" @click.stop>
           <div class="d-flex mt-3">
-            <v-textarea v-model="replyText" placeholder="写下你的回复..." rows="2" density="compact" hide-details variant="outlined" class="mr-2" style="font-size:13px" @keydown.enter.ctrl="doReply" />
+            <MentionTextarea v-model="replyText" placeholder="写下你的回复..." rows="2" density="compact" hide-details variant="outlined" class="mr-2" style="font-size:13px" @keydown.enter.ctrl="doReply" />
             <v-btn variant="flat" size="small" :loading="replying" @click="doReply"
               style="background:var(--paper-accent);color:#fff;text-transform:none;letter-spacing:0;border-radius:20px;padding:0 16px;align-self:flex-end">回复</v-btn>
           </div>
@@ -74,7 +74,7 @@
             <v-progress-circular v-if="loadingComments" indeterminate size="20" class="d-block mx-auto my-4" color="var(--paper-accent)" />
             <div v-else>
             <div class="d-flex mb-3">
-              <v-textarea v-model="newComment" placeholder="发表评论..." rows="1" density="compact" hide-details variant="outlined" class="mr-2" style="font-size:13px" />
+              <MentionTextarea v-model="newComment" placeholder="发表评论..." rows="1" density="compact" hide-details variant="outlined" class="mr-2" style="font-size:13px" />
               <v-btn variant="text" size="small" :loading="posting" @click.stop="postComment" style="color:var(--paper-accent);text-transform:none;letter-spacing:0;min-width:auto">发布</v-btn>
             </div>
             <div v-for="c in comments" :key="c.id" class="mb-2">
@@ -104,6 +104,7 @@ import { useAuthStore } from '@/stores/auth'
 import UserAvatar from './UserAvatar.vue'
 import client from '@/api/client'
 import { renderMarkdown, md } from '@/utils/markdown'
+import MentionTextarea from './MentionTextarea.vue'
 import type { Topic, Comment } from '@/types'
 
 const router = useRouter()

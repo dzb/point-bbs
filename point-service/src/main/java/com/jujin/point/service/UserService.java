@@ -9,6 +9,7 @@ import com.jujin.freeway.db.Database;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -25,6 +26,14 @@ public class UserService {
 
     public Optional<User> findById(long id) {
         return userRepo.findById(id);
+    }
+
+    public Optional<User> findByUsername(String username) {
+        return userRepo.findByUsername(username);
+    }
+
+    public List<User> searchByPrefix(String prefix, int limit) {
+        return userRepo.searchByPrefix(prefix, limit);
     }
 
     public User signUp(CreateUserRequest req) {

@@ -28,7 +28,7 @@
             <h3 style="font-weight:500;color:var(--paper-text);margin:0;font-size:17px">评论 {{ comments.length }}</h3>
           </div>
           <div v-if="auth.isLoggedIn" class="mb-4">
-            <v-textarea v-model="commentText" placeholder="写下你的想法..." rows="2" class="mb-2" />
+            <MentionTextarea v-model="commentText" placeholder="写下你的想法... @用户名 可提及用户" rows="2" class="mb-2" />
             <div class="d-flex justify-end">
               <v-btn variant="text" :loading="submitting" @click="postComment" style="color:var(--paper-text2)">发布</v-btn>
             </div>
@@ -41,7 +41,7 @@
                   <span style="font-size:14px;color:var(--paper-text);font-weight:500">{{ c.user?.nickname }}</span>
                   <span style="font-size:12px;color:var(--paper-text2);margin-left:8px">{{ formatTime(c.createTime) }}</span>
                 </div>
-                <div v-html="c.content" class="comment-body" />
+                <div v-html="renderMarkdown(c.content)" class="comment-body" />
               </div>
             </div>
           </div>
@@ -67,6 +67,7 @@ import client from '@/api/client'
 import BackButton from '@/components/BackButton.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import ImageViewer from '@/components/ImageViewer.vue'
+import MentionTextarea from '@/components/MentionTextarea.vue'
 import { renderMarkdown } from '@/utils/markdown'
 
 const route = useRoute(); const auth = useAuthStore()

@@ -20,7 +20,7 @@
       <v-btn icon="mdi-format-list-numbered" variant="text" size="small" @click="insertLine('1. ')" />
     </div>
 
-    <v-textarea ref="contentArea" v-model="form.content" placeholder="开始写作..." rows="18" variant="plain" hide-details class="content-area" />
+    <MentionTextarea ref="contentArea" v-model="form.content" placeholder="开始写作..." rows="18" variant="plain" hide-details class="content-area" />
 
     <v-alert v-if="error" type="error" density="compact" class="mt-3" variant="tonal">{{ error }}</v-alert>
     <div class="d-flex justify-end mt-4">
@@ -35,6 +35,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
+import MentionTextarea from '@/components/MentionTextarea.vue'
 
 const router = useRouter()
 const auth = useAuthStore()

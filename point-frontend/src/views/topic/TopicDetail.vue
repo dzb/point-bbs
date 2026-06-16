@@ -39,7 +39,7 @@
           <div v-if="auth.isLoggedIn" class="d-flex mb-4">
             <UserAvatar :src="auth.user?.avatar" :name="auth.user?.nickname" :size="32" class="mr-3 flex-shrink-0" />
             <div class="flex-grow-1">
-              <v-textarea v-model="commentText" placeholder="写下你的评论..." rows="2" variant="outlined" density="compact" hide-details class="mb-2" />
+              <MentionTextarea v-model="commentText" placeholder="写下你的评论... @用户名 可提及用户" rows="2" variant="outlined" density="compact" hide-details class="mb-2" />
               <div class="d-flex justify-end">
                 <v-btn variant="flat" size="small" :loading="submitting" @click="postComment"
                   style="background:var(--paper-accent);color:#fff;text-transform:none;letter-spacing:0;border-radius:20px;padding:0 16px">回复</v-btn>
@@ -59,7 +59,7 @@
                   </router-link>
                   <span style="font-size:12px;color:var(--paper-text2);margin-left:8px">{{ formatTime(c.createTime) }}</span>
                 </div>
-                <div v-html="c.content" class="comment-body" />
+                <div v-html="renderMarkdown(c.content)" class="comment-body" />
               </div>
             </div>
           </div>
@@ -85,6 +85,7 @@ import client from '@/api/client'
 import UserAvatar from '@/components/UserAvatar.vue'
 import BackButton from '@/components/BackButton.vue'
 import ImageViewer from '@/components/ImageViewer.vue'
+import MentionTextarea from '@/components/MentionTextarea.vue'
 import { renderMarkdown } from '@/utils/markdown'
 import { topicAsideState } from '@/composables/useTopicAside'
 

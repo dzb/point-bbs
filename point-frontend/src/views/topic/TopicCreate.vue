@@ -5,7 +5,7 @@
       <v-text-field v-model="form.title" label="标题" variant="outlined" density="compact" class="mb-3" counter="128" />
       <v-select v-model="form.categoryId" label="分类" :items="categories" item-title="name" item-value="id"
         variant="outlined" density="compact" class="mb-3" />
-      <v-textarea v-model="form.content" label="内容 (支持 Markdown)" rows="12" variant="outlined"
+      <MentionTextarea v-model="form.content" label="内容 (支持 Markdown, @提及用户)" rows="12" variant="outlined"
         density="compact" class="mb-3" />
       <v-combobox v-model="form.tags" label="标签 (回车添加)" multiple chips variant="outlined"
         density="compact" class="mb-4" />
@@ -19,6 +19,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import client from '@/api/client'
+import MentionTextarea from '@/components/MentionTextarea.vue'
 
 const router = useRouter()
 const form = reactive({

@@ -5,7 +5,7 @@
         <div class="d-flex">
           <v-avatar size="36" class="mr-3 mt-1 flex-shrink-0"><v-icon>mdi-pen</v-icon></v-avatar>
           <div class="flex-grow-1" style="min-width:0">
-            <v-textarea v-model="newMoment" placeholder="记录思考，分享见闻..." rows="2" variant="plain" hide-details density="compact" @paste="onPaste" class="composer-input" />
+            <MentionTextarea v-model="newMoment" placeholder="记录思考，分享见闻..." rows="2" variant="plain" hide-details density="compact" @paste="onPaste" class="composer-input" />
             <div v-if="images.length" class="composer-images">
               <div v-for="(img,i) in images" :key="i" class="composer-img">
                 <img :src="img.url" />
@@ -42,6 +42,7 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import MomentCard from '@/components/MomentCard.vue'
+import MentionTextarea from '@/components/MentionTextarea.vue'
 import type { Topic } from '@/types'
 
 const auth = useAuthStore()

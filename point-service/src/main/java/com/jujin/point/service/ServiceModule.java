@@ -64,5 +64,10 @@ public class ServiceModule implements Module2 {
             .add("notify-follow", EventSubscriber.of(UserFollowedEvent.class,
                 e -> NotificationHandler.onUserFollowed(e,
                     com.jujin.point.domain.AppContext.container())));
+
+        binder.contribute(EventSubscriber.class)
+            .add("notify-mention", EventSubscriber.of(UserMentionedEvent.class,
+                e -> NotificationHandler.onUserMentioned(e,
+                    com.jujin.point.domain.AppContext.container())));
     }
 }

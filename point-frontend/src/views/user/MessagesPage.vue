@@ -62,7 +62,7 @@ async function markAllRead() {
 }
 
 function iconForType(type: number): string {
-  return ['mdi-comment-outline', 'mdi-heart-outline', 'mdi-account-plus-outline'][type] || 'mdi-bell-outline'
+  return ['mdi-comment-outline', 'mdi-heart-outline', 'mdi-account-plus-outline', 'mdi-at'][type] || 'mdi-bell-outline'
 }
 
 function formatTime(ts: number) { return ts ? new Date(ts).toLocaleString('zh-CN') : '' }

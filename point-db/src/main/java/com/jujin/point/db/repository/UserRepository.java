@@ -66,4 +66,11 @@ public class UserRepository extends BaseRepository<User> {
     public void incrCommentCount(long userId) {
         execute("UPDATE bbs_user SET comment_count = comment_count + 1 WHERE id = ?", userId);
     }
+
+    public List<User> searchByPrefix(String prefix, int limit) {
+        return query(
+            "SELECT id, username, nickname, avatar FROM bbs_user WHERE (username LIKE ? OR nickname LIKE ?) AND status <> 0 ORDER BY score DESC LIMIT ?",
+            prefix + "%", prefix + "%", limit)
+            .list(User.class);
+    }
 }

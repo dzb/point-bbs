@@ -3,7 +3,7 @@
     <v-card-title>编辑帖子</v-card-title>
     <v-card-text>
       <v-text-field v-model="form.title" label="标题" variant="outlined" density="compact" class="mb-3" />
-      <v-textarea v-model="form.content" label="内容" rows="12" variant="outlined" density="compact" class="mb-4" />
+      <MentionTextarea v-model="form.content" label="内容 (支持 @提及用户)" rows="12" variant="outlined" density="compact" class="mb-4" />
       <v-btn block color="primary" :loading="submitting" @click="submit">保存修改</v-btn>
       <v-alert v-if="error" type="error" density="compact" class="mt-3">{{ error }}</v-alert>
     </v-card-text>
@@ -14,6 +14,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import client from '@/api/client'
+import MentionTextarea from '@/components/MentionTextarea.vue'
 
 const route = useRoute()
 const router = useRouter()

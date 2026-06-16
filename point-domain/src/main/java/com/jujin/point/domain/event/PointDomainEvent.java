@@ -8,7 +8,7 @@ public sealed interface PointDomainEvent
             CommentCreatedEvent, UserLikedEvent, UserUnlikedEvent,
             UserFollowedEvent, UserUnfollowedEvent, UserFavoritedEvent,
             CheckInEvent, UserLoginEvent, LevelUpEvent, BadgeGrantedEvent,
-            QaAnswerAcceptedEvent {
+            QaAnswerAcceptedEvent, UserMentionedEvent {
 
     long timestamp();
 }

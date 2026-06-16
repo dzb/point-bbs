@@ -24,6 +24,17 @@ public class UserRoutes {
                 full.ifPresent(u -> u.setPassword(null));
                 ctx.sendJson(200, ApiResponse.ok(full.orElse(null)));
             }),
+            // User search for @mention autocomplete
+            Route.get("/search", ctx -> {
+                String q = ctx.queryParam("q");
+                if (q == null || q.isBlank()) {
+                    ctx.sendJson(200, ApiResponse.ok(List.of()));
+                    return;
+                }
+                var users = userSvc().searchByPrefix(q.trim(), 10);
+                users.forEach(u -> u.setPassword(null));
+                ctx.sendJson(200, ApiResponse.ok(users));
+            }),
             Route.get("/{id}", ctx -> {
                 var u = userSvc().findById(ctx.pathVar("id", Long.class));
                 u.ifPresent(x -> x.setPassword(null));

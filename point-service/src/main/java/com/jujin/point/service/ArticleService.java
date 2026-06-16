@@ -1,8 +1,12 @@
 package com.jujin.point.service;
 
 import com.jujin.point.domain.entity.Article;
+import com.jujin.point.domain.event.UserMentionedEvent;
 import com.jujin.freeway.db.Database;
+import com.jujin.freeway.db.Row;
+import com.jujin.freeway.ioc.EventBus;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,10 +16,12 @@ import java.util.Optional;
 public class ArticleService {
     private final Database db;
     private final TagService tagSvc;
+    private final EventBus eventBus;
 
-    public ArticleService(Database db, TagService tagSvc) {
+    public ArticleService(Database db, TagService tagSvc, EventBus eventBus) {
         this.db = db;
         this.tagSvc = tagSvc;
+        this.eventBus = eventBus;
     }
 
     public Optional<Article> findById(long id) {
@@ -23,24 +29,40 @@ public class ArticleService {
     }
 
     public Article create(long userId, String title, String summary, String content, String contentType) {
-        var article = new Article();
         var now = System.currentTimeMillis();
-        article.setUserId(userId);
-        article.setTitle(title);
-        article.setSummary(summary);
-        article.setContent(content);
-        article.setContentType(contentType != null ? contentType : "markdown");
-        article.setStatus(1);
-        article.setCreateTime(now);
-        article.setUpdateTime(now);
+        var result = new Article[1];
 
-        db.execute(
-            "INSERT INTO bbs_article (user_id, title, summary, content, content_type, status, view_count, comment_count, like_count, create_time, update_time) " +
-            "VALUES (?, ?, ?, ?, ?, 1, 0, 0, 0, ?, ?)",
-            userId, title, summary, content, contentType != null ? contentType : "markdown", now, now
-        );
-        return db.query("SELECT * FROM bbs_article WHERE user_id = $userId ORDER BY create_time DESC LIMIT 1")
-            .param("userId", userId).one(Article.class).orElseThrow();
+        db.transaction(() -> {
+            db.execute(
+                "INSERT INTO bbs_article (user_id, title, summary, content, content_type, status, view_count, comment_count, like_count, create_time, update_time) " +
+                "VALUES (?, ?, ?, ?, ?, 1, 0, 0, 0, ?, ?)",
+                userId, title, summary, content, contentType != null ? contentType : "markdown", now, now
+            );
+            var article = db.query("SELECT * FROM bbs_article WHERE user_id = ? ORDER BY create_time DESC LIMIT 1", userId)
+                .one(Article.class).orElseThrow();
+            result[0] = article;
+
+            // Notify @mentioned users
+            var mentioned = MentionParser.extractMentions(content);
+            var notified = new HashSet<Long>();
+            for (String username : mentioned) {
+                db.query("SELECT id FROM bbs_user WHERE username = ? AND status <> 0", username)
+                    .one(Row.class).ifPresent(row -> {
+                        long uid = row.longVal("id");
+                        if (uid != userId && notified.add(uid)) {
+                            eventBus.publish(new UserMentionedEvent(userId, uid,
+                                "article", article.getId(), truncate(content, 100), now));
+                        }
+                    });
+            }
+        });
+
+        return result[0];
+    }
+
+    private static String truncate(String s, int maxLen) {
+        if (s == null) return "";
+        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
     }
 
     public List<Article> getRecent(int page, int pageSize) {

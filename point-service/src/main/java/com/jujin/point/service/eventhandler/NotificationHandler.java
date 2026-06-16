@@ -51,6 +51,21 @@ public final class NotificationHandler {
             .findFirst().map(r -> r.string("nickname")).orElse("有人");
     }
 
+    public static void onUserMentioned(UserMentionedEvent e, Container c) {
+        var db = c.get(Database.class);
+        var msgSvc = c.get(MessageService.class);
+        var nickname = getNickname(db, e.fromUserId());
+        var entityLabel = switch (e.entityType()) {
+            case "topic" -> "帖子";
+            case "article" -> "文章";
+            case "comment" -> "评论";
+            default -> "内容";
+        };
+        msgSvc.send(e.fromUserId(), e.mentionedUserId(),
+            "@了你", nickname + " 在" + entityLabel + "中提到了你",
+            e.contentPreview(), 3, e.entityType() + ":" + e.entityId());
+    }
+
     public static void onUserFollowed(UserFollowedEvent e, Container c) {
         var db = c.get(Database.class);
         var nickname = db.query("SELECT nickname FROM bbs_user WHERE id = $id").param("id", e.userId())

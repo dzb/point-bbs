@@ -1,6 +1,7 @@
 package com.jujin.point.service;
 
 import com.jujin.point.db.repository.TopicRepository;
+import com.jujin.point.db.repository.UserRepository;
 import com.jujin.point.domain.dto.PageRequest;
 import com.jujin.point.domain.dto.PageResult;
 import com.jujin.point.domain.dto.TopicDtos.*;
@@ -10,6 +11,7 @@ import com.jujin.point.domain.event.*;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.ioc.EventBus;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,11 +21,13 @@ import java.util.Optional;
 public class TopicService {
     private final Database db;
     private final TopicRepository topicRepo;
+    private final UserRepository userRepo;
     private final EventBus eventBus;
 
-    public TopicService(Database db, TopicRepository topicRepo, EventBus eventBus) {
+    public TopicService(Database db, TopicRepository topicRepo, UserRepository userRepo, EventBus eventBus) {
         this.db = db;
         this.topicRepo = topicRepo;
+        this.userRepo = userRepo;
         this.eventBus = eventBus;
     }
 
@@ -51,6 +55,17 @@ public class TopicService {
             topicRepo.insert(topic);
             db.execute("UPDATE bbs_user SET topic_count = topic_count + 1 WHERE id = ?", userId);
             eventBus.publish(new TopicCreatedEvent(userId, topic.getId(), req.type(), now));
+            // Notify @mentioned users
+            var mentioned = MentionParser.extractMentions(req.content());
+            var notified = new HashSet<Long>();
+            for (String username : mentioned) {
+                userRepo.findByUsername(username).ifPresent(u -> {
+                    if (u.getId() != userId && notified.add(u.getId())) {
+                        eventBus.publish(new UserMentionedEvent(userId, u.getId(),
+                            "topic", topic.getId(), truncate(req.content(), 100), now));
+                    }
+                });
+            }
         });
 
         return topic;
@@ -132,6 +147,11 @@ public class TopicService {
         topic.setSticky(sticky);
         topic.setStickyTime(sticky ? System.currentTimeMillis() : 0);
         topicRepo.update(topic);
+    }
+
+    private static String truncate(String s, int maxLen) {
+        if (s == null) return "";
+        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
     }
 
     public void acceptAnswer(long topicId, long commentId) {
