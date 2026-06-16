@@ -119,6 +119,10 @@ html.dark .auth-card { background: #252220; }
 .auth-link { text-align: center; margin-top: 20px; font-size: 13px; }
 .auth-link a { color: var(--paper-accent); text-decoration: none; }
 
+/* Remove underline from @mention and other rendered-markdown links */
+.topic-content a, .comment-body a, .article-body a, .moment-body a { text-decoration: none; }
+.topic-content a:hover, .comment-body a:hover, .article-body a:hover, .moment-body a:hover { text-decoration: underline; }
+
 /* Image grid (shared across feed cards and detail pages) */
 .img-grid { display: grid; gap: 4px; margin: 8px 0; max-height: 420px; overflow: hidden; border-radius: 8px; }
 .img-grid.cols-2 { grid-template-columns: 1fr 1fr; }

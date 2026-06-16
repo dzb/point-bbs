@@ -9,7 +9,7 @@
             <UserAvatar :src="profile.avatar" :name="profile.nickname" :size="64" class="mr-4 flex-shrink-0" />
             <div class="flex-grow-1">
               <div class="d-flex align-center">
-                <h1 class="text-h5 mb-0" style="font-family:'Noto Serif SC',Georgia,serif;font-weight:700;color:var(--paper-text)">{{ profile.nickname }}</h1>
+                <h1 class="text-h5 mb-0" style="font-family:'Noto Serif SC',Georgia,serif;font-weight:700;color:var(--paper-text)">{{ profile.nickname }} <span style="font-size:14px;font-weight:400;color:var(--paper-text2)">@{{ profile.id }}</span></h1>
                 <v-btn v-if="auth.isLoggedIn && !isSelf" size="small" variant="outlined"
                   :color="following ? 'var(--paper-accent)' : ''" :loading="followLoading"
                   @click="toggleFollow" class="follow-btn ml-auto">
@@ -17,7 +17,6 @@
                 </v-btn>
               </div>
               <div class="mt-1 mb-2" style="font-size:13px;color:var(--paper-text2)">
-                <span v-if="profile.email" class="mr-3">{{ profile.email }}</span>
                 <span v-if="profile.score>0" class="mr-3">{{ profile.score }} 积分</span>
               </div>
               <div v-if="profile.description" style="font-size:14px;color:var(--paper-text2);line-height:1.7">{{ profile.description }}</div>
