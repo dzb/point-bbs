@@ -47,22 +47,22 @@
             </div>
           </div>
 
-          <div v-for="c in comments" :key="c.id" class="py-3"
-            :class="{ 'op-reply': c.user?.id === topic.userId }"
-            :style="c.user?.id === topic.userId ? 'border-left:2px solid var(--paper-accent);padding-left:14px' : 'border-top:1px solid var(--paper-border)'">
-            <span v-if="c.user?.id === topic.userId" class="op-badge">作者</span>
-            <div class="d-flex">
-              <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
-                <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" />
-              </router-link>
-              <div>
-                <div class="mb-1">
-                  <router-link :to="`/users/${c.user?.id}`" class="text-decoration-none" style="font-size:13px;font-weight:500;color:var(--paper-text)">
-                    {{ c.user?.nickname }}<span style="font-size:11px;color:var(--paper-text2);font-weight:400"> @{{ c.user?.username || c.user?.id }}</span>
-                  </router-link>
-                  <span style="font-size:12px;color:var(--paper-text2);margin-left:8px">{{ formatTime(c.createTime) }}</span>
+          <div v-for="(c, i) in comments" :key="c.id">
+            <div v-if="i > 0 && c.user?.id === topic.userId" class="op-line" />
+            <div class="py-3" :style="'border-top:1px solid var(--paper-border)'">
+              <div class="d-flex">
+                <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
+                  <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" />
+                </router-link>
+                <div>
+                  <div class="mb-1">
+                    <router-link :to="`/users/${c.user?.id}`" class="text-decoration-none" style="font-size:13px;font-weight:500;color:var(--paper-text)">
+                      {{ c.user?.nickname }}<span style="font-size:11px;color:var(--paper-text2);font-weight:400"> @{{ c.user?.username || c.user?.id }}</span>
+                    </router-link>
+                    <span style="font-size:12px;color:var(--paper-text2);margin-left:8px">{{ formatTime(c.createTime) }}</span>
+                  </div>
+                  <div v-html="renderMarkdown(c.content)" class="comment-body" />
                 </div>
-                <div v-html="renderMarkdown(c.content)" class="comment-body" />
               </div>
             </div>
           </div>
@@ -214,7 +214,6 @@ function onContentClick(e: MouseEvent) {
 .topic-content { font-size: 17px; line-height: 1.9; color: var(--paper-text); word-break: break-word; }
 .topic-content :deep(img) { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 .topic-content :deep(p) { margin: .5em 0; }
-.op-badge { font-size: 11px; color: #fff; background: var(--paper-accent); padding: 1px 6px; border-radius: 4px; margin-bottom: 6px; display: inline-block; }
-.op-reply { background: rgba(196,61,61,.03); }
+.op-line { width: 1px; height: 12px; background: var(--paper-border); margin: 0 auto; }
 .comment-body { font-size: 14px; color: var(--paper-text); line-height: 1.6; word-break: break-word; }
 </style>
