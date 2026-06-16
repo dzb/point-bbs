@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
@@ -69,12 +69,17 @@ const router = useRouter()
 const searchQuery = ref('')
 const searchFocused = ref(false)
 const unreadCount = ref(0)
+let pollTimer: ReturnType<typeof setInterval> | null = null
 
-onMounted(async () => { if (auth.isLoggedIn) await fetchUnread() })
-auth.$subscribe(async () => { if (auth.isLoggedIn) await fetchUnread() })
+onMounted(() => { watch(() => auth.isLoggedIn, v => { if (v) { fetchUnread(); startPolling() } else { stopPolling(); unreadCount.value = 0 } }, { immediate: true }) })
+onUnmounted(() => stopPolling())
+
+function startPolling() { stopPolling(); fetchUnread(); pollTimer = setInterval(fetchUnread, 15000) }
+function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null } }
 
 async function fetchUnread() {
-  try { const { data } = await client.get(`/users/${auth.user?.id}/messages/unread`); if (data.code===0) unreadCount.value = data.data?.count||0 } catch { console.error('unread fetch error') }
+  if (!auth.user?.id) return
+  try { const { data } = await client.get(`/users/${auth.user?.id}/messages/unread`); if (data.code===0) unreadCount.value = data.data?.count||0 } catch { /* ignore */ }
 }
 
 function doSearch() { if (searchQuery.value.trim()) router.push({ name: 'search', query: { q: searchQuery.value.trim() } }) }
