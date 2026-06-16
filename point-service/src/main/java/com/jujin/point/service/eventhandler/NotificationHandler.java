@@ -22,7 +22,25 @@ public final class NotificationHandler {
                     msgSvc.send(e.userId(), topic.getUserId(),
                         "新评论", nickname + " 评论了你的帖子",
                         truncate(topic.getTitle(), 200), 0,
-                        e.entityType() + ":" + e.entityId()));
+                        "topic:" + e.entityId()));
+        } else if ("comment".equals(e.entityType())) {
+            // Reply to a comment — notify the parent comment author
+            Long parentAuthorId = DbQuery.longValue(db,
+                "SELECT user_id FROM bbs_comment WHERE id = ?", "user_id", e.entityId());
+            if (parentAuthorId != null && parentAuthorId != e.userId()) {
+                msgSvc.send(e.userId(), parentAuthorId,
+                    "新回复", nickname + " 回复了你的评论", null, 0,
+                    "comment:" + e.entityId());
+            }
+        } else if ("article".equals(e.entityType())) {
+            // Comment on an article — notify the article author
+            Long articleAuthorId = DbQuery.longValue(db,
+                "SELECT user_id FROM bbs_article WHERE id = ?", "user_id", e.entityId());
+            if (articleAuthorId != null && articleAuthorId != e.userId()) {
+                msgSvc.send(e.userId(), articleAuthorId,
+                    "新评论", nickname + " 评论了你的文章", null, 0,
+                    "article:" + e.entityId());
+            }
         }
     }
 
