@@ -75,8 +75,9 @@ function renderDropdown() {
       : `<div style="width:24px;height:24px;border-radius:50%;background:#c43d3d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;margin-right:8px;flex-shrink:0">${(u.nickname||'?')[0]}</div>`
     html += `<div class="mention-item-global" style="display:flex;align-items:center;padding:8px 12px;cursor:pointer;background:${itemBg}" data-idx="${i}">${avatarHtml}<span style="font-weight:600;font-size:13px;color:#c43d3d">@${u.username||''}</span><span style="font-size:12px;color:${text2};margin-left:6px">${u.nickname||''}</span></div>`
   }
-  if (suggestions.value.length === 0 && term.value.length > 0) {
-    html = `<div style="display:flex;align-items:center;padding:8px 12px;color:${text2};cursor:default">无匹配用户</div>`
+  if (suggestions.value.length === 0) {
+    const hint = term.value.length > 0 ? '无匹配用户' : '输入用户名搜索...'
+    html = `<div style="display:flex;align-items:center;padding:8px 12px;color:${text2};cursor:default;min-height:36px">${hint}</div>`
   }
   d.innerHTML = html
   // Attach click handlers
