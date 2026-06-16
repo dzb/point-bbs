@@ -6,6 +6,10 @@
       @keydown="onKeydown"
       v-bind="$attrs"
       ref="textareaRef"
+      autocapitalize="off"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
     />
     <div v-if="show" class="mention-dropdown">
       <div
@@ -111,11 +115,11 @@ function onKeydown(e: KeyboardEvent) {
 <style scoped>
 .mention-wrapper { position: relative; }
 .mention-dropdown {
-  position: absolute; bottom: 100%; left: 0; right: 0; z-index: 200;
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
   max-height: 200px; overflow-y: auto;
   background: var(--paper-bg); border: 1px solid var(--paper-border);
   border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.12);
-  margin-bottom: 4px;
+  margin-top: 4px;
 }
 .mention-item {
   display: flex; align-items: center;

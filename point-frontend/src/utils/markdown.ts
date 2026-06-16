@@ -61,7 +61,8 @@ export const md = new MarkdownIt({ breaks: true, linkify: true })
  */
 export function renderMarkdown(content: string): string {
   // Step 0: convert @username mentions to markdown links before processing
-  content = content.replace(/@([\w一-鿿]{1,32})/g, '[@$1](/users/$1)')
+  // Use hash-based routing (/#/users/username) since the app uses createWebHashHistory
+  content = content.replace(/@([\w一-鿿]{1,32})/g, '[@$1](/#/users/$1)')
 
   const parts: string[] = []
   let lastIndex = 0
