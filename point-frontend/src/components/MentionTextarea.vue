@@ -58,7 +58,8 @@ function updatePosition() {
   const el = getTextarea()
   if (!el) return
   const rect = el.getBoundingClientRect()
-  dropdownStyle.top = (rect.bottom + 4) + 'px'
+  // Show above the input to avoid v-textarea overlay occlusion
+  dropdownStyle.bottom = (window.innerHeight - rect.top + 4) + 'px'
   dropdownStyle.left = rect.left + 'px'
   dropdownStyle.width = rect.width + 'px'
 }
