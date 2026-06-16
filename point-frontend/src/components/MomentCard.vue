@@ -79,8 +79,8 @@
                 <v-btn v-if="newComment.trim()" variant="flat" size="x-small" :loading="posting" @click.stop="postComment" class="viewer-composer-btn">发布</v-btn>
               </div>
             </div>
-            <div v-for="(c, i) in comments" :key="c.id" class="mb-2" :style="isThreaded(i, c) ? 'padding-top:4px' : ''">
-              <div v-if="isThreaded(i, c)" class="op-connector" />
+            <div v-for="(c, i) in comments" :key="c.id" class="mb-2">
+              <div v-if="i > 0 && isThreaded(i, c)" class="op-connector" />
               <div class="d-flex">
                 <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0" />
                 <div>

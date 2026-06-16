@@ -48,8 +48,8 @@
           </div>
 
           <div v-for="(c, i) in comments" :key="c.id">
-            <div class="py-3" :style="isThreaded(i, c) ? 'padding-top:4px' : 'border-top:1px solid var(--paper-border)'">
-              <div v-if="i > 0 && isThreaded(i, c)" class="op-connector" />
+            <div v-if="i > 0 && isThreaded(i, c)" class="op-connector" />
+            <div class="py-3" :style="isThreaded(i, c) ? '' : 'border-top:1px solid var(--paper-border)'">
               <div class="d-flex">
                 <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
                   <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" />
