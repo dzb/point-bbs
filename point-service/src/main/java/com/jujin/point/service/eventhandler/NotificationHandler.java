@@ -25,12 +25,19 @@ public final class NotificationHandler {
                         "topic:" + e.entityId()));
         } else if ("comment".equals(e.entityType())) {
             // Reply to a comment — notify the parent comment author
-            Long parentAuthorId = DbQuery.longValue(db,
-                "SELECT user_id FROM bbs_comment WHERE id = ?", "user_id", e.entityId());
-            if (parentAuthorId != null && parentAuthorId != e.userId()) {
-                msgSvc.send(e.userId(), parentAuthorId,
-                    "新回复", nickname + " 回复了你的评论", null, 0,
-                    "comment:" + e.entityId());
+            // Look up parent comment to find the root topic/article for navigation
+            var parentRow = db.query(
+                "SELECT user_id, entity_type, entity_id FROM bbs_comment WHERE id = ?", e.entityId())
+                .one(Row.class).orElse(null);
+            if (parentRow != null) {
+                long parentAuthorId = parentRow.longVal("user_id");
+                String parentEntityType = parentRow.string("entity_type");
+                long parentEntityId = parentRow.longVal("entity_id");
+                if (parentAuthorId != e.userId()) {
+                    String extra = "comment:" + e.entityId() + ":" + parentEntityType + ":" + parentEntityId;
+                    msgSvc.send(e.userId(), parentAuthorId,
+                        "新回复", nickname + " 回复了你的评论", null, 0, extra);
+                }
             }
         } else if ("article".equals(e.entityType())) {
             // Comment on an article — notify the article author

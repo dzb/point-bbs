@@ -81,28 +81,36 @@ async function markAllRead() {
   messages.value.forEach(m => (m.status = 1))
 }
 
-function parseExtra(m: any): { type: string; id: string } | null {
+function parseExtra(m: any): { type: string; id: string; parentType?: string; parentId?: string } | null {
   if (!m.extraData) return null
-  const [t, id] = m.extraData.split(':')
-  return t && id ? { type: t, id } : null
+  const parts = m.extraData.split(':')
+  // "topic:142" or "comment:108:topic:142"
+  if (parts.length === 2) return { type: parts[0], id: parts[1] }
+  if (parts.length === 4) return { type: parts[0], id: parts[1], parentType: parts[2], parentId: parts[3] }
+  return null
 }
 
 function canOpen(m: any): boolean {
-  const e = parseExtra(m); return !!(e && (e.type === 'topic' || e.type === 'article' || e.type === 'user'))
+  const e = parseExtra(m); if (!e) return false
+  // For comment, use parent entity for navigation
+  const t = e.parentType || e.type
+  return t === 'topic' || t === 'article' || t === 'user'
 }
 
 function openEntity(m: any) {
   const e = parseExtra(m); if (!e) return
   if (m.status === 0) client.post(`/users/${auth.user?.id}/messages/read`, { ids: [m.id] }).catch(()=>{})
   m.status = 1
-  if (e.type === 'topic') router.push(`/topics/${e.id}`)
-  else if (e.type === 'article') router.push(`/articles/${e.id}`)
-  else if (e.type === 'user') router.push(`/users/${e.id}`)
+  const t = e.parentType || e.type; const id = e.parentId || e.id
+  if (t === 'topic') router.push(`/topics/${id}`)
+  else if (t === 'article') router.push(`/articles/${id}`)
+  else if (t === 'user') router.push(`/users/${id}`)
 }
 
 function entityLabel(m: any): string {
   const e = parseExtra(m); if (!e) return ''
-  return e.type === 'topic' ? '帖子' : e.type === 'article' ? '文章' : '用户'
+  const t = e.parentType || e.type
+  return t === 'topic' ? '帖子' : t === 'article' ? '文章' : '用户'
 }
 
 function sender(m: any): string {
@@ -118,8 +126,9 @@ function actionText(m: any): string {
 }
 
 function canReply(m: any): boolean {
-  const e = parseExtra(m)
-  return !!(e && (e.type === 'topic' || e.type === 'article'))
+  const e = parseExtra(m); if (!e) return false
+  const t = e.parentType || e.type
+  return t === 'topic' || t === 'article'
 }
 
 function toggleReply(m: any) {
@@ -131,9 +140,9 @@ async function doReply(m: any) {
   if (!replyText.value.trim()) return
   replying.value = true
   try {
-    const e = parseExtra(m)
-    if (!e) return
-    await client.post(`/api/${e.type}s/${e.id}/comments`, {
+    const e = parseExtra(m); if (!e) return
+    const t = e.parentType || e.type; const id = e.parentId || e.id
+    await client.post(`/api/${t}s/${id}/comments`, {
       content: replyText.value,
       contentType: 'markdown'
     })
