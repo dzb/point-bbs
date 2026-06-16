@@ -79,8 +79,8 @@
                 <v-btn v-if="newComment.trim()" variant="flat" size="x-small" :loading="posting" @click.stop="postComment" class="viewer-composer-btn">发布</v-btn>
               </div>
             </div>
-            <div v-for="(c, i) in comments" :key="c.id" class="mb-2">
-              <div v-if="i > 0 && comments[i-1].user?.id !== c.user?.id && (c.user?.id === moment.userId || comments[i-1].user?.id === moment.userId)" class="op-connector" />
+            <div v-for="(c, i) in comments" :key="c.id" class="mb-2" :style="isThreaded(i, c) ? 'padding-top:4px' : ''">
+              <div v-if="isThreaded(i, c)" class="op-connector" />
               <div class="d-flex">
                 <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0" />
                 <div>
@@ -115,6 +115,12 @@ const auth = useAuthStore()
 const props = defineProps<{ moment: Topic }>()
 const emit = defineEmits<{ 'toggle-like': [moment: Topic]; 'delete-moment': [id: number] }>()
 const isOwner = computed(() => auth.user?.id === props.moment.userId)
+function isThreaded(i: number, c: Comment) {
+  if (i === 0 || !props.moment.userId) return false
+  const prev = comments.value[i - 1]
+  if (prev.user?.id === c.user?.id) return false
+  return c.user?.id === props.moment.userId || prev.user?.id === props.moment.userId
+}
 const confirming = ref(false)
 const deleting = ref(false)
 

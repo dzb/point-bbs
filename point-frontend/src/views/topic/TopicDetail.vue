@@ -48,8 +48,8 @@
           </div>
 
           <div v-for="(c, i) in comments" :key="c.id">
-            <div v-if="i > 0 && comments[i-1].user?.id !== c.user?.id && (c.user?.id === topic.userId || comments[i-1].user?.id === topic.userId)" class="op-connector" />
-            <div class="py-3" :style="i > 0 && c.user?.id === topic.userId ? 'padding-top:4px' : 'border-top:1px solid var(--paper-border)'">
+            <div class="py-3" :style="isThreaded(i, c) ? 'padding-top:4px' : 'border-top:1px solid var(--paper-border)'">
+              <div v-if="i > 0 && isThreaded(i, c)" class="op-connector" />
               <div class="d-flex">
                 <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
                   <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" />
@@ -196,6 +196,12 @@ async function postComment() {
 }
 
 function formatTime(ts: number) { return ts ? new Date(ts).toLocaleString('zh-CN') : '' }
+function isThreaded(i: number, c: any) {
+  if (i === 0 || !topic.value) return false
+  const prev = comments.value[i - 1]
+  if (prev.user?.id === c.user?.id) return false
+  return c.user?.id === topic.value.userId || prev.user?.id === topic.value.userId
+}
 
 function onContentClick(e: MouseEvent) {
   const target = e.target as HTMLElement
