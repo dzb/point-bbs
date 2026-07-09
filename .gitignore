@@ -16,3 +16,6 @@ uploads/
 gpg-private.key
 package-lock.json
 dependency-reduced-pom.xml
+._*
+point-boot/src/main/resources/static/assets/
+output/
