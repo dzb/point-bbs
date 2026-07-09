@@ -2,8 +2,30 @@
   <h1>📖 point</h1>
   <p><em>聚 · 记录思考，分享见闻</em></p>
   <p>A modern BBS/forum system with a quiet, reading-room aesthetic.</p>
+
+  <!-- badges -->
+  <p>
+    <img src="https://img.shields.io/badge/Java-25-%23ED8B00?logo=openjdk&logoColor=white" alt="Java 25"/>
+    <img src="https://img.shields.io/badge/Freeway-1.3.2-%238B5CF6?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij48cGF0aCBkPSJNOCAwbDggNC04IDQtOC00eiIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0wIDRsOCA0LTggNHoiIGZpbGw9IiNjNDNkM2QiLz48L3N2Zz4=&amp;label=Freeway&amp;labelColor=%23374151" alt="Freeway 1.3.2"/>
+    <img src="https://img.shields.io/badge/Vue_3-3.5-%234FC08D?logo=vue.js&logoColor=white" alt="Vue 3"/>
+    <img src="https://img.shields.io/badge/JDK_25_+_Vue_3_+_H2-SPA_%2B_REST-%23c43d3d" alt="SPA+REST"/>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/license-MIT-%23f0ad4e" alt="MIT License"/>
+    <img src="https://img.shields.io/badge/build-Maven_shade_JAR-%234299e1?logo=apachemaven&logoColor=white" alt="Maven"/>
+    <img src="https://img.shields.io/badge/status-active_development-%232ea043" alt="Status"/>
+  </p>
+
   <p>──</p>
-  <p>Companion application for the <a href="https://github.com/dzb/freeway">freeway</a> Java framework — built to <strong>validate, exercise, and showcase</strong> freeway's capabilities in a real-world project.</p>
+  <p>Companion application for the <a href="https://github.com/dzb/freeway">Freeway</a> Java framework — built to <strong>validate, exercise, and showcase</strong> Freeway's capabilities in a real-world project.</p>
+
+  <p>
+    <img src="https://img.shields.io/badge/%F0%9F%94%A8_Module_Composition-binder.install()_%2B_autoDiscovery(false)-%238B5CF6" alt="Module Composition"/>
+    <img src="https://img.shields.io/badge/%F0%9F%93%9C_Schema_Migration-SchemaEntity_contribution-%234299e1" alt="SchemaEntity"/>
+    <img src="https://img.shields.io/badge/%E2%9D%A4%EF%B8%8F_Injection-constructor_DI_%2B_%40Value-%23c43d3d" alt="DI"/>
+    <img src="https://img.shields.io/badge/%F0%9F%93%A1_Events-EventSubscriber_%2B_EventBus-%232ea043" alt="Events"/>
+    <img src="https://img.shields.io/badge/%F0%9F%93%8A_Health_Check-pluggable_HealthCheck-%23f0ad4e" alt="HealthCheck"/>
+  </p>
 </div>
 
 ---
@@ -30,7 +52,7 @@ Four paper themes are available (cicada grey, warm ivory, golden amber, and nigh
 
 ### Freeway Framework
 
-The backend is built on [freeway](https://github.com/dzb/freeway), a modern Java framework with:
+The backend is built on [Freeway](https://github.com/dzb/freeway), a modern Java framework with:
 
 - Compose-first IoC container (`ModuleEx` / `Binder`)
 - Embedded HTTP server with routing, filters, and static files
@@ -55,7 +77,7 @@ java -jar point-boot/target/point-boot-*.jar
 ```
 
 That's it. The JAR contains:
-- The REST API server (freeway embedded HTTP engine)
+- The REST API server (Freeway embedded HTTP engine)
 - The compiled frontend SPA (served as static resources)
 - The **H2 file-based database** engine (auto-creates `./data/bbs` on first run — data persists across restarts)
 - Schema migration and seed data (auto-run at startup)

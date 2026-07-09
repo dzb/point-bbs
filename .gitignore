@@ -8,7 +8,11 @@ data/
 .idea/
 *.iml
 .vscode/
+.vite/
 *.swp
 *.swo
 .DS_Store
+uploads/
+gpg-private.key
+package-lock.json
 dependency-reduced-pom.xml
