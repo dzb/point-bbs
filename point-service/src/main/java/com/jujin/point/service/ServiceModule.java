@@ -4,6 +4,7 @@ import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.EventSubscriber;
 import com.jujin.freeway.ioc.ModuleEx;
 import com.jujin.point.db.repository.*;
+import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.event.*;
 import com.jujin.point.service.eventhandler.NotificationHandler;
 
@@ -58,9 +59,9 @@ public class ServiceModule implements ModuleEx {
             .add(
                 "notify-comment",
                 EventSubscriber.of(CommentCreatedEvent.class, e ->
-                    com.jujin.point.domain.AppContext.get(
-                        NotificationHandler.class
-                    ).onCommentCreated(e)
+                    AppContext.get(NotificationHandler.class).onCommentCreated(
+                        e
+                    )
                 )
             );
 
@@ -69,9 +70,7 @@ public class ServiceModule implements ModuleEx {
             .add(
                 "notify-like",
                 EventSubscriber.of(UserLikedEvent.class, e ->
-                    com.jujin.point.domain.AppContext.get(
-                        NotificationHandler.class
-                    ).onUserLiked(e)
+                    AppContext.get(NotificationHandler.class).onUserLiked(e)
                 )
             );
 
@@ -80,9 +79,7 @@ public class ServiceModule implements ModuleEx {
             .add(
                 "notify-follow",
                 EventSubscriber.of(UserFollowedEvent.class, e ->
-                    com.jujin.point.domain.AppContext.get(
-                        NotificationHandler.class
-                    ).onUserFollowed(e)
+                    AppContext.get(NotificationHandler.class).onUserFollowed(e)
                 )
             );
 
@@ -91,9 +88,7 @@ public class ServiceModule implements ModuleEx {
             .add(
                 "notify-mention",
                 EventSubscriber.of(UserMentionedEvent.class, e ->
-                    com.jujin.point.domain.AppContext.get(
-                        NotificationHandler.class
-                    ).onUserMentioned(e)
+                    AppContext.get(NotificationHandler.class).onUserMentioned(e)
                 )
             );
     }

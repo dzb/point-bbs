@@ -14,6 +14,7 @@ import com.jujin.point.admin.AdminWebModule;
 import com.jujin.point.cache.PointCacheModule;
 import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.entity.*;
+import com.jujin.point.service.DbQuery;
 import com.jujin.point.service.ServiceModule;
 import com.jujin.point.web.WebModule;
 import java.security.MessageDigest;
@@ -71,7 +72,7 @@ public class PointModule implements ModuleEx {
                     @Override
                     public void start(Container container) {
                         var db = container.get(Database.class);
-                        long count = com.jujin.point.service.DbQuery.count(
+                        long count = DbQuery.count(
                             db,
                             "SELECT COUNT(*) AS cnt FROM bbs_permission"
                         );
@@ -131,7 +132,7 @@ public class PointModule implements ModuleEx {
                     @Override
                     public void start(Container container) {
                         var db = container.get(Database.class);
-                        long userCount = com.jujin.point.service.DbQuery.count(
+                        long userCount = DbQuery.count(
                             db,
                             "SELECT COUNT(*) AS cnt FROM bbs_user"
                         );
