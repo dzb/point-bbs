@@ -40,31 +40,34 @@ The backend is built on [freeway](https://github.com/dzb/freeway), a modern Java
 
 ## Quick Start
 
-### Backend
+**The whole backend ships as a single executable JAR** — zero external dependencies. No database (embedded H2), no web server (embedded), no node runtime needed for deployment.
+
+### One-Command Deploy
 
 ```bash
-# Build the fat JAR (requires JDK 25)
+# Requires JDK 25
 mvn clean package -pl point-boot -am
 
-# Run (starts on http://localhost:8082)
+# Everything in one JAR — starts on http://localhost:8082
 java -jar point-boot/target/point-boot-*.jar
 ```
 
-The server starts with an H2 file database at `./data/bbs` — no external database setup needed. Schema and seed data are auto-migrated on first run.
+That's it. The JAR contains:
+- The REST API server (freeway embedded HTTP engine)
+- The compiled frontend SPA (served as static resources)
+- The **H2 file-based database** engine (auto-creates `./data/bbs` on first run — data persists across restarts)
+- Schema migration and seed data (auto-run at startup)
 
-### Frontend
+No Docker, no PostgreSQL, no nginx, no Node.js.
+
+### Frontend Dev Mode (optional)
+
+If you're working on the frontend separately:
 
 ```bash
 cd point-frontend
-
-# Dev server (http://localhost:3000, API proxied to :8082)
-npm run dev
-
-# Production build
-npm run build
-
-# Preview production build
-npm run preview
+npm run dev            # http://localhost:3000, API proxied to :8082
+npm run build          # Production build → point-boot serves it
 ```
 
 ---
