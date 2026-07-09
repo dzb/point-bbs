@@ -2,6 +2,8 @@
   <h1>📖 point</h1>
   <p><em>聚 · 记录思考，分享见闻</em></p>
   <p>A modern BBS/forum system with a quiet, reading-room aesthetic.</p>
+  <p>──</p>
+  <p>Companion application for the <a href="https://github.com/dzb/freeway">freeway</a> Java framework — built to <strong>validate, exercise, and showcase</strong> freeway's capabilities in a real-world project.</p>
 </div>
 
 ---
