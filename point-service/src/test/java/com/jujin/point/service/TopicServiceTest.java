@@ -3,12 +3,14 @@ package com.jujin.point.service;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.jujin.freeway.db.*;
+import com.jujin.freeway.db.schema.PostgresDialect;
 import com.jujin.freeway.db.schema.Schema;
 import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.Container;
+import com.jujin.freeway.ioc.EventBus;
 import com.jujin.freeway.ioc.Freeway;
-import com.jujin.freeway.ioc.Module2;
 import com.jujin.point.db.repository.TopicRepository;
+import com.jujin.point.db.repository.UserRepository;
 import com.jujin.point.domain.dto.TopicDtos.CreateTopicRequest;
 import com.jujin.point.domain.entity.Comment;
 import com.jujin.point.domain.entity.Favorite;
@@ -33,12 +35,13 @@ class TopicServiceTest {
             "jdbc:h2:mem:point_test;MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
         var db = DatabaseBuilder.from(config).build();
         var orm = Orm.of(db);
-        Schema.ensure(db, ALL_ENTITIES);
+        Schema.ensure(db, new PostgresDialect(), ALL_ENTITIES);
 
         container = Freeway.create(binder -> {
             binder.bind(Database.class).to(db);
             binder.bind(Orm.class).to(orm);
             binder.bind(TopicRepository.class).to(new TopicRepository(db, orm));
+            binder.bind(UserRepository.class).to(new UserRepository(db, orm));
             binder.bind(TopicService.class).to(TopicService.class);
         });
         topicService = container.get(TopicService.class);

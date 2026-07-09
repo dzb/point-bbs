@@ -3,8 +3,8 @@ package com.jujin.point.admin.route;
 import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.service.SysConfigService;
-import com.jujin.freeway.http.Route;
-import com.jujin.freeway.http.RouteGroup;
+import com.jujin.freeway.http.route.Route;
+import com.jujin.freeway.http.route.RouteGroup;
 
 import java.util.Map;
 
@@ -29,13 +29,13 @@ public class AdminConfigRoutes {
             }),
             // Get single config
             Route.get("/{key}", ctx -> {
-                String key = ctx.pathVar("key");
+                String key = ctx.pathVar("key").orElse(null);
                 var value = configSvc().get(key);
                 ctx.sendJson(200, ApiResponse.ok(Map.of("key", key, "value", value)));
             }),
             // Set single config
             Route.post("/{key}", ctx -> {
-                String key = ctx.pathVar("key");
+                String key = ctx.pathVar("key").orElse(null);
                 var req = ctx.bodyAsJson(Map.class);
                 String value = (String) req.get("value");
                 configSvc().set(key, value);

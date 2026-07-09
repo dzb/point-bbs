@@ -62,7 +62,7 @@ public class TopicService {
                 userRepo.findByUsername(username).ifPresent(u -> {
                     if (u.getId() != userId && notified.add(u.getId())) {
                         eventBus.publish(new UserMentionedEvent(userId, u.getId(),
-                            "topic", topic.getId(), truncate(req.content(), 100), now));
+                            "topic", topic.getId(), Strings.truncate(req.content(), 100), now));
                     }
                 });
             }
@@ -111,12 +111,14 @@ public class TopicService {
 
     public PageResult<Topic> getUserTopics(long userId, PageRequest page) {
         var items = topicRepo.findByUserId(userId, page.page(), page.pageSize());
-        return new PageResult<>(items, page.page(), page.pageSize(), items.size());
+        var total = topicRepo.countByUserId(userId);
+        return new PageResult<>(items, page.page(), page.pageSize(), total);
     }
 
     public PageResult<Topic> getTopicsByCategory(long categoryId, PageRequest page) {
         var items = topicRepo.findByCategoryId(categoryId, page.page(), page.pageSize());
-        return new PageResult<>(items, page.page(), page.pageSize(), items.size());
+        var total = topicRepo.countByCategoryId(categoryId);
+        return new PageResult<>(items, page.page(), page.pageSize(), total);
     }
 
     public List<Topic> getRecommended(int limit) {
@@ -129,7 +131,8 @@ public class TopicService {
 
     public PageResult<Topic> search(String keyword, PageRequest page) {
         var items = topicRepo.searchByTitle(keyword, page.page(), page.pageSize());
-        return new PageResult<>(items, page.page(), page.pageSize(), items.size());
+        var total = topicRepo.countByTitleSearch(keyword);
+        return new PageResult<>(items, page.page(), page.pageSize(), total);
     }
 
     public void recommend(long topicId, boolean recommend) {
@@ -147,11 +150,6 @@ public class TopicService {
         topic.setSticky(sticky);
         topic.setStickyTime(sticky ? System.currentTimeMillis() : 0);
         topicRepo.update(topic);
-    }
-
-    private static String truncate(String s, int maxLen) {
-        if (s == null) return "";
-        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
     }
 
     public void acceptAnswer(long topicId, long commentId) {

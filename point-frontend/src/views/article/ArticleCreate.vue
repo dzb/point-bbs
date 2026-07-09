@@ -24,19 +24,20 @@
 
     <v-alert v-if="error" type="error" density="compact" class="mt-3" variant="tonal">{{ error }}</v-alert>
     <div class="d-flex justify-end mt-4">
-      <v-btn class="post-btn" variant="flat" size="large" :loading="submitting" @click="submit">发布文章</v-btn>
+      <v-btn class="post-btn" variant="flat" size="large" :loading="submitting" @click="submit">{{ editId ? '保存修改' : '发布文章' }}</v-btn>
     </div>
 
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import MentionTextarea from '@/components/MentionTextarea.vue'
 
+const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 if (!auth.isLoggedIn) { router.replace('/login') }
@@ -44,6 +45,22 @@ const contentArea = ref<any>(null)
 const form = reactive({ title: '', content: '', contentType: 'markdown' as string })
 const submitting = ref(false)
 const error = ref('')
+const editId = ref<string | null>(null)
+
+onMounted(async () => {
+  const id = route.query.edit as string | undefined
+  if (id) {
+    editId.value = id
+    try {
+      const { data } = await client.get(`/articles/${id}`)
+      if (data.code === 0 && data.data) {
+        form.title = data.data.title || ''
+        form.content = data.data.content || ''
+        form.contentType = data.data.contentType || 'markdown'
+      }
+    } catch { /* ignore */ }
+  }
+})
 
 function insertMd(before: string, after: string) {
   const el = contentArea.value?.$el?.querySelector('textarea')
@@ -75,18 +92,24 @@ async function submit() {
   if (!form.title || !form.content) { error.value = '标题和内容不能为空'; return }
   submitting.value = true
   try {
-    const { data } = await client.post('/articles', form)
-    if (data.code === 0) router.push(`/articles/${data.data.id}`)
-    else error.value = data.message
-  } catch (e: any) { error.value = e.response?.data?.message || '发布失败' }
+    if (editId.value) {
+      const { data } = await client.post(`/articles/edit/${editId.value}`, form)
+      if (data.code === 0) router.push(`/articles/${editId.value}`)
+      else error.value = data.message
+    } else {
+      const { data } = await client.post('/articles', form)
+      if (data.code === 0) router.push(`/articles/${data.data.id}`)
+      else error.value = data.message
+    }
+  } catch (e: any) { error.value = e.response?.data?.message || (editId.value ? '保存失败' : '发布失败') }
   submitting.value = false
 }
 </script>
 
 <style scoped>
-.title-input :deep(input) { font-family: 'Noto Serif SC', Georgia, serif; font-size: 28px; font-weight: 700; }
+.title-input :deep(input) { font-size: 28px; font-weight: 700; }
 .md-toolbar { display: flex; align-items: center; gap: 2px; padding: 4px 0; border-top: 1px solid var(--paper-border); border-bottom: 1px solid var(--paper-border); margin-bottom: 8px; }
-.content-area :deep(textarea) { font-size: 17px; line-height: 1.9; font-family: 'Noto Serif SC', Georgia, serif; }
+.content-area :deep(textarea) { font-size: 17px; line-height: 1.9; }
 .post-btn { background: var(--paper-accent) !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 8px; font-weight: 500; padding: 0 32px; }
 .post-btn:hover { background: var(--paper-accent-hover) !important; }
 </style>

@@ -45,6 +45,11 @@ public class MessageService {
             "SELECT COUNT(*) AS cnt FROM bbs_message WHERE user_id = ? AND status = 0", userId);
     }
 
+    public long count(long userId) {
+        return DbQuery.count(db,
+            "SELECT COUNT(*) AS cnt FROM bbs_message WHERE user_id = ?", userId);
+    }
+
     public void markRead(long userId, List<Long> messageIds) {
         if (messageIds.isEmpty()) return;
         var placeholders = messageIds.stream().map(id -> "?").reduce((a, b) -> a + "," + b).orElse("?");

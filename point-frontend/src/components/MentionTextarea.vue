@@ -55,7 +55,7 @@ const dropdownStyle = computed(() => {
   const el = (textareaRef.value?.$el?.querySelector('textarea') ?? null) as HTMLTextAreaElement | null
   if (!el) return { display: 'none' as const }
   const r = el.getBoundingClientRect()
-  return { top: (r.bottom + 4) + 'px', left: r.left + 'px', width: r.width + 'px' }
+  return { top: (r.bottom + 4) + 'px', left: r.left + 'px', width: '260px' }
 })
 
 function onInput(value: string) {

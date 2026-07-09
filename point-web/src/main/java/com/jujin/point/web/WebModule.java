@@ -6,14 +6,14 @@ import com.jujin.point.web.filter.AuthFilter;
 import com.jujin.point.web.filter.SpaFilter;
 import com.jujin.point.web.route.*;
 import com.jujin.point.domain.dto.ApiResponse;
-import com.jujin.freeway.http.ExceptionMapper;
-import com.jujin.freeway.http.HttpFilter;
-import com.jujin.freeway.http.RouteGroup;
-import com.jujin.freeway.http.StaticResourceMount;
+import com.jujin.freeway.http.filter.ExceptionMapper;
+import com.jujin.freeway.http.filter.HttpFilter;
+import com.jujin.freeway.http.route.RouteGroup;
+import com.jujin.freeway.http.staticfile.StaticResourceMount;
 import com.jujin.freeway.ioc.Binder;
-import com.jujin.freeway.ioc.Module2;
+import com.jujin.freeway.ioc.ModuleEx;
 
-public class WebModule implements Module2 {
+public class WebModule implements ModuleEx {
 
     @Override
     public void bind(Binder binder) {
@@ -32,7 +32,7 @@ public class WebModule implements Module2 {
         // Serve SPA frontend before auth (skips /api paths)
         binder.contribute(HttpFilter.class).add("spa-filter", new SpaFilter());
 
-        binder.contribute(HttpFilter.class).add("auth-filter", new AuthFilter());
+        binder.contribute(HttpFilter.class).add(AuthFilter.class).after("spa-filter");
 
         binder.contribute(ExceptionMapper.class).add((ctx, ex) -> {
             if (ex instanceof AuthException ae) { ctx.sendJson(ae.statusCode(), ApiResponse.error(ae.statusCode(), ae.getMessage())); return true; }

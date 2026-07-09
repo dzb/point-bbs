@@ -7,14 +7,16 @@ import com.jujin.point.domain.dto.PageRequest;
 import com.jujin.point.domain.dto.TopicDtos.*;
 import com.jujin.point.service.*;
 import com.jujin.point.web.ResponseEnricher;
+import com.jujin.point.web.WebUtils;
 import com.jujin.point.web.filter.AuthFilter;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Row;
-import com.jujin.freeway.http.HttpContext;
-import com.jujin.freeway.http.Route;
-import com.jujin.freeway.http.RouteGroup;
+import com.jujin.freeway.http.route.Route;
+import com.jujin.freeway.http.route.RouteGroup;
 
 import java.util.*;
+
+import static com.jujin.point.web.WebUtils.intParam;
 
 public class TopicRoutes {
 
@@ -23,7 +25,7 @@ public class TopicRoutes {
             // List recent topics
             Route.get("", ctx -> {
                 int page = intParam(ctx, "page", 1);
-                int pageSize = intParam(ctx, "pageSize", 1);
+                int pageSize = intParam(ctx, "pageSize", 30);
                 var result = topicSvc().getRecentTopics(PageRequest.of(page, pageSize));
                 var enriched = ResponseEnricher.enrichTopics(result.items());
                 var resp = new LinkedHashMap<String, Object>();
@@ -35,7 +37,7 @@ public class TopicRoutes {
             Route.get("/following", ctx -> {
                 var user = AuthFilter.requireUser();
                 int page = intParam(ctx, "page", 1);
-                int pageSize = intParam(ctx, "pageSize", 1);
+                int pageSize = intParam(ctx, "pageSize", 30);
                 var db = AppContext.get(Database.class);
                 int offset = (page - 1) * pageSize;
                 // Get followed user IDs
@@ -62,7 +64,7 @@ public class TopicRoutes {
             // Moments (tweets — type=1)
             Route.get("/moments", ctx -> {
                 int page = intParam(ctx, "page", 1);
-                int pageSize = intParam(ctx, "pageSize", 1);
+                int pageSize = intParam(ctx, "pageSize", 30);
                 var db = AppContext.get(Database.class);
                 int offset = (page - 1) * pageSize;
                 var tweets = db.query(
@@ -80,14 +82,29 @@ public class TopicRoutes {
             }),
             // Search
             Route.get("/search", ctx -> {
-                String q = ctx.queryParam("q");
-                if (q == null || q.isBlank()) { ctx.sendJson(200, ApiResponse.ok(List.of())); return; }
-                var r = topicSvc().search(q, PageRequest.of(intParam(ctx, "page", 1), 20));
-                ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichTopics(r.items())));
+                String q = ctx.queryParam("q").orElse(null);
+                if (q == null || q.isBlank()) {
+                    var empty = new LinkedHashMap<String, Object>();
+                    empty.put("items", List.of());
+                    empty.put("page", 1);
+                    empty.put("pageSize", 30);
+                    empty.put("total", 0);
+                    ctx.sendJson(200, ApiResponse.ok(empty));
+                    return;
+                }
+                int page = intParam(ctx, "page", 1);
+                int pageSize = intParam(ctx, "pageSize", 30);
+                var r = topicSvc().search(q, PageRequest.of(page, pageSize));
+                var resp = new LinkedHashMap<String, Object>();
+                resp.put("items", ResponseEnricher.enrichTopics(r.items()));
+                resp.put("page", r.page());
+                resp.put("pageSize", r.pageSize());
+                resp.put("total", r.total());
+                ctx.sendJson(200, ApiResponse.ok(resp));
             }),
             // Topic detail
             Route.get("/{id}", ctx -> {
-                var t = topicSvc().findById(ctx.pathVar("id", Long.class)).orElse(null);
+                var t = topicSvc().findById(ctx.pathVar("id", Long.class).orElse(0L)).orElse(null);
                 if (t == null) { ctx.sendJson(404, ApiResponse.error("帖子不存在")); return; }
                 topicSvc().incrViewCount(t.getId());
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichTopic(t)));
@@ -101,64 +118,90 @@ public class TopicRoutes {
             // Edit
             Route.post("/edit/{id}", UpdateTopicRequest.class, (ctx, req) -> {
                 var user = AuthFilter.requireUser();
-                long id = ctx.pathVar("id", Long.class);
+                long id = ctx.pathVar("id", Long.class).orElse(0L);
                 var t = topicSvc().update(user.userId(), id, req);
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichTopic(t)));
             }),
             // Delete
             Route.post("/delete/{id}", ctx -> {
                 var user = AuthFilter.requireUser();
-                topicSvc().delete(user.userId(), ctx.pathVar("id", Long.class));
+                topicSvc().delete(user.userId(), ctx.pathVar("id", Long.class).orElse(0L));
                 ctx.sendJson(200, ApiResponse.ok());
             }),
 
             // --- Comments (nested under topic) ---
             Route.get("/{id}/comments", ctx -> {
-                long topicId = ctx.pathVar("id", Long.class);
+                long topicId = ctx.pathVar("id", Long.class).orElse(0L);
                 int page = intParam(ctx, "page", 1);
-                var comments = commentSvc().getComments("topic", topicId, PageRequest.of(page, 20));
-                ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichComments(comments)));
+                int pageSize = intParam(ctx, "pageSize", 30);
+                var comments = commentSvc().getComments("topic", topicId, PageRequest.of(page, pageSize));
+                var resp = new LinkedHashMap<String, Object>();
+                resp.put("items", ResponseEnricher.enrichComments(comments));
+                resp.put("page", page);
+                resp.put("pageSize", pageSize);
+                resp.put("total", commentSvc().countComments("topic", topicId));
+                ctx.sendJson(200, ApiResponse.ok(resp));
             }),
             Route.post("/{id}/comments", CreateCommentRequest.class, (ctx, req) -> {
                 var user = AuthFilter.requireUser();
-                long topicId = ctx.pathVar("id", Long.class);
+                long topicId = ctx.pathVar("id", Long.class).orElse(0L);
                 var c = commentSvc().create(user.userId(), "topic", topicId, req.content(), req.contentType(),
                     req.imageList(), req.quoteId() != null ? req.quoteId() : 0);
                 ctx.sendJson(201, ApiResponse.ok(ResponseEnricher.enrichComment(c)));
             }),
 
+            // --- Comment Delete ---
+            Route.post("/{id}/comments/{commentId}/delete", ctx -> {
+                var user = AuthFilter.requireUser();
+                commentSvc().delete(user.userId(), ctx.pathVar("commentId", Long.class).orElse(0L));
+                ctx.sendJson(200, ApiResponse.ok());
+            }),
+
+            // --- Comment Like ---
+            Route.post("/{id}/comments/{commentId}/like", ctx -> {
+                var user = AuthFilter.requireUser();
+                long commentId = ctx.pathVar("commentId", Long.class).orElse(0L);
+                boolean liked = likeSvc().like(user.userId(), "comment", commentId);
+                ctx.sendJson(200, ApiResponse.ok(Map.of("liked", liked)));
+            }),
+            Route.post("/{id}/comments/{commentId}/unlike", ctx -> {
+                var user = AuthFilter.requireUser();
+                likeSvc().unlike(user.userId(), "comment", ctx.pathVar("commentId", Long.class).orElse(0L));
+                ctx.sendJson(200, ApiResponse.ok());
+            }),
+
             // --- Like (nested) ---
             Route.post("/{id}/like", ctx -> {
                 var user = AuthFilter.requireUser();
-                long topicId = ctx.pathVar("id", Long.class);
+                long topicId = ctx.pathVar("id", Long.class).orElse(0L);
                 boolean liked = likeSvc().like(user.userId(), "topic", topicId);
                 ctx.sendJson(200, ApiResponse.ok(Map.of("liked", liked)));
             }),
             Route.post("/{id}/unlike", ctx -> {
                 var user = AuthFilter.requireUser();
-                likeSvc().unlike(user.userId(), "topic", ctx.pathVar("id", Long.class));
+                likeSvc().unlike(user.userId(), "topic", ctx.pathVar("id", Long.class).orElse(0L));
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             Route.get("/{id}/like/status", ctx -> {
                 var user = AuthFilter.currentUser();
-                boolean liked = user != null && likeSvc().hasLiked(user.userId(), "topic", ctx.pathVar("id", Long.class));
+                boolean liked = user != null && likeSvc().hasLiked(user.userId(), "topic", ctx.pathVar("id", Long.class).orElse(0L));
                 ctx.sendJson(200, ApiResponse.ok(Map.of("liked", liked)));
             }),
 
             // --- Favorite (nested) ---
             Route.post("/{id}/favorite", ctx -> {
                 var user = AuthFilter.requireUser();
-                favSvc().add(user.userId(), "topic", ctx.pathVar("id", Long.class));
+                favSvc().add(user.userId(), "topic", ctx.pathVar("id", Long.class).orElse(0L));
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             Route.post("/{id}/unfavorite", ctx -> {
                 var user = AuthFilter.requireUser();
-                favSvc().remove(user.userId(), "topic", ctx.pathVar("id", Long.class));
+                favSvc().remove(user.userId(), "topic", ctx.pathVar("id", Long.class).orElse(0L));
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             Route.get("/{id}/favorite/status", ctx -> {
                 var user = AuthFilter.currentUser();
-                boolean f = user != null && favSvc().isFavorited(user.userId(), "topic", ctx.pathVar("id", Long.class));
+                boolean f = user != null && favSvc().isFavorited(user.userId(), "topic", ctx.pathVar("id", Long.class).orElse(0L));
                 ctx.sendJson(200, ApiResponse.ok(Map.of("favorited", f)));
             })
         );
@@ -168,10 +211,5 @@ public class TopicRoutes {
     private static CommentService commentSvc() { return AppContext.get(CommentService.class); }
     private static UserLikeService likeSvc() { return AppContext.get(UserLikeService.class); }
     private static FavoriteService favSvc() { return AppContext.get(FavoriteService.class); }
-
-    private static int intParam(HttpContext ctx, String name, int defaultVal) {
-        Integer v = ctx.queryParam(name, Integer.class);
-        return v != null ? v : defaultVal;
-    }
 
 }

@@ -27,7 +27,7 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <freeway.version>1.1.2-SNAPSHOT</freeway.version>
+        <freeway.version>1.3.2</freeway.version>
         <slf4j.version>2.0.17</slf4j.version>
         <h2.version>2.3.232</h2.version>
         <!-- JWT library for auth -->
@@ -44,7 +44,7 @@
             <dependency>
                 <groupId>com.jujin8.freeway</groupId>
                 <artifactId>freeway-http</artifactId>
-                <version>${freeway.version}</version>
+                <version>1.3.2-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jujin8.freeway</groupId>
@@ -54,11 +54,6 @@
             <dependency>
                 <groupId>com.jujin8.freeway</groupId>
                 <artifactId>freeway-ioc</artifactId>
-                <version>${freeway.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.jujin8.freeway</groupId>
-                <artifactId>freeway-http-robaho</artifactId>
                 <version>${freeway.version}</version>
             </dependency>
 

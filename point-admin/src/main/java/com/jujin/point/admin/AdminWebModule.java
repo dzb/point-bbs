@@ -2,10 +2,10 @@ package com.jujin.point.admin;
 
 import com.jujin.point.admin.filter.AdminFilter;
 import com.jujin.point.admin.route.*;
-import com.jujin.freeway.http.HttpFilter;
-import com.jujin.freeway.http.RouteGroup;
+import com.jujin.freeway.http.filter.HttpFilter;
+import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.ioc.Binder;
-import com.jujin.freeway.ioc.Module2;
+import com.jujin.freeway.ioc.ModuleEx;
 
 /**
  * Admin web module — contributes admin API routes with auth + admin filtering.
@@ -14,14 +14,14 @@ import com.jujin.freeway.ioc.Module2;
  * 1. AuthFilter (from WebModule) — resolves CurrentUser
  * 2. AdminFilter — checks admin roles
  */
-public class AdminWebModule implements Module2 {
+public class AdminWebModule implements ModuleEx {
 
     @Override
     public void bind(Binder binder) {
         // Admin authorization filter (after auth)
         binder.contribute(HttpFilter.class)
             .add("admin-filter", new AdminFilter())
-            .after("auth-filter");
+            .after("auth_filter@com.jujin.point.web.filter");
 
         // Admin route groups
         binder.contribute(RouteGroup.class).add(AdminTopicRoutes.routes());

@@ -51,18 +51,13 @@ public class ArticleService {
                         long uid = row.longVal("id");
                         if (uid != userId && notified.add(uid)) {
                             eventBus.publish(new UserMentionedEvent(userId, uid,
-                                "article", article.getId(), truncate(content, 100), now));
+                                "article", article.getId(), Strings.truncate(content, 100), now));
                         }
                     });
             }
         });
 
         return result[0];
-    }
-
-    private static String truncate(String s, int maxLen) {
-        if (s == null) return "";
-        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
     }
 
     public List<Article> getRecent(int page, int pageSize) {
@@ -103,6 +98,12 @@ public class ArticleService {
         return db.query(
             "SELECT * FROM bbs_article WHERE user_id = $userId AND status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
             .param("userId", userId).param("limit", pageSize).param("offset", offset).list(Article.class);
+    }
+
+    public long countByUser(long userId) {
+        var row = db.query("SELECT COUNT(*) AS cnt FROM bbs_article WHERE user_id = $userId AND status = 1")
+            .param("userId", userId).one(Row.class).orElse(null);
+        return row != null ? row.longVal("cnt") : 0;
     }
 
     public void delete(long userId, long articleId) {

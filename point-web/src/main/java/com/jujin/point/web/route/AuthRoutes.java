@@ -9,9 +9,11 @@ import com.jujin.point.web.filter.AuthFilter;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
 import com.jujin.freeway.db.Row;
-import com.jujin.freeway.http.Route;
-import com.jujin.freeway.http.RouteGroup;
+import com.jujin.freeway.http.route.Route;
+import com.jujin.freeway.http.route.RouteGroup;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class AuthRoutes {
@@ -23,7 +25,7 @@ public class AuthRoutes {
                 var user = userSvc().signUp(req);
                 var token = authSvc().createToken(user.getId(), user.getNickname(),
                     user.getAvatar() != null ? user.getAvatar() : "", null);
-                ctx.sendJson(201, ApiResponse.ok(Map.of("token", token, "userId", user.getId(),
+                ctx.sendJson(201, ApiResponse.ok(Map.of("token", token, "id", user.getId(),
                     "nickname", user.getNickname(), "avatar", user.getAvatar() != null ? user.getAvatar() : "")));
             }),
             Route.post("/signin", ctx -> {
@@ -31,7 +33,7 @@ public class AuthRoutes {
                 var user = userSvc().signIn(req.loginName(), req.password());
                 var token = authSvc().createToken(user.getId(), user.getNickname(),
                     user.getAvatar() != null ? user.getAvatar() : "", null);
-                ctx.sendJson(200, ApiResponse.ok(Map.of("token", token, "userId", user.getId(),
+                ctx.sendJson(200, ApiResponse.ok(Map.of("token", token, "id", user.getId(),
                     "nickname", user.getNickname(), "avatar", user.getAvatar() != null ? user.getAvatar() : "")));
             }),
             Route.post("/signout", ctx -> ctx.sendJson(200, ApiResponse.ok())),
@@ -42,16 +44,21 @@ public class AuthRoutes {
                 ctx.sendJson(200, ApiResponse.ok(Map.of("url", provider.authorizeUrl(UUID.randomUUID().toString()))));
             }),
             Route.get("/github/callback", ctx -> {
-                String code = ctx.queryParam("code");
+                String code = ctx.queryParam("code").orElse(null);
                 if (code == null) { ctx.sendJson(400, ApiResponse.error("缺少code")); return; }
                 var info = AppContext.get(GitHubOAuthProvider.class).handleCallback(code);
                 if (info == null) { ctx.sendJson(400, ApiResponse.error("OAuth授权失败")); return; }
                 var runtime = handleOAuthLogin("github", info);
-                ctx.sendJson(200, ApiResponse.ok(runtime));
+                String token = (String) runtime.get("token");
+                if (token == null) { ctx.sendJson(400, ApiResponse.error("登录失败")); return; }
+                String spaOrigin = ctx.header("Origin").orElse("http://localhost:3000");
+                String redirectUrl = spaOrigin + "/#/login?token=" + java.net.URLEncoder.encode(token, StandardCharsets.UTF_8);
+                ctx.headerSet("Location", redirectUrl);
+                ctx.status(302).output("Redirecting...".getBytes(StandardCharsets.UTF_8));
             }),
             Route.post("/github/bind", ctx -> {
                 var user = AuthFilter.requireUser();
-                String code = ctx.queryParam("code");
+                String code = ctx.queryParam("code").orElse(null);
                 if (code == null) { ctx.sendJson(400, ApiResponse.error("缺少code")); return; }
                 var info = AppContext.get(GitHubOAuthProvider.class).handleCallback(code);
                 if (info == null) { ctx.sendJson(400, ApiResponse.error("OAuth授权失败")); return; }
@@ -87,7 +94,7 @@ public class AuthRoutes {
             orm.insert(tu);
         }
         String token = authSvc.createToken(user.getId(), user.getNickname(), user.getAvatar() != null ? user.getAvatar() : "", null);
-        return Map.of("token", token, "userId", user.getId(), "nickname", user.getNickname());
+        return Map.of("token", token, "id", user.getId(), "nickname", user.getNickname());
     }
 
     private static void bindThirdUser(long userId, String provider, OAuthProvider.OAuthUserInfo info) {

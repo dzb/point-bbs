@@ -92,6 +92,14 @@ const router = createRouter({
           },
         },
         {
+          path: 'users/:id/edit',
+          name: 'user-profile-edit',
+          components: {
+            default: () => import('@/views/user/UserProfileEdit.vue'),
+            aside: PageAside,
+          },
+        },
+        {
           path: 'search',
           name: 'search',
           components: {
@@ -112,6 +120,22 @@ const router = createRouter({
           name: 'favorites',
           components: {
             default: () => import('@/views/user/FavoritesPage.vue'),
+            aside: PageAside,
+          },
+        },
+        {
+          path: 'users/:id/followers',
+          name: 'user-followers',
+          components: {
+            default: () => import('@/views/user/FollowListPage.vue'),
+            aside: PageAside,
+          },
+        },
+        {
+          path: 'users/:id/following',
+          name: 'user-following',
+          components: {
+            default: () => import('@/views/user/FollowListPage.vue'),
             aside: PageAside,
           },
         },

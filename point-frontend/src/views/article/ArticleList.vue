@@ -18,15 +18,14 @@
       </div>
       <div v-if="articles.length===0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无文章</div>
       <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="var(--paper-accent)" />
-      <div v-if="hasMore" class="text-center mt-4 mb-2">
-        <v-btn variant="text" :loading="loadingMore" @click="loadMore" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
-      </div>
+      <LoadMore :has-more="hasMore" :loading="loadingMore" @load-more="loadMore" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import client from '@/api/client'
+import LoadMore from '@/components/LoadMore.vue'
 
 const articles = ref<any[]>([])
 const loading = ref(true)

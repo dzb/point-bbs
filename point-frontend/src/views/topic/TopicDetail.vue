@@ -39,7 +39,7 @@
           <div v-if="auth.isLoggedIn" class="d-flex mb-4">
             <UserAvatar :src="auth.user?.avatar" :name="auth.user?.nickname" :size="32" class="mr-3 flex-shrink-0" />
             <div class="flex-grow-1">
-              <MentionTextarea v-model="commentText" placeholder="写下你的评论... @用户名 可提及用户" rows="2" variant="outlined" density="compact" hide-details class="mb-2" />
+              <MentionTextarea v-model="commentText" placeholder="写下你的评论... @用户名 可提及用户" rows="2" variant="outlined" density="compact" hide-details class="mb-2 reply-composer" />
               <div class="d-flex justify-end">
                 <v-btn variant="flat" size="small" :loading="submitting" @click="postComment"
                   style="background:var(--paper-accent);color:#fff;text-transform:none;letter-spacing:0;border-radius:20px;padding:0 16px">回复</v-btn>
@@ -49,7 +49,7 @@
 
           <div v-for="(c, i) in comments" :key="c.id">
             <div v-if="i > 0 && isThreaded(i, c)" class="op-connector" />
-            <div class="py-3" :style="isThreaded(i, c) ? '' : 'border-top:1px solid var(--paper-border)'">
+            <div :class="isThreaded(i, c) ? 'threaded-comment' : 'py-3'" :style="isThreaded(i, c) ? '' : 'border-top:1px solid var(--paper-border)'">
               <div class="d-flex">
                 <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
                   <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" />
@@ -62,13 +62,18 @@
                     <span style="font-size:12px;color:var(--paper-text2);margin-left:8px">{{ formatTime(c.createTime) }}</span>
                   </div>
                   <div v-html="renderMarkdown(c.content)" class="comment-body" />
+                  <div class="d-flex mt-1" style="gap:16px;font-size:12px;color:var(--paper-text2)">
+                    <span class="d-flex align-center" style="gap:2px;cursor:pointer" :style="c._liked ? 'color:var(--paper-accent)' : ''" title="赞" @click="toggleCommentLike(c)">
+                      <v-icon :size="14">{{ c._liked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>{{ c.likeCount || 0 }}
+                    </span>
+                    <v-icon size="15" title="回复" style="cursor:pointer" @click="replyTo(c)">mdi-reply</v-icon>
+                    <v-icon v-if="auth.user?.id === c.user?.id" size="15" title="删除" style="cursor:pointer" @click="deleteComment(c)">mdi-delete-outline</v-icon>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div v-if="hasMoreComments" class="text-center mt-3 mb-2">
-            <v-btn variant="text" size="small" :loading="loadingMoreComments" @click="loadMoreComments" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">更多评论</v-btn>
-          </div>
+          <LoadMore :has-more="hasMoreComments" :loading="loadingMoreComments" label="更多评论" @load-more="loadMoreComments" />
         </div>
 
       </div>
@@ -89,6 +94,7 @@ import UserAvatar from '@/components/UserAvatar.vue'
 import BackButton from '@/components/BackButton.vue'
 import ImageViewer from '@/components/ImageViewer.vue'
 import MentionTextarea from '@/components/MentionTextarea.vue'
+import LoadMore from '@/components/LoadMore.vue'
 import { renderMarkdown } from '@/utils/markdown'
 import { topicAsideState } from '@/composables/useTopicAside'
 
@@ -132,9 +138,10 @@ async function loadComments(reset = false) {
   try {
     const { data } = await client.get(`/topics/${id}/comments`, { params: { page: commentPage.value, pageSize: commentPageSize } })
     if (data.code===0) {
-      const newItems = data.data || []
+      const payload = data.data || {}
+      const newItems = (payload.items || []).map((c: any) => { c._liked = false; return c })
       comments.value = commentPage.value === 1 ? newItems : [...comments.value, ...newItems]
-      hasMoreComments.value = newItems.length === commentPageSize
+      hasMoreComments.value = (payload.items || []).length < (payload.total ?? 0)
     }
   } catch { console.error('api error') }
 }
@@ -166,6 +173,27 @@ async function toggleFav() {
   if (favorited.value) { await client.post(`/topics/${route.params.id}/unfavorite`); favorited.value=false }
   else { await client.post(`/topics/${route.params.id}/favorite`); favorited.value=true }
   favLoading.value = false
+}
+async function toggleCommentLike(c: any) {
+  if (!auth.isLoggedIn) return
+  const tid = route.params.id
+  if (c._liked) {
+    await client.post(`/topics/${tid}/comments/${c.id}/unlike`)
+    c._liked = false; c.likeCount = Math.max(0, (c.likeCount || 0) - 1)
+  } else {
+    await client.post(`/topics/${tid}/comments/${c.id}/like`)
+    c._liked = true; c.likeCount = (c.likeCount || 0) + 1
+  }
+}
+function replyTo(_c: any) {
+  // connector line already shows the reply relationship — just focus, no @mention
+  const el = document.querySelector('.reply-composer textarea') as HTMLTextAreaElement
+  if (el) el.focus()
+}
+async function deleteComment(c: any) {
+  if (!confirm('确定删除这条评论？')) return
+  await client.post(`/topics/${route.params.id}/comments/${c.id}/delete`)
+  comments.value = comments.value.filter(x => x.id !== c.id)
 }
 function syncAsideState() {
   if (!topic.value) return
@@ -220,6 +248,11 @@ function onContentClick(e: MouseEvent) {
 .topic-content { font-size: 17px; line-height: 1.9; color: var(--paper-text); word-break: break-word; }
 .topic-content :deep(img) { max-width: 100%; border-radius: 8px; margin: 8px 0; }
 .topic-content :deep(p) { margin: .5em 0; }
-.op-connector { width: 2px; height: 24px; background: var(--paper-border); margin-left: 16px; margin-top: -8px; }
+.topic-content :deep(ul), .topic-content :deep(ol) { padding-left: 1.8em; margin: .5em 0; }
+.topic-content :deep(li) { margin: .2em 0; }
+.threaded-comment { padding-top: 0; padding-bottom: 0; }
+.op-connector { width: 2px; height: 60px; background: var(--paper-border); margin-left: 16px; margin-top: -44px; margin-bottom: 4px; }
 .comment-body { font-size: 14px; color: var(--paper-text); line-height: 1.6; word-break: break-word; }
+.comment-body :deep(ul), .comment-body :deep(ol) { padding-left: 1.6em; margin: .3em 0; }
+.comment-body :deep(li) { margin: .1em 0; }
 </style>

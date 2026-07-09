@@ -3,6 +3,7 @@ package com.jujin.point.service.eventhandler;
 import com.jujin.point.domain.entity.Topic;
 import com.jujin.point.domain.event.*;
 import com.jujin.point.service.DbQuery;
+import com.jujin.point.service.Strings;
 import com.jujin.point.service.MessageService;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Row;
@@ -21,7 +22,7 @@ public final class NotificationHandler {
                 .ifPresent(topic ->
                     msgSvc.send(e.userId(), topic.getUserId(),
                         "新评论", nickname + " 评论了你的帖子",
-                        truncate(topic.getTitle(), 200), 0,
+                        Strings.truncate(topic.getTitle(), 200), 0,
                         "topic:" + e.entityId()));
         } else if ("comment".equals(e.entityType())) {
             // Reply to a comment — notify the parent comment author
@@ -100,8 +101,4 @@ public final class NotificationHandler {
             "新粉丝", nickname + " 关注了你", null, 2, "user:" + e.userId());
     }
 
-    private static String truncate(String s, int maxLen) {
-        if (s == null) return "";
-        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
-    }
 }

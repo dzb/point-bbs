@@ -3,8 +3,8 @@ package com.jujin.point.admin.filter;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.web.filter.AuthFilter;
 import com.jujin.freeway.http.HttpContext;
-import com.jujin.freeway.http.HttpFilter;
-import com.jujin.freeway.http.RouteHandler;
+import com.jujin.freeway.http.filter.HttpFilter;
+import com.jujin.freeway.http.route.RouteHandler;
 
 /**
  * Admin authorization filter — must be placed AFTER AuthFilter.

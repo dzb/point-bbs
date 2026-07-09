@@ -3,8 +3,8 @@ package com.jujin.point.web.route;
 import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.service.CategoryService;
-import com.jujin.freeway.http.Route;
-import com.jujin.freeway.http.RouteGroup;
+import com.jujin.freeway.http.route.Route;
+import com.jujin.freeway.http.route.RouteGroup;
 
 public class CategoryRoutes {
 

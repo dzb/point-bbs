@@ -6,6 +6,7 @@ import com.jujin.point.domain.event.UserFollowedEvent;
 import com.jujin.point.domain.event.UserUnfollowedEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
+import com.jujin.freeway.db.Row;
 import com.jujin.freeway.ioc.EventBus;
 
 import java.util.List;
@@ -62,5 +63,19 @@ public class UserFollowService {
             "SELECT u.* FROM bbs_user u INNER JOIN bbs_user_follow f ON u.id = f.other_id " +
             "WHERE f.user_id = ? AND f.status = 1 ORDER BY f.create_time DESC LIMIT ? OFFSET ?",
             userId, pageSize, offset).list(User.class);
+    }
+
+    public long countFollowers(long userId) {
+        var row = db.query(
+            "SELECT COUNT(*) AS cnt FROM bbs_user_follow f WHERE f.other_id = ? AND f.status = 1",
+            userId).one(Row.class).orElse(null);
+        return row != null ? row.longVal("cnt") : 0;
+    }
+
+    public long countFollowing(long userId) {
+        var row = db.query(
+            "SELECT COUNT(*) AS cnt FROM bbs_user_follow f WHERE f.user_id = ? AND f.status = 1",
+            userId).one(Row.class).orElse(null);
+        return row != null ? row.longVal("cnt") : 0;
     }
 }

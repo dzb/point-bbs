@@ -15,6 +15,10 @@
                   @click="toggleFollow" class="follow-btn ml-auto">
                   {{ following ? '已关注' : '+ 关注' }}
                 </v-btn>
+                <v-btn v-else-if="isSelf" size="small" variant="outlined"
+                  @click="router.push(`/users/${profile.id}/edit`)" class="ml-auto">
+                  编辑资料
+                </v-btn>
               </div>
               <div class="mt-1 mb-2" style="font-size:13px;color:var(--paper-text2)">
                 <span v-if="profile.score>0" class="mr-3">{{ profile.score }} 积分</span>
@@ -22,8 +26,8 @@
               <div v-if="profile.description" style="font-size:14px;color:var(--paper-text2);line-height:1.7">{{ profile.description }}</div>
               <div class="d-flex mt-3" style="gap:32px">
                 <div><span style="font-size:18px;font-weight:600;color:var(--paper-text)">{{ profile.topicCount||0 }}</span><span style="font-size:12px;color:var(--paper-text2);margin-left:4px">帖子</span></div>
-                <div><span style="font-size:18px;font-weight:600;color:var(--paper-text)">{{ profile.fansCount||0 }}</span><span style="font-size:12px;color:var(--paper-text2);margin-left:4px">粉丝</span></div>
-                <div><span style="font-size:18px;font-weight:600;color:var(--paper-text)">{{ profile.followCount||0 }}</span><span style="font-size:12px;color:var(--paper-text2);margin-left:4px">关注</span></div>
+                <div style="cursor:pointer" @click="router.push(`/users/${profile.id}/followers`)"><span style="font-size:18px;font-weight:600;color:var(--paper-text)">{{ profile.fansCount||0 }}</span><span style="font-size:12px;color:var(--paper-text2);margin-left:4px">粉丝</span></div>
+                <div style="cursor:pointer" @click="router.push(`/users/${profile.id}/following`)"><span style="font-size:18px;font-weight:600;color:var(--paper-text)">{{ profile.followCount||0 }}</span><span style="font-size:12px;color:var(--paper-text2);margin-left:4px">关注</span></div>
               </div>
             </div>
           </div>
@@ -38,9 +42,7 @@
           <div class="moments-list mb-4">
             <MomentCard v-for="t in topics" :key="t.id" :moment="t" @toggle-like="toggleLike" @delete-moment="removeTopic" />
           </div>
-          <div v-if="hasMoreTopics" class="text-center mb-4">
-            <v-btn variant="text" :loading="loadingMore" @click="loadMoreTopics" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
-          </div>
+          <LoadMore :has-more="hasMoreTopics" :loading="loadingMore" @load-more="loadMoreTopics" />
           <div v-if="topics.length===0" class="text-center py-16" style="color:var(--paper-text2)">暂无帖子</div>
         </div>
 
@@ -50,9 +52,7 @@
             <div style="font-size:15px;color:var(--paper-text);font-weight:500;line-height:1.4">{{ a.title || '无标题' }}</div>
             <div style="font-size:12px;color:var(--paper-text2);margin-top:4px">{{ a.summary?.substring(0,80) }} · {{ fmt(a.createTime) }}</div>
           </div>
-          <div v-if="hasMoreArticles" class="text-center mb-4">
-            <v-btn variant="text" :loading="loadingMore" @click="loadMoreArticles" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
-          </div>
+          <LoadMore :has-more="hasMoreArticles" :loading="loadingMore" @load-more="loadMoreArticles" />
           <div v-if="articles.length===0" class="text-center py-16" style="color:var(--paper-text2)">暂无文章</div>
         </div>
       </div>
@@ -64,13 +64,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import UserAvatar from '@/components/UserAvatar.vue'
 import MomentCard from '@/components/MomentCard.vue'
+import LoadMore from '@/components/LoadMore.vue'
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const profile = ref<any>(null)
 const topics = ref<any[]>([])
@@ -110,9 +112,10 @@ async function loadTopics(reset = false) {
   try {
     const { data } = await client.get(`/users/${id}/topics`, { params: { page: pageTopics.value, pageSize } })
     if (data.code===0) {
-      const newItems = (data.data || []).map((m:any)=>({...m,liked:false}))
+      const payload = data.data || {}
+      const newItems = (payload.items || []).map((m:any)=>({...m,liked:false}))
       topics.value = pageTopics.value === 1 ? newItems : [...topics.value, ...newItems]
-      hasMoreTopics.value = newItems.length === pageSize
+      hasMoreTopics.value = (payload.items || []).length < (payload.total ?? 0)
     }
   } catch { console.error('api error') }
 }
@@ -123,9 +126,10 @@ async function loadArticles(reset = false) {
   try {
     const { data } = await client.get(`/users/${id}/articles`, { params: { page: pageArticles.value, pageSize } })
     if (data.code===0) {
-      const newItems = data.data || []
+      const payload = data.data || {}
+      const newItems = payload.items || []
       articles.value = pageArticles.value === 1 ? newItems : [...articles.value, ...newItems]
-      hasMoreArticles.value = newItems.length === pageSize
+      hasMoreArticles.value = (payload.items || []).length < (payload.total ?? 0)
     }
   } catch { console.error('api error') }
 }

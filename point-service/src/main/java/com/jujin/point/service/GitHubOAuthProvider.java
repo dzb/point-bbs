@@ -22,7 +22,7 @@ public class GitHubOAuthProvider implements OAuthProvider {
     public GitHubOAuthProvider(
         @Value("${bbs.oauth.github.client-id:}") String clientId,
         @Value("${bbs.oauth.github.client-secret:}") String clientSecret,
-        @Value("${bbs.oauth.github.redirect-uri:http://localhost:8082/api/login/github/callback}") String redirectUri
+        @Value("${bbs.oauth.github.redirect-uri:http://localhost:8082/api/auth/github/callback}") String redirectUri
     ) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;

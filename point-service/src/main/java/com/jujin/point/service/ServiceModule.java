@@ -5,13 +5,13 @@ import com.jujin.point.domain.event.*;
 import com.jujin.point.service.eventhandler.NotificationHandler;
 import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.EventSubscriber;
-import com.jujin.freeway.ioc.Module2;
+import com.jujin.freeway.ioc.ModuleEx;
 import com.jujin.freeway.ioc.Scope;
 
 /**
  * Service module — binds all business services and event subscribers.
  */
-public class ServiceModule implements Module2 {
+public class ServiceModule implements ModuleEx {
 
     @Override
     public void bind(Binder binder) {

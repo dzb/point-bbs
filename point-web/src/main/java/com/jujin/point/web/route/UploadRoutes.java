@@ -4,8 +4,8 @@ import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.service.UploadService;
 import com.jujin.point.web.filter.AuthFilter;
-import com.jujin.freeway.http.Route;
-import com.jujin.freeway.http.RouteGroup;
+import com.jujin.freeway.http.route.Route;
+import com.jujin.freeway.http.route.RouteGroup;
 
 import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
@@ -17,8 +17,7 @@ public class UploadRoutes {
         return RouteGroup.of("/api",
             Route.post("/upload", ctx -> {
                 var user = AuthFilter.requireUser();
-                long topicId = 0;
-                try { topicId = Long.parseLong(ctx.queryParam("topicId")); } catch (Exception ignored) {}
+                long topicId = ctx.queryParam("topicId").map(Long::parseLong).orElse(0L);
 
                 // Base64 image upload (mobile-friendly)
                 String body = ctx.bodyText();
@@ -33,18 +32,21 @@ public class UploadRoutes {
                 }
 
                 if (ctx.isMultipart()) {
-                    var file = ctx.multipart().file("file");
-                    if (file.isPresent()) {
-                        var f = file.get();
-                        var att = svc().upload(user.userId(), topicId, f.filename(), f.openStream(), f.size(), f.contentType());
-                        ctx.sendJson(201, ApiResponse.ok(Map.of("id", att.getId(), "url", att.getFileUrl(), "fileName", att.getFileName(), "size", f.size())));
-                        return;
+                    var multipart = ctx.multipart().orElse(null);
+                    if (multipart != null) {
+                        var file = multipart.file("file");
+                        if (file.isPresent()) {
+                            var f = file.get();
+                            var att = svc().upload(user.userId(), topicId, f.filename(), f.openStream(), f.size(), f.contentType());
+                            ctx.sendJson(201, ApiResponse.ok(Map.of("id", att.getId(), "url", att.getFileUrl(), "fileName", att.getFileName(), "size", f.size())));
+                            return;
+                        }
                     }
                 }
                 ctx.sendJson(400, ApiResponse.error("请上传文件"));
             }),
             Route.get("/attachment/download/{id}", ctx -> {
-                String id = ctx.pathVar("id");
+                String id = ctx.pathVar("id").orElse(null);
                 var att = svc().getAttachment(id);
                 if (att == null || !Files.exists(svc().getFilePath(att))) {
                     ctx.sendJson(404, ApiResponse.error("文件不存在")); return;

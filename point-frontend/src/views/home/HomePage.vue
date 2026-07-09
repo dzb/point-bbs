@@ -5,7 +5,7 @@
         <div class="d-flex">
           <v-avatar size="36" class="mr-3 mt-1 flex-shrink-0"><v-icon>mdi-pen</v-icon></v-avatar>
           <div class="flex-grow-1" style="min-width:0">
-            <MentionTextarea v-model="newMoment" placeholder="记录思考，分享见闻..." rows="2" variant="plain" hide-details density="compact" @paste="onPaste" class="composer-input" />
+            <MentionTextarea v-model="newMoment" placeholder="记录思考，分享见闻..." rows="2" auto-grow variant="plain" hide-details density="compact" @paste="onPaste" class="composer-input" />
             <div v-if="images.length" class="composer-images">
               <div v-for="(img,i) in images" :key="i" class="composer-img">
                 <img :src="img.url" />
@@ -31,9 +31,7 @@
       </div>
       <div v-if="moments.length===0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无随想</div>
       <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="var(--paper-accent)" />
-      <div v-if="hasMore" class="text-center mt-4 mb-2">
-        <v-btn variant="text" :loading="loadingMore" @click="loadMore" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
-      </div>
+      <LoadMore :has-more="hasMore" :loading="loadingMore" @load-more="loadMore" />
   </div>
 </template>
 
@@ -43,6 +41,7 @@ import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import MomentCard from '@/components/MomentCard.vue'
 import MentionTextarea from '@/components/MentionTextarea.vue'
+import LoadMore from '@/components/LoadMore.vue'
 import type { Topic } from '@/types'
 
 const auth = useAuthStore()
@@ -138,10 +137,15 @@ function removeMoment(id: number) {
 </script>
 
 <style scoped>
-.composer { border: 1px solid var(--paper-border); border-radius: 12px; padding: 16px; background: var(--paper-bg); box-shadow: 0 2px 12px rgba(0,0,0,.06); }
-.composer-input :deep(.v-field) { border: none !important; }
-.composer-input :deep(.v-field__input) { padding-top: 4px !important; padding-bottom: 4px !important; min-height: 40px !important; font-size: 15px; }
-.composer-images { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; margin-top: 8px; }
+.composer { border: 1px solid var(--paper-border); border-radius: 12px; padding: 12px 12px 10px; background: var(--paper-bg); }
+.composer-input :deep(.v-field) { border: none !important; box-shadow: none !important; outline: none !important; background: transparent !important; }
+.composer-input :deep(.v-field__input) { padding: 8px 0 4px !important; font-size: 15px; line-height: 1.5; }
+.composer-input :deep(.v-field__outline),
+.composer-input :deep(.v-field__overlay),
+.composer-input :deep(.v-field__loader),
+.composer-input :deep(.v-field__clearable),
+.composer-input :deep(.v-input__details) { display: none !important; }
+.composer-images { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; margin-top: 6px; }
 .composer-img { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
 .composer-img img { width: 100%; height: 100%; object-fit: cover; }
 .composer-img.uploading { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.03); }

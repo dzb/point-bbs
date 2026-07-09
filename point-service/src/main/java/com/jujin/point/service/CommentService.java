@@ -54,7 +54,7 @@ public class CommentService {
                 userRepo.findByUsername(username).ifPresent(u -> {
                     if (u.getId() != userId && notified.add(u.getId())) {
                         eventBus.publish(new UserMentionedEvent(userId, u.getId(),
-                            entityType, comment.getId(), truncate(content, 100), now));
+                            entityType, entityId, Strings.truncate(content, 100), now));
                     }
                 });
             }
@@ -88,17 +88,17 @@ public class CommentService {
         return commentRepo.findByEntity(entityType, entityId, page.page(), page.pageSize());
     }
 
+    public long countComments(String entityType, long entityId) {
+        return commentRepo.countByEntity(entityType, entityId);
+    }
+
     public List<Comment> getReplies(long commentId, PageRequest page) {
         return commentRepo.findReplies(commentId, page.page(), page.pageSize());
     }
 
-    private static String truncate(String s, int maxLen) {
-        if (s == null) return "";
-        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
-    }
-
     public PageResult<Comment> getUserComments(long userId, PageRequest page) {
         var items = commentRepo.findByUserId(userId, page.page(), page.pageSize());
-        return new PageResult<>(items, page.page(), page.pageSize(), items.size());
+        var total = commentRepo.countByUserId(userId);
+        return new PageResult<>(items, page.page(), page.pageSize(), total);
     }
 }

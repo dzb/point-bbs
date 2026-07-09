@@ -45,4 +45,12 @@ public class CommentRepository extends BaseRepository<Comment> {
             .one(Row.class).orElse(null);
         return row != null ? row.longVal("cnt") : 0;
     }
+
+    public long countByUserId(long userId) {
+        var row = query(
+            "SELECT COUNT(*) AS cnt FROM bbs_comment WHERE user_id = $userId AND status = 1")
+            .param("userId", userId)
+            .one(Row.class).orElse(null);
+        return row != null ? row.longVal("cnt") : 0;
+    }
 }

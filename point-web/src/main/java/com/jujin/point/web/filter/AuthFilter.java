@@ -1,18 +1,27 @@
 package com.jujin.point.web.filter;
 
-import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.dto.CurrentUser;
 import com.jujin.point.service.AuthService;
 import com.jujin.point.service.PermissionService;
 import com.jujin.freeway.http.HttpContext;
-import com.jujin.freeway.http.HttpFilter;
-import com.jujin.freeway.http.RouteHandler;
+import com.jujin.freeway.http.filter.HttpFilter;
+import com.jujin.freeway.http.route.RouteHandler;
 
 /**
  * Authentication filter — extracts JWT token and resolves CurrentUser via ScopedValue.
+ *
+ * AuthService and PermissionService are injected by the container.
  */
 public class AuthFilter implements HttpFilter {
     private static final ScopedValue<CurrentUser> CURRENT_USER = ScopedValue.newInstance();
+
+    private final AuthService authService;
+    private final PermissionService permissionService;
+
+    public AuthFilter(AuthService authService, PermissionService permissionService) {
+        this.authService = authService;
+        this.permissionService = permissionService;
+    }
 
     public static CurrentUser currentUser() {
         return CURRENT_USER.isBound() ? CURRENT_USER.get() : null;
@@ -29,9 +38,9 @@ public class AuthFilter implements HttpFilter {
         var token = extractToken(ctx);
         CurrentUser user = null;
         if (token != null) {
-            user = AppContext.get(AuthService.class).validateToken(token).orElse(null);
+            user = authService.validateToken(token).orElse(null);
             if (user != null) {
-                var permCodes = AppContext.get(PermissionService.class).getUserPermissionCodes(user.userId());
+                var permCodes = permissionService.getUserPermissionCodes(user.userId());
                 user = new CurrentUser(user.userId(), user.nickname(), user.avatar(), permCodes);
             }
         }
@@ -42,11 +51,11 @@ public class AuthFilter implements HttpFilter {
     }
 
     private String extractToken(HttpContext ctx) {
-        var auth = ctx.header("Authorization");
+        var auth = ctx.header("Authorization").orElse(null);
         if (auth != null) {
             if (auth.startsWith("Bearer ")) return auth.substring(7);
             return auth;
         }
-        return ctx.queryParam("token");
+        return ctx.queryParam("token").orElse(null);
     }
 }

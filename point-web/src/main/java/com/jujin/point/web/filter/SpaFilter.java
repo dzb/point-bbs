@@ -1,8 +1,8 @@
 package com.jujin.point.web.filter;
 
 import com.jujin.freeway.http.HttpContext;
-import com.jujin.freeway.http.HttpFilter;
-import com.jujin.freeway.http.RouteHandler;
+import com.jujin.freeway.http.filter.HttpFilter;
+import com.jujin.freeway.http.route.RouteHandler;
 
 import java.io.InputStream;
 

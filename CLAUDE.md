@@ -88,19 +88,72 @@ Four paper themes implemented via CSS variables + Vuetify `useTheme()` + `<html>
 
 | Key | Label | Dark? |
 |---|---|---|
-| `jade` | 象牙·玉白 (default) | No |
-| `jinsu` | 金粟·暖黄 | No |
-| `cicada` | 蝉翼·冷灰 | No |
+| `cicada` | 蝉翼·冷灰 (default) | No |
 | `night` | 夜读·墨池 | Yes |
 
-Theme is persisted to `localStorage` key `paperTheme`. The `usePaperTheme()` composable (`src/composables/usePaperTheme.ts`) orchestrates applying CSS variables and Vuetify theme colors. All component styles use `var(--paper-bg)`, `var(--paper-text)`, `var(--paper-text2)`, `var(--paper-border)` instead of hardcoded colors. The vermilion (`#c43d3d`) accent is the only non-variable color used throughout.
+Theme is persisted to `localStorage` key `paperTheme`. Toggled via sun/moon icon button in the header (`usePaperTheme().toggleTheme()`). All component styles use `var(--paper-bg)`, `var(--paper-nav)`, `var(--paper-text)`, `var(--paper-text2)`, `var(--paper-border)`. Accent colors use `var(--paper-accent)` / `var(--paper-accent-hover)`.
 
 ### Design tokens
 
-- Vermilion: `#c43d3d` (default), `#a83434` (hover), `#8e2626` (active)
+- Vermilion: `#c43d3d` (--paper-accent), `#a83434` (--paper-accent-hover), `#8e2626` (active)
 - Fonts: headings use `'Noto Serif SC', 'Source Han Serif SC', Georgia, serif`; body uses system sans-serif
 - Cards: no shadow (`elevation: 0`), 1px solid border, 8px border-radius
 - Buttons: always lowercase, no letter-spacing, 6px border-radius
 - Article body: 17px, line-height 1.9, max-width 680px centered
 
 Full design system documented in `point-frontend/DESIGN.md`.
+
+### Image grid (DO NOT SIMPLIFY)
+
+`src/utils/markdown.ts` — `renderMarkdown()` splits content into text segments (rendered by markdown-it) and consecutive image groups (rendered as `<div class="img-grid cols-N">` directly). This is the ONLY approach that works with `breaks:true` + XSS-safe `html:false`. Simpler alternatives (pre-injecting HTML, post-processing rendered output) were tested and failed. The code comment documents all three approaches and why each simpler one was rejected.
+
+## Recent changes (2026-06-14)
+
+### Layout restructure
+- Full-width top header with logo + tabs + search + user menu
+- Three-column body: sidebar nav (240→60px), main content, aside (366→0px)
+- Logo moved from sidebar into header, left-aligned to sidebar icons (12px padding)
+- Tabs left-aligned to content area start position
+- Responsive breakpoints centralized in `DefaultLayout.vue` (1300/1200/1100/900)
+- Aside extracted from pages into Vue Router named views (`<router-view name="aside">`)
+- ~150 lines of duplicated CSS removed; shared styles consolidated to global block
+
+### Pagination (30 items/page + load-more)
+- Unified pageSize to 30 across all list/comment endpoints
+- Added "显示更多" to 11 list types (HomePage, FollowingPage, ExplorePage, ArticleList, SearchPage, MessagesPage, FavoritesPage, UserProfile topics+articles, ArticleDetail comments, TopicDetail comments, MomentCard comments)
+
+### Backend audit fixes (16 issues across 5 rounds)
+**Critical:** AdminCategoryRoutes empty CRUD → implemented; production JWT secret empty → placeholder; count() full-table scan → SELECT COUNT(*); AdminFilter RBAC bypass → seeded admin permission code
+**Security:** SQL injection in IN clauses (3 locations) → parameterized; ownership checks missing (4 endpoints) → added; LIKE wildcard escaping → ESCAPE clause
+**Design:** ResponseEnricher missing fields → added imageList/hideContent/tags; parseInt duplicated 4× → extracted then replaced with HttpContext coercion; ArticleService DI inconsistency → constructor injection; signup missing avatar → aligned with signin
+**Quality:** SimpleCache race/leak → computeIfAbsent+maxSize+cleanExpired; ForbiddenWord visibility → private; cache generics Object→typed; @Column annotations added to 6 entities; ArticleTag status long→int; GitHub OAuth URL → configurable; default nickname → hex timestamp; admin user list → paginated
+
+### Frontend audit fixes (14 issues across 5 rounds)
+**Critical:** XSS via `html:true` → removed, image grids post-processed; prop mutation → local ref; memory leak → onUnmounted cleanup
+**Types:** Created `src/types/` with Topic/Article/Comment/Message/UserInfo interfaces; replaced `any` refs
+**Error handling:** 23 empty catch blocks → console.error; TopicEdit added validation + try/catch
+**Consistency:** MarkdownIt singleton; empty style blocks removed; img-grid.css fixed; viewer dark mode; 401/logout use router.push instead of hard navigation; aria-labels on key buttons
+**Cleanup:** 2 pre-existing TS errors fixed (v-badge type, Promise generic)
+
+### API alignment
+- 35 frontend API calls all match backend routes exactly, zero mismatches
+- 31 backend routes unused by frontend (OAuth, article edit/delete, admin panel, etc.)
+- See full inventory in audit notes below
+
+## Backend route inventory (2026-06-14 state)
+
+### Used by frontend (35 calls matching):
+- Auth: signup, signin
+- Topics: list, moments, following, search, detail, create, edit, delete, comments CRUD, like/unlike, favorite/unfavorite, status checks
+- Articles: list, detail, create, comments CRUD
+- Users: current, profile, topics, articles, messages CRUD, follow/unfollow, favorites
+- Upload: POST /upload
+- Categories: GET /categories
+
+### Not yet wired (31 routes):
+- OAuth: GitHub authorize/callback/bind/unbind (5)
+- Topic recommended (1)
+- Article edit/delete, like/unlike/favorite/unfavorite (6)
+- User edit, followers/following list (3)
+- Attachment download (1)
+- Admin panel: topic(6) + user(5) + category(4) + config(4) = 19

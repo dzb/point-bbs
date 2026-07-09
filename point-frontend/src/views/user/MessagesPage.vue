@@ -1,9 +1,16 @@
 <template>
     <div class="detail-main">
-      <div v-if="messages.length > 0" class="d-flex justify-end mb-3">
+      <v-tabs v-model="activeTab" density="compact" color="var(--paper-accent)" class="mb-4" style="border-bottom:1px solid var(--paper-border)">
+        <v-tab value="all" style="font-size:14px;text-transform:none;letter-spacing:0">全部</v-tab>
+        <v-tab value="1" style="font-size:14px;text-transform:none;letter-spacing:0">赞</v-tab>
+        <v-tab value="2" style="font-size:14px;text-transform:none;letter-spacing:0">关注</v-tab>
+        <v-tab value="3" style="font-size:14px;text-transform:none;letter-spacing:0">提及</v-tab>
+        <v-tab value="0" style="font-size:14px;text-transform:none;letter-spacing:0">评论</v-tab>
+      </v-tabs>
+      <div v-if="filtered.length > 0" class="d-flex justify-end mb-3">
         <v-btn variant="text" size="small" @click="markAllRead">全部已读</v-btn>
       </div>
-      <div v-for="m in messages" :key="m.id" class="msg-card" :class="{ unread: m.status === 0 }">
+      <div v-for="m in filtered" :key="m.id" class="msg-card" :class="{ unread: m.status === 0 }">
         <div class="d-flex align-center mb-2">
           <v-icon :color="m.status===0?'var(--paper-accent)':''" size="16" class="mr-2 flex-shrink-0">{{ iconForType(m.type) }}</v-icon>
           <span style="font-size:13px;font-weight:600;color:var(--paper-text)">{{ sender(m) }}</span>
@@ -33,20 +40,19 @@
           </div>
         </div>
       </div>
-      <div v-if="messages.length===0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无通知</div>
+      <div v-if="filtered.length===0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无通知</div>
       <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="var(--paper-accent)" />
-      <div v-if="hasMore" class="text-center mt-4 mb-2">
-        <v-btn variant="text" :loading="loadingMore" @click="loadMore" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
-      </div>
+      <LoadMore :has-more="hasMore" :loading="loadingMore" @load-more="loadMore" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import MentionTextarea from '@/components/MentionTextarea.vue'
+import LoadMore from '@/components/LoadMore.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -59,6 +65,13 @@ const hasMore = ref(false); const loadingMore = ref(false)
 const replyId = ref(0)
 const replyText = ref('')
 const replying = ref(false)
+const activeTab = ref('all')
+
+const filtered = computed(() => {
+  if (activeTab.value === 'all') return messages.value
+  const t = Number(activeTab.value)
+  return messages.value.filter((m: any) => m.type === t)
+})
 
 onMounted(() => loadItems())
 
@@ -67,9 +80,10 @@ async function loadItems(reset = false) {
   try {
     const { data } = await client.get(`/users/${auth.user?.id}/messages`, { params: { page: page.value, pageSize } })
     if (data.code===0) {
-      const items = data.data || []
+      const payload = data.data || {}
+      const items = payload.items || []
       messages.value = page.value === 1 ? items : [...messages.value, ...items]
-      hasMore.value = items.length === pageSize
+      hasMore.value = (payload.items || []).length < (payload.total ?? 0)
     }
   } catch { /* ignore */ }
   loading.value = false
@@ -142,7 +156,7 @@ async function doReply(m: any) {
   try {
     const e = parseExtra(m); if (!e) return
     const t = e.parentType || e.type; const id = e.parentId || e.id
-    await client.post(`/api/${t}s/${id}/comments`, {
+    await client.post(`/${t}s/${id}/comments`, {
       content: replyText.value,
       contentType: 'markdown'
     })

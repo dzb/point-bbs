@@ -12,9 +12,7 @@
     </v-card>
     <div v-if="topics.length === 0 && !loading" class="text-center py-8 text-grey">没有找到相关帖子</div>
     <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" />
-    <div v-if="hasMore" class="text-center mt-4 mb-2">
-      <v-btn variant="text" :loading="loadingMore" @click="loadMore" style="text-transform:none;letter-spacing:0;color:var(--paper-text2)">显示更多</v-btn>
-    </div>
+    <LoadMore :has-more="hasMore" :loading="loadingMore" @load-more="loadMore" />
   </div>
 </template>
 
@@ -22,6 +20,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import client from '@/api/client'
+import LoadMore from '@/components/LoadMore.vue'
 
 const route = useRoute()
 const query = ref(route.query.q as string || '')
@@ -40,9 +39,10 @@ async function loadItems(reset = false) {
   try {
     const { data } = await client.get('/topics/search', { params: { q: query.value, page: page.value, pageSize } })
     if (data.code === 0) {
-      const newItems = data.data?.items || []
+      const payload = data.data || {}
+      const newItems = payload.items || []
       topics.value = page.value === 1 ? newItems : [...topics.value, ...newItems]
-      hasMore.value = newItems.length === pageSize
+      hasMore.value = (payload.items || []).length < (payload.total ?? 0)
     }
   } catch { console.error('api error') }
   loading.value = false

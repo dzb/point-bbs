@@ -37,10 +37,6 @@
         </dependency>
         <dependency>
             <groupId>com.jujin8.freeway</groupId>
-            <artifactId>freeway-http-robaho</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jujin8.freeway</groupId>
             <artifactId>freeway-db</artifactId>
         </dependency>
         <dependency>

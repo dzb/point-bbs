@@ -1,15 +1,15 @@
 {
-  "web": {
-    "server": {
-      "host": "0.0.0.0",
-      "port": 8080
-    },
-    "cors": {
-      "enabled": true,
-      "allowed-origins": "https://your-domain.com"
-    }
-  },
   "freeway": {
+    "web": {
+      "server": {
+        "host": "0.0.0.0",
+        "port": 8080
+      },
+      "cors": {
+        "enabled": true,
+        "allowed-origins": "https://your-domain.com"
+      }
+    },
     "db": {
       "url": "jdbc:mysql://localhost:3306/bbs?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai",
       "username": "SET_DB_USERNAME",
@@ -27,6 +27,13 @@
     },
     "upload": {
       "dir": "./uploads"
+    },
+    "oauth": {
+      "github": {
+        "client-id": "SET_GITHUB_CLIENT_ID",
+        "client-secret": "SET_GITHUB_CLIENT_SECRET",
+        "redirect-uri": "https://your-domain.com/api/auth/github/callback"
+      }
     }
   }
 }

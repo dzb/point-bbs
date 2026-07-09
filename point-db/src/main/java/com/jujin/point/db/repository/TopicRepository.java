@@ -3,6 +3,7 @@ package com.jujin.point.db.repository;
 import com.jujin.point.domain.entity.Topic;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
+import com.jujin.freeway.db.Row;
 
 import java.util.List;
 
@@ -76,6 +77,27 @@ public class TopicRepository extends BaseRepository<Topic> {
             "SELECT * FROM bbs_topic WHERE status = 1 AND title LIKE $keyword ESCAPE '\\' ORDER BY last_comment_time DESC LIMIT $limit OFFSET $offset")
             .param("keyword", "%" + escaped + "%").param("limit", pageSize).param("offset", offset)
             .list(Topic.class);
+    }
+
+    public long countByUserId(long userId) {
+        var row = query("SELECT COUNT(*) AS cnt FROM bbs_topic WHERE user_id = $userId AND status = 1")
+            .param("userId", userId).one(Row.class).orElse(null);
+        return row != null ? row.longVal("cnt") : 0;
+    }
+
+    public long countByCategoryId(long categoryId) {
+        var row = query("SELECT COUNT(*) AS cnt FROM bbs_topic WHERE category_id = $catId AND status = 1")
+            .param("catId", categoryId).one(Row.class).orElse(null);
+        return row != null ? row.longVal("cnt") : 0;
+    }
+
+    public long countByTitleSearch(String keyword) {
+        var escaped = keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        var row = query(
+            "SELECT COUNT(*) AS cnt FROM bbs_topic WHERE status = 1 AND title LIKE $keyword ESCAPE '\\'")
+            .param("keyword", "%" + escaped + "%")
+            .one(Row.class).orElse(null);
+        return row != null ? row.longVal("cnt") : 0;
     }
 
     public int incrViewCount(long topicId) {

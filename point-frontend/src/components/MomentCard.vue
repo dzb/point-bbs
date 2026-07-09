@@ -261,6 +261,8 @@ async function confirmDelete() {
 .mc-time { font-size: 12px; color: var(--paper-text2); margin-left: auto; }
 .mc-body { font-size: 15px; color: var(--paper-text); line-height: 1.7; word-break: break-word; }
 .mc-body :deep(p) { margin: .3em 0; }
+.mc-body :deep(ul), .mc-body :deep(ol) { padding-left: 1.6em; margin: .3em 0; }
+.mc-body :deep(li) { margin: .1em 0; }
 .mc-body :deep(img) { max-width: 100%; max-height: 400px; border-radius: 8px; cursor: pointer; vertical-align: top; }
 .mc-body :deep(.img-grid img) { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 1; max-height: none; border-radius: 0; }
 /* Multi-image grid via container */
@@ -292,7 +294,7 @@ async function confirmDelete() {
 .viewer-text :deep(p) { margin: .3em 0; }
 .viewer-divider { height: 1px; background: var(--paper-border); margin: 20px 0; }
 .viewer-actions-row { gap: 24px; font-size: 13px; color: var(--paper-text2); }
-.op-connector { width: 2px; height: 20px; background: var(--paper-border); margin-left: 12px; }
+.op-connector { width: 2px; height: 24px; background: var(--paper-border); margin-left: 12px; margin-top: -14px; margin-bottom: 2px; }
 .viewer-composer { margin-bottom: 12px; }
 .viewer-composer :deep(.v-field__field) { padding: 0 !important; }
 .viewer-composer-btn { background: var(--paper-accent) !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 16px; padding: 2px 14px; font-size: 11px; }
