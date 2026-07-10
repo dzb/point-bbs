@@ -1,5 +1,5 @@
 <div align="center">
-  <h1><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiNjNDNkM2QiLz4KICA8dGV4dCB4PSIzMiIgeT0iNDciIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSInTm90byBTZXJpZiBTQycsJ1NvdXJjZSBIYW4gU2VyaWYgU0MnLEdlb3JnaWEsc2VyaWYiIGZvbnQtc2l6ZT0iNDQiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNmZGZhZjYiPuiBmjwvdGV4dD4KPC9zdmc+Cg==" alt="聚" width="48" height="48" style="vertical-align: middle; margin-right: 8px; border-radius: 8px;"> point</h1>
+  <h1><img src="https://raw.githubusercontent.com/dzb/point-bbs/master/point-frontend/public/favicon.svg" alt="聚" width="48" height="48" style="vertical-align: middle; margin-right: 8px; border-radius: 8px;"> point</h1>
   <p><em>聚 · 记录思考，分享见闻</em></p>
   <p>A modern BBS/forum system with a quiet, reading-room aesthetic.</p>
 
