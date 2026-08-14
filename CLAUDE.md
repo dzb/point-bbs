@@ -11,7 +11,7 @@ Two independent projects live in this repo:
 | Directory | Stack | Purpose |
 |---|---|---|
 | `point-frontend/` | Vue 3 + Vuetify + Vite + TypeScript | SPA frontend |
-| `point-boot/` + sibling modules | Java (JDK 25) + freeway 1.1.0 + Maven | REST API backend |
+| `point-boot/` + sibling modules | Java (JDK 25) + freeway 1.3.8-SNAPSHOT + Maven | REST API backend |
 
 The backend source spans **7 Maven modules** at the repo root: `point-domain`, `point-db`, `point-cache`, `point-service`, `point-web`, `point-admin`, `point-boot`. The `point-boot` module is the executable launcher (shade JAR with `PointApp.main()`).
 
@@ -108,6 +108,16 @@ Full design system documented in `point-frontend/DESIGN.md`.
 `src/utils/markdown.ts` — `renderMarkdown()` splits content into text segments (rendered by markdown-it) and consecutive image groups (rendered as `<div class="img-grid cols-N">` directly). This is the ONLY approach that works with `breaks:true` + XSS-safe `html:false`. Simpler alternatives (pre-injecting HTML, post-processing rendered output) were tested and failed. The code comment documents all three approaches and why each simpler one was rejected.
 
 ## Recent changes (2026-06-14)
+
+### freeway 1.3.8-SNAPSHOT upgrade (2026-08-14)
+- `freeway.version` 1.3.2 → 1.3.8-SNAPSHOT in parent POM
+- `Row.longVal()` → `Row.longValue()` rename (13 files)
+- `PostgresDialect` moved to `com.jujin.freeway.db.dialect`; `Schema.ensure()` no longer takes a dialect (derived from URL) — TopicServiceTest updated
+- HTTP API renames: `headerSet()` → `setHeader()`, `status(int)` → `setStatus(int)`, `ExceptionMapper` → `ErrorHandler` (handler lambda now receives `HttpResponse`; request method/path no longer available in the handler)
+- Config keys: `freeway.web.*` → `freeway.http.*` (server/cors) in all three profile JSONs; `freeway.db.*` unchanged; prod config pins `"dialect": "mysql"`
+- `PointApp` now forwards CLI args via `.args(args)` and reads `freeway.http.server.port` for the startup banner
+- Note: do NOT force `"dialect": "h2"` — H2Dialect inherits Postgres dollar-quoting, which breaks `$named` SQL params (silent empty results)
+
 
 ### Layout restructure
 - Full-width top header with logo + tabs + search + user menu

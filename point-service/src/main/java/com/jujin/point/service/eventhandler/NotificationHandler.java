@@ -11,7 +11,7 @@ import com.jujin.point.service.Strings;
 /**
  * Notification handler — processes domain events and creates user notifications.
  *
- * Freeway 1.3.2: dependencies are injected via constructor at container startup,
+ * freeway 1.3.8: dependencies are injected via constructor at container startup,
  * not resolved from Container at runtime. This is the idiomatic DI pattern.
  */
 public class NotificationHandler {
@@ -50,9 +50,9 @@ public class NotificationHandler {
                 .one(Row.class)
                 .orElse(null);
             if (parentRow != null) {
-                long parentAuthorId = parentRow.longVal("user_id");
+                long parentAuthorId = parentRow.longValue("user_id");
                 String parentEntityType = parentRow.string("entity_type");
-                long parentEntityId = parentRow.longVal("entity_id");
+                long parentEntityId = parentRow.longValue("entity_id");
                 if (parentAuthorId != e.userId()) {
                     String extra =
                         "comment:" +

@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 /**
  * Enriches entities with related user info for frontend display.
  *
- * Freeway 1.3.2: this is a proper injectable service. Database is injected
+ * freeway 1.3.8: this is a proper injectable service. Database is injected
  * via constructor instead of resolved from AppContext at runtime.
  */
 public class ResponseEnricher {
@@ -201,11 +201,11 @@ public class ResponseEnricher {
         Map<Long, Map<String, Object>> result = new HashMap<>();
         for (var r : rows) {
             var m = new LinkedHashMap<String, Object>();
-            m.put("id", r.longVal("id"));
+            m.put("id", r.longValue("id"));
             m.put("nickname", r.string("nickname"));
             m.put("username", r.string("username"));
             m.put("avatar", r.string("avatar"));
-            result.put(r.longVal("id"), m);
+            result.put(r.longValue("id"), m);
         }
         return result;
     }
@@ -227,7 +227,7 @@ public class ResponseEnricher {
             .list(Row.class);
         Map<Long, List<String>> result = new HashMap<>();
         for (var r : rows) {
-            long aid = r.longVal("article_id");
+            long aid = r.longValue("article_id");
             result
                 .computeIfAbsent(aid, k -> new ArrayList<>())
                 .add(r.string("name"));
@@ -245,7 +245,7 @@ public class ResponseEnricher {
         if (rows.isEmpty()) return new LinkedHashMap<>();
         var r = rows.getFirst();
         var m = new LinkedHashMap<String, Object>();
-        m.put("id", r.longVal("id"));
+        m.put("id", r.longValue("id"));
         m.put("nickname", r.string("nickname"));
         m.put("username", r.string("username"));
         m.put("avatar", r.string("avatar"));

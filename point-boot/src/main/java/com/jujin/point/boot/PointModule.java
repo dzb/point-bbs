@@ -25,7 +25,7 @@ import java.util.random.RandomGenerator;
 /**
  * Primary bbs module — composes all feature modules and initializes AppContext.
  *
- * Explicitly installs all sub-modules (freeway 1.3.2 idiom).
+ * Explicitly installs all sub-modules (freeway 1.3.8 idiom).
  * Schema is auto-migrated via SchemaEntity contribution (not manual Schema.ensure).
  * Database health check is registered as an example of freeway's HealthCheck extension.
  */
@@ -33,7 +33,7 @@ public class PointModule implements ModuleEx {
 
     @Override
     public void bind(Binder binder) {
-        // ── Explicit module composition (freeway 1.3.2: binder.install() over SPI) ──
+        // ── Explicit module composition (freeway 1.3.8: binder.install() over SPI) ──
         binder.install(new DbModule());
         binder.install(new HttpModule());
         binder.install(new PointCacheModule());
@@ -108,7 +108,7 @@ public class PointModule implements ModuleEx {
                         for (var r : rows) {
                             db.execute(
                                 "INSERT INTO bbs_role_permission (role_id, permission_id, create_time) VALUES (1,?,?)",
-                                r.longVal("id"),
+                                r.longValue("id"),
                                 now
                             );
                         }

@@ -1,6 +1,6 @@
 {
   "freeway": {
-    "web": {
+    "http": {
       "server": {
         "host": "0.0.0.0",
         "port": 8080
@@ -14,6 +14,7 @@
       "url": "jdbc:mysql://localhost:3306/bbs?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai",
       "username": "SET_DB_USERNAME",
       "password": "SET_DB_PASSWORD",
+      "dialect": "mysql",
       "pool": {
         "max-size": 30,
         "min-idle": 5

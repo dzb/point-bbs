@@ -11,7 +11,7 @@ import com.jujin.point.service.eventhandler.NotificationHandler;
 /**
  * Service module — binds all business services and event subscribers.
  *
- * Freeway 1.3.2: SINGLETON is the default scope, so explicit .scope() is omitted.
+ * freeway 1.3.8: SINGLETON is the default scope, so explicit .scope() is omitted.
  * Event subscribers use canonical IDs for ordering and rely on container-injected
  * NotificationHandler (not AppContext.container()).
  */

@@ -41,9 +41,9 @@ public class SpaFilter implements HttpFilter {
             next.handle(ctx);
             return;
         }
-        ctx.headerSet("Content-Type", "text/html; charset=utf-8");
-        ctx.headerSet("Cache-Control", "no-cache");
-        ctx.status(200).output(bytes);
+        ctx.setHeader("Content-Type", "text/html; charset=utf-8");
+        ctx.setHeader("Cache-Control", "no-cache");
+        ctx.setStatus(200).output(bytes);
     }
 
     private byte[] getIndexHtml() {

@@ -43,7 +43,7 @@ public class CommentRepository extends BaseRepository<Comment> {
             "SELECT COUNT(*) AS cnt FROM bbs_comment WHERE entity_type = $entityType AND entity_id = $entityId AND status = 1")
             .param("entityType", entityType).param("entityId", entityId)
             .one(Row.class).orElse(null);
-        return row != null ? row.longVal("cnt") : 0;
+        return row != null ? row.longValue("cnt") : 0;
     }
 
     public long countByUserId(long userId) {
@@ -51,6 +51,6 @@ public class CommentRepository extends BaseRepository<Comment> {
             "SELECT COUNT(*) AS cnt FROM bbs_comment WHERE user_id = $userId AND status = 1")
             .param("userId", userId)
             .one(Row.class).orElse(null);
-        return row != null ? row.longVal("cnt") : 0;
+        return row != null ? row.longValue("cnt") : 0;
     }
 }

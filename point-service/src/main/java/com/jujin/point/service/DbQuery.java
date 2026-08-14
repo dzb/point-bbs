@@ -13,7 +13,7 @@ public final class DbQuery {
     public static long count(Database db, String sql, Object... params) {
         var rows = db.query(sql, params).list(Row.class);
         if (rows.isEmpty()) return 0;
-        Long cnt = rows.getFirst().longVal("cnt");
+        Long cnt = rows.getFirst().longValue("cnt");
         return cnt != null ? cnt : 0;
     }
 
@@ -21,6 +21,6 @@ public final class DbQuery {
     public static Long longValue(Database db, String sql, String col, Object... params) {
         var rows = db.query(sql, params).list(Row.class);
         if (rows.isEmpty()) return null;
-        return rows.getFirst().longVal(col);
+        return rows.getFirst().longValue(col);
     }
 }

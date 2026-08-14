@@ -53,8 +53,8 @@ public class AuthRoutes {
                 if (token == null) { ctx.sendJson(400, ApiResponse.error("登录失败")); return; }
                 String spaOrigin = ctx.header("Origin").orElse("http://localhost:3000");
                 String redirectUrl = spaOrigin + "/#/login?token=" + java.net.URLEncoder.encode(token, StandardCharsets.UTF_8);
-                ctx.headerSet("Location", redirectUrl);
-                ctx.status(302).output("Redirecting...".getBytes(StandardCharsets.UTF_8));
+                ctx.setHeader("Location", redirectUrl);
+                ctx.setStatus(302).output("Redirecting...".getBytes(StandardCharsets.UTF_8));
             }),
             Route.post("/github/bind", ctx -> {
                 var user = AuthFilter.requireUser();

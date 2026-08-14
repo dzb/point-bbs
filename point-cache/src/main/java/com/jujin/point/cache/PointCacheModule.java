@@ -10,7 +10,7 @@ import com.jujin.point.domain.entity.User;
 /**
  * Cache module — binds typed caches.
  *
- * Freeway 1.3.2: instance bindings (.to(instance)) are implicitly SINGLETON.
+ * freeway 1.3.8: instance bindings (.to(instance)) are implicitly SINGLETON.
  */
 public class PointCacheModule implements ModuleEx {
 

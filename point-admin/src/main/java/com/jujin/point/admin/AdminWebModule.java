@@ -10,7 +10,7 @@ import com.jujin.point.admin.route.*;
 /**
  * Admin web module — contributes admin API routes with auth + admin filtering.
  *
- * Freeway 1.3.2: add(Class) generates a canonical auto-ID (snake_name@package),
+ * freeway 1.3.8: add(Class) generates a canonical auto-ID (snake_name@package),
  * and before/after ordering uses these stable IDs instead of fragile string literals.
  *
  * Filter order:

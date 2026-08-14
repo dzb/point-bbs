@@ -67,6 +67,6 @@ public abstract class BaseRepository<T> {
         var tableName = SqlTypeMapping.tableName(entityType);
         var row = db.query("SELECT COUNT(*) AS cnt FROM " + tableName)
             .one(Row.class).orElse(null);
-        return row != null ? row.longVal("cnt") : 0;
+        return row != null ? row.longValue("cnt") : 0;
     }
 }

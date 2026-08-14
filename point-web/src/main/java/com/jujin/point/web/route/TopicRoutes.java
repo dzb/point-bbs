@@ -52,7 +52,7 @@ public class TopicRoutes {
                     )
                     .list(Row.class)
                     .stream()
-                    .map(r -> r.longVal("other_id"))
+                    .map(r -> r.longValue("other_id"))
                     .toList();
                 if (followedIds.isEmpty()) {
                     ctx.sendJson(200, ApiResponse.ok(java.util.List.of()));

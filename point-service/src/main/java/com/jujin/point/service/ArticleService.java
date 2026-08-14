@@ -48,7 +48,7 @@ public class ArticleService {
             for (String username : mentioned) {
                 db.query("SELECT id FROM bbs_user WHERE username = ? AND status <> 0", username)
                     .one(Row.class).ifPresent(row -> {
-                        long uid = row.longVal("id");
+                        long uid = row.longValue("id");
                         if (uid != userId && notified.add(uid)) {
                             eventBus.publish(new UserMentionedEvent(userId, uid,
                                 "article", article.getId(), Strings.truncate(content, 100), now));
@@ -103,7 +103,7 @@ public class ArticleService {
     public long countByUser(long userId) {
         var row = db.query("SELECT COUNT(*) AS cnt FROM bbs_article WHERE user_id = $userId AND status = 1")
             .param("userId", userId).one(Row.class).orElse(null);
-        return row != null ? row.longVal("cnt") : 0;
+        return row != null ? row.longValue("cnt") : 0;
     }
 
     public void delete(long userId, long articleId) {

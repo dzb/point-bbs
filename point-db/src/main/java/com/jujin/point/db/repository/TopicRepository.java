@@ -82,13 +82,13 @@ public class TopicRepository extends BaseRepository<Topic> {
     public long countByUserId(long userId) {
         var row = query("SELECT COUNT(*) AS cnt FROM bbs_topic WHERE user_id = $userId AND status = 1")
             .param("userId", userId).one(Row.class).orElse(null);
-        return row != null ? row.longVal("cnt") : 0;
+        return row != null ? row.longValue("cnt") : 0;
     }
 
     public long countByCategoryId(long categoryId) {
         var row = query("SELECT COUNT(*) AS cnt FROM bbs_topic WHERE category_id = $catId AND status = 1")
             .param("catId", categoryId).one(Row.class).orElse(null);
-        return row != null ? row.longVal("cnt") : 0;
+        return row != null ? row.longValue("cnt") : 0;
     }
 
     public long countByTitleSearch(String keyword) {
@@ -97,7 +97,7 @@ public class TopicRepository extends BaseRepository<Topic> {
             "SELECT COUNT(*) AS cnt FROM bbs_topic WHERE status = 1 AND title LIKE $keyword ESCAPE '\\'")
             .param("keyword", "%" + escaped + "%")
             .one(Row.class).orElse(null);
-        return row != null ? row.longVal("cnt") : 0;
+        return row != null ? row.longValue("cnt") : 0;
     }
 
     public int incrViewCount(long topicId) {

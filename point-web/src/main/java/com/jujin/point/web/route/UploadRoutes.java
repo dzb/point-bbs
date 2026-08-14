@@ -52,8 +52,8 @@ public class UploadRoutes {
                     ctx.sendJson(404, ApiResponse.error("文件不存在")); return;
                 }
                 svc().recordDownload(id);
-                ctx.headerSet("Content-Type", att.getFileType() != null ? att.getFileType() : "application/octet-stream");
-                ctx.headerSet("Content-Disposition", "inline; filename=\"" + att.getFileName() + "\"");
+                ctx.setHeader("Content-Type", att.getFileType() != null ? att.getFileType() : "application/octet-stream");
+                ctx.setHeader("Content-Disposition", "inline; filename=\"" + att.getFileName() + "\"");
                 ctx.output(Files.readAllBytes(svc().getFilePath(att)));
             })
         );

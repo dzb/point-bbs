@@ -3,9 +3,7 @@ package com.jujin.point.service;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.jujin.freeway.db.*;
-import com.jujin.freeway.db.schema.PostgresDialect;
-import com.jujin.freeway.db.schema.Schema;
-import com.jujin.freeway.ioc.Binder;
+import com.jujin.freeway.db.schema.Schema;import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.Container;
 import com.jujin.freeway.ioc.EventBus;
 import com.jujin.freeway.ioc.Freeway;
@@ -35,7 +33,7 @@ class TopicServiceTest {
             "jdbc:h2:mem:point_test;MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
         var db = DatabaseBuilder.from(config).build();
         var orm = Orm.of(db);
-        Schema.ensure(db, new PostgresDialect(), ALL_ENTITIES);
+        Schema.ensure(db, ALL_ENTITIES);
 
         container = Freeway.create(binder -> {
             binder.bind(Database.class).to(db);

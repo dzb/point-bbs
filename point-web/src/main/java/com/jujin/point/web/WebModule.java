@@ -1,6 +1,6 @@
 package com.jujin.point.web;
 
-import com.jujin.freeway.http.filter.ExceptionMapper;
+import com.jujin.freeway.http.filter.ErrorHandler;
 import com.jujin.freeway.http.filter.HttpFilter;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.staticfile.StaticResourceMount;
@@ -16,7 +16,7 @@ import com.jujin.point.web.route.*;
 /**
  * Web module — serves the SPA and REST API routes.
  *
- * Freeway 1.3.2: filters use canonical auto-IDs via add(Class) instead of
+ * freeway 1.3.8: filters use canonical auto-IDs via add(Class) instead of
  * manual id strings. AuthFilter receives AuthService + PermissionService via DI.
  * ResponseEnricher is bound as a singleton with Database injection.
  */
@@ -55,27 +55,27 @@ public class WebModule implements ModuleEx {
             .after("spa-filter");
 
         // Exception mappers
-        binder.contribute(ExceptionMapper.class).add((ctx, ex) -> {
+        binder.contribute(ErrorHandler.class).add((resp, ex) -> {
             if (ex instanceof AuthException ae) {
-                ctx.sendJson(
+                resp.sendJson(
                     ae.statusCode(),
                     ApiResponse.error(ae.statusCode(), ae.getMessage())
                 );
                 return true;
             }
             if (ex instanceof ServiceException se) {
-                ctx.sendJson(400, ApiResponse.error(se.getMessage()));
+                resp.sendJson(400, ApiResponse.error(se.getMessage()));
                 return true;
             }
             System.err.println(
-                "=== Unhandled exception for " +
-                    ctx.method() +
-                    " " +
-                    ctx.path() +
+                "=== Unhandled exception: " +
+                    ex.getClass().getSimpleName() +
+                    ": " +
+                    ex.getMessage() +
                     " ==="
             );
             ex.printStackTrace(System.err);
-            ctx.sendJson(
+            resp.sendJson(
                 500,
                 ApiResponse.error(
                     500,

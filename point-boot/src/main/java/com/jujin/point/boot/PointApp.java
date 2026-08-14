@@ -5,7 +5,7 @@ import com.jujin.freeway.boot.FreewayApp;
 /**
  * point application entry point.
  *
- * Freeway 1.3.2: explicit module composition via FreewayApp.of() with
+ * freeway 1.3.8: explicit module composition via FreewayApp.of() with
  * autoDiscovery(false) — all modules are installed manually by PointModule
  * via binder.install(), avoiding duplicate SPI auto-discovery.
  */
@@ -31,15 +31,16 @@ public class PointApp {
             ||P ||||O ||||I ||||N ||||T ||
             ||__||||__||||__||||__||||__||
             |/__\\\\||/__\\\\||/__\\\\||/__\\\\||/__\\\\|
-            point v1.0.0 -- powered by freeway 1.3.2 + JDK %s
+            point v1.0.0 -- powered by freeway 1.3.8 + JDK %s
             """.formatted(Runtime.version().feature())
         );
 
         var runtime = FreewayApp.of(new PointModule())
             .autoDiscovery(false) // All modules explicitly composed via PointModule.bind()
+            .args(args)
             .start();
 
-        var port = runtime.config().get("freeway.web.server.port");
+        var port = runtime.config().get("freeway.http.server.port");
         System.out.println(
             "point running on http://localhost:" + (port != null ? port : 8082)
         );
