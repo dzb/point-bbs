@@ -1,15 +1,15 @@
 <template>
   <div class="mention-wrapper">
     <v-textarea
-      :model-value="modelValue"
-      @update:model-value="onInput"
-      @keydown="onKeydown"
       v-bind="$attrs"
       ref="textareaRef"
+      :model-value="modelValue"
       autocapitalize="off"
       autocomplete="off"
       autocorrect="off"
       spellcheck="false"
+      @update:model-value="onInput"
+      @keydown="onKeydown"
     />
     <Teleport to="body">
       <div v-if="show" class="mention-dropdown" :style="dropdownStyle">
@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onUnmounted } from 'vue'
 import UserAvatar from './UserAvatar.vue'
 import { searchUsers } from '@/api/user'
 import type { UserInfo } from '@/types'
@@ -55,7 +55,12 @@ const dropdownStyle = computed(() => {
   const el = (textareaRef.value?.$el?.querySelector('textarea') ?? null) as HTMLTextAreaElement | null
   if (!el) return { display: 'none' as const }
   const r = el.getBoundingClientRect()
-  return { top: (r.bottom + 4) + 'px', left: r.left + 'px', width: '260px' }
+  return { top: r.bottom + 4 + 'px', left: r.left + 'px', width: '260px' }
+})
+
+onUnmounted(() => {
+  if (timer) clearTimeout(timer)
+  timer = null
 })
 
 function onInput(value: string) {
@@ -84,12 +89,19 @@ function detect(value: string) {
 }
 
 async function doSearch(q: string) {
-  if (!q) { suggestions.value = []; show.value = true; selectedIndex.value = 0; return }
+  if (!q) {
+    suggestions.value = []
+    show.value = true
+    selectedIndex.value = 0
+    return
+  }
   try {
     suggestions.value = await searchUsers(q)
     show.value = true
     selectedIndex.value = 0
-  } catch { suggestions.value = [] }
+  } catch {
+    suggestions.value = []
+  }
 }
 
 function select(user: UserInfo) {
@@ -111,27 +123,58 @@ function select(user: UserInfo) {
 
 function onKeydown(e: KeyboardEvent) {
   if (!show.value) return
-  if (e.key === 'ArrowDown') { e.preventDefault(); selectedIndex.value = Math.min(selectedIndex.value + 1, suggestions.value.length - 1) }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); selectedIndex.value = Math.max(selectedIndex.value - 1, 0) }
-  else if (e.key === 'Enter' || e.key === 'Tab') {
-    if (suggestions.value[selectedIndex.value]) { e.preventDefault(); select(suggestions.value[selectedIndex.value]) }
-  } else if (e.key === 'Escape') { show.value = false }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    selectedIndex.value = Math.min(selectedIndex.value + 1, suggestions.value.length - 1)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    selectedIndex.value = Math.max(selectedIndex.value - 1, 0)
+  } else if (e.key === 'Enter' || e.key === 'Tab') {
+    if (suggestions.value[selectedIndex.value]) {
+      e.preventDefault()
+      select(suggestions.value[selectedIndex.value])
+    }
+  } else if (e.key === 'Escape') {
+    show.value = false
+  }
 }
 </script>
 
 <style>
 .mention-dropdown {
-  position: fixed; z-index: 99999;
-  min-width: 200px; max-height: 200px; overflow-y: auto;
-  background: var(--paper-bg); border: 1px solid var(--paper-border);
-  border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  position: fixed;
+  z-index: 99999;
+  min-width: 200px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--paper-bg);
+  border: 1px solid var(--paper-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 .mention-item {
-  display: flex; align-items: center;
-  padding: 8px 12px; cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
 }
-.mention-item:hover, .mention-item.active { background: var(--paper-nav); }
-.mention-item.dimmed { color: var(--paper-text2); cursor: default; padding: 8px 12px; }
-.mention-username { font-weight: 600; font-size: 13px; color: var(--paper-accent); }
-.mention-nickname { font-size: 12px; color: var(--paper-text2); margin-left: 6px; }
+.mention-item:hover,
+.mention-item.active {
+  background: var(--paper-nav);
+}
+.mention-item.dimmed {
+  color: var(--paper-text2);
+  cursor: default;
+  padding: 8px 12px;
+}
+.mention-username {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--paper-accent);
+}
+.mention-nickname {
+  font-size: 12px;
+  color: var(--paper-text2);
+  margin-left: 6px;
+}
 </style>

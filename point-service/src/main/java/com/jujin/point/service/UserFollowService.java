@@ -31,26 +31,32 @@ public class UserFollowService {
     public void follow(long userId, long otherId) {
         if (userId == otherId) throw new ServiceException("不能关注自己");
         if (isFollowing(userId, otherId)) return;
-        db.transaction(() -> {
-            orm.insert(new UserFollow(userId, otherId, 1, System.currentTimeMillis()));
-            db.execute("UPDATE bbs_user SET follow_count = follow_count + 1 WHERE id = ?", userId);
-            db.execute("UPDATE bbs_user SET fans_count = fans_count + 1 WHERE id = ?", otherId);
-            bus.publish(new UserFollowedEvent(userId, otherId, System.currentTimeMillis()));
-        });
-    }
-
-    public void unfollow(long userId, long otherId) {
-        long deleted = db.execute(
-            "DELETE FROM bbs_user_follow WHERE user_id = ? AND other_id = ?", userId, otherId).rows();
-        if (deleted > 0) {
-            db.execute("UPDATE bbs_user SET follow_count = GREATEST(0, follow_count - 1) WHERE id = ?", userId);
-            db.execute("UPDATE bbs_user SET fans_count = GREATEST(0, fans_count - 1) WHERE id = ?", otherId);
-            bus.publish(new UserUnfollowedEvent(userId, otherId, System.currentTimeMillis()));
+        try {
+            db.transaction(() -> {
+                orm.insert(new UserFollow(userId, otherId, 1, System.currentTimeMillis()));
+                db.execute("UPDATE bbs_user SET follow_count = follow_count + 1 WHERE id = ?", userId);
+                db.execute("UPDATE bbs_user SET fans_count = fans_count + 1 WHERE id = ?", otherId);
+                bus.publish(new UserFollowedEvent(userId, otherId, System.currentTimeMillis()));
+            });
+        } catch (com.jujin.freeway.db.SqlException e) {
+            // Unique (user_id, other_id) index — concurrent follow; ignore.
         }
     }
 
+    public void unfollow(long userId, long otherId) {
+        db.transaction(() -> {
+            long deleted = db.execute(
+                "DELETE FROM bbs_user_follow WHERE user_id = ? AND other_id = ?", userId, otherId).rows();
+            if (deleted > 0) {
+                db.execute("UPDATE bbs_user SET follow_count = GREATEST(0, follow_count - 1) WHERE id = ?", userId);
+                db.execute("UPDATE bbs_user SET fans_count = GREATEST(0, fans_count - 1) WHERE id = ?", otherId);
+                bus.publish(new UserUnfollowedEvent(userId, otherId, System.currentTimeMillis()));
+            }
+        });
+    }
+
     public List<User> getFollowers(long userId, int page, int pageSize) {
-        int offset = (page - 1) * pageSize;
+        long offset = (long) (page - 1) * pageSize;
         return db.query(
             "SELECT u.* FROM bbs_user u INNER JOIN bbs_user_follow f ON u.id = f.user_id " +
             "WHERE f.other_id = ? AND f.status = 1 ORDER BY f.create_time DESC LIMIT ? OFFSET ?",
@@ -58,7 +64,7 @@ public class UserFollowService {
     }
 
     public List<User> getFollowing(long userId, int page, int pageSize) {
-        int offset = (page - 1) * pageSize;
+        long offset = (long) (page - 1) * pageSize;
         return db.query(
             "SELECT u.* FROM bbs_user u INNER JOIN bbs_user_follow f ON u.id = f.other_id " +
             "WHERE f.user_id = ? AND f.status = 1 ORDER BY f.create_time DESC LIMIT ? OFFSET ?",

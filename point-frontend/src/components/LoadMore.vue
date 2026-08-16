@@ -13,8 +13,10 @@ const emit = defineEmits<{ (e: 'load-more'): void }>()
     <v-btn
       variant="text"
       :loading="loading"
+      style="text-transform: none; letter-spacing: 0; color: var(--paper-text2)"
       @click="emit('load-more')"
-      style="text-transform:none;letter-spacing:0;color:var(--paper-text2)"
-    >{{ label || '显示更多' }}</v-btn>
+    >
+      {{ label || '显示更多' }}
+    </v-btn>
   </div>
 </template>

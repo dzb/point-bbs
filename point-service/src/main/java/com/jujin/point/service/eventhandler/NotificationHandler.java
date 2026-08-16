@@ -38,7 +38,7 @@ public class NotificationHandler {
                         nickname + " 评论了你的帖子",
                         Strings.truncate(topic.getTitle(), 200),
                         0,
-                        "topic:" + e.entityId()
+                        "{\"type\":\"topic\",\"id\":" + e.entityId() + "}"
                     )
                 );
         } else if ("comment".equals(e.entityType())) {
@@ -55,12 +55,13 @@ public class NotificationHandler {
                 long parentEntityId = parentRow.longValue("entity_id");
                 if (parentAuthorId != e.userId()) {
                     String extra =
-                        "comment:" +
+                        "{\"type\":\"comment\",\"id\":" +
                         e.entityId() +
-                        ":" +
+                        ",\"parentType\":\"" +
                         parentEntityType +
-                        ":" +
-                        parentEntityId;
+                        "\",\"parentId\":" +
+                        parentEntityId +
+                        "}";
                     msgSvc.send(
                         e.userId(),
                         parentAuthorId,
@@ -87,7 +88,7 @@ public class NotificationHandler {
                     nickname + " 评论了你的文章",
                     null,
                     0,
-                    "article:" + e.entityId()
+                    "{\"type\":\"article\",\"id\":" + e.entityId() + "}"
                 );
             }
         }
@@ -118,7 +119,7 @@ public class NotificationHandler {
                 nickname + " 赞了你的" + e.entityType(),
                 null,
                 1,
-                e.entityType() + ":" + e.entityId()
+                "{\"type\":\"" + e.entityType() + "\",\"id\":" + e.entityId() + "}"
             );
         }
     }
@@ -138,7 +139,7 @@ public class NotificationHandler {
             nickname + " 在" + entityLabel + "中提到了你",
             e.contentPreview(),
             3,
-            e.entityType() + ":" + e.entityId()
+            "{\"type\":\"" + e.entityType() + "\",\"id\":" + e.entityId() + "}"
         );
     }
 
@@ -151,7 +152,7 @@ public class NotificationHandler {
             nickname + " 关注了你",
             null,
             2,
-            "user:" + e.userId()
+            "{\"type\":\"user\",\"id\":" + e.userId() + "}"
         );
     }
 

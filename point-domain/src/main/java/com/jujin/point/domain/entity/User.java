@@ -1,6 +1,7 @@
 package com.jujin.point.domain.entity;
 
 import com.jujin.freeway.db.schema.Column;
+import com.jujin.freeway.db.schema.Index;
 import com.jujin.freeway.db.schema.Generated;
 import com.jujin.freeway.db.schema.Id;
 import com.jujin.freeway.db.schema.Table;
@@ -14,9 +15,9 @@ public class User {
     private Long id;
     @Column(length = 16)
     private String phone;
-    @Column(length = 32)
+    @Index(name = "uq_user_username", unique = true) @Column(length = 32)
     private String username;
-    @Column(length = 128)
+    @Index(name = "uq_user_email", unique = true) @Column(length = 128)
     private String email;
     @Column(nullable = false)
     private boolean emailVerified;
@@ -52,8 +53,6 @@ public class User {
     private int followCount;
     @Column(nullable = false)
     private int fansCount;
-    @Column(type = "TEXT")
-    private String roles;
     @Column(nullable = false)
     private long forbiddenEndTime;
     @Column(nullable = false)
@@ -106,8 +105,6 @@ public class User {
     public void setFollowCount(int followCount) { this.followCount = followCount; }
     public int getFansCount() { return fansCount; }
     public void setFansCount(int fansCount) { this.fansCount = fansCount; }
-    public String getRoles() { return roles; }
-    public void setRoles(String roles) { this.roles = roles; }
     public long getForbiddenEndTime() { return forbiddenEndTime; }
     public void setForbiddenEndTime(long forbiddenEndTime) { this.forbiddenEndTime = forbiddenEndTime; }
     public long getCreateTime() { return createTime; }

@@ -42,8 +42,9 @@ public class TopicRoutes {
                 var user = AuthFilter.requireUser();
                 int page = intParam(ctx, "page", 1);
                 int pageSize = intParam(ctx, "pageSize", 30);
+                var pr = PageRequest.of(page, pageSize);
                 var db = AppContext.get(Database.class);
-                int offset = (page - 1) * pageSize;
+                int offset = (int) pr.offset();
                 // Get followed user IDs
                 var followedIds = db
                     .query(
@@ -55,7 +56,12 @@ public class TopicRoutes {
                     .map(r -> r.longValue("other_id"))
                     .toList();
                 if (followedIds.isEmpty()) {
-                    ctx.sendJson(200, ApiResponse.ok(java.util.List.of()));
+                    var empty = new LinkedHashMap<String, Object>();
+                    empty.put("items", List.of());
+                    empty.put("page", page);
+                    empty.put("pageSize", pageSize);
+                    empty.put("total", 0);
+                    ctx.sendJson(200, ApiResponse.ok(empty));
                     return;
                 }
                 var placeholders = followedIds
@@ -76,15 +82,33 @@ public class TopicRoutes {
                         params
                     )
                     .list(com.jujin.point.domain.entity.Topic.class);
+                var countParams = new Object[followedIds.size()];
+                for (int i = 0; i < followedIds.size(); i++) countParams[i] = followedIds.get(i);
+                var total = db
+                    .query(
+                        "SELECT COUNT(*) AS cnt FROM bbs_topic WHERE user_id IN (" +
+                            placeholders +
+                            ") AND status = 1 AND type = 1",
+                        countParams
+                    )
+                    .one(Row.class)
+                    .map(r -> r.longValue("cnt"))
+                    .orElse(0L);
                 var enriched = ResponseEnricher.enrichTopics(tweets);
-                ctx.sendJson(200, ApiResponse.ok(enriched));
+                var resp = new LinkedHashMap<String, Object>();
+                resp.put("items", enriched);
+                resp.put("page", page);
+                resp.put("pageSize", pageSize);
+                resp.put("total", total);
+                ctx.sendJson(200, ApiResponse.ok(resp));
             }),
             // Moments (tweets — type=1)
             Route.get("/moments", ctx -> {
                 int page = intParam(ctx, "page", 1);
                 int pageSize = intParam(ctx, "pageSize", 30);
+                var pr = PageRequest.of(page, pageSize);
                 var db = AppContext.get(Database.class);
-                int offset = (page - 1) * pageSize;
+                int offset = (int) pr.offset();
                 var tweets = db
                     .query(
                         "SELECT * FROM bbs_topic WHERE type = 1 AND status = 1 ORDER BY create_time DESC LIMIT ? OFFSET ?",
@@ -93,15 +117,20 @@ public class TopicRoutes {
                     )
                     .list(com.jujin.point.domain.entity.Topic.class);
                 var enriched = ResponseEnricher.enrichTopics(tweets);
-                ctx.sendJson(200, ApiResponse.ok(enriched));
+                var resp = new LinkedHashMap<String, Object>();
+                resp.put("items", enriched);
+                resp.put("page", page);
+                resp.put("pageSize", pageSize);
+                resp.put("total", topicSvc().countByType(1));
+                ctx.sendJson(200, ApiResponse.ok(resp));
             }),
             // Recommended topics
             Route.get("/recommended", ctx -> {
-                int limit = intParam(ctx, "limit", 10);
+                int limit = Math.min(Math.max(intParam(ctx, "limit", 10), 1), 50);
                 var topics = topicSvc().getRecommended(limit);
                 ctx.sendJson(
                     200,
-                    ApiResponse.ok(ResponseEnricher.enrichTopics(topics))
+                    ApiResponse.ok(Map.of("items", ResponseEnricher.enrichTopics(topics)))
                 );
             }),
             // Search
@@ -131,7 +160,7 @@ public class TopicRoutes {
                 var t = topicSvc()
                     .findById(ctx.pathVar("id", Long.class).orElse(0L))
                     .orElse(null);
-                if (t == null) {
+                if (t == null || t.getStatus() != 1) {
                     ctx.sendJson(404, ApiResponse.error("帖子不存在"));
                     return;
                 }

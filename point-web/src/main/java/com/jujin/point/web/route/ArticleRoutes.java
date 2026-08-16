@@ -21,10 +21,17 @@ public class ArticleRoutes {
     public static RouteGroup routes() {
         return RouteGroup.of("/api/articles",
             Route.get("", ctx -> {
-                int page = intParam(ctx, "page", 1);
-                int pageSize = intParam(ctx, "pageSize", 30);
-                var articles = svc().getRecent(page, pageSize);
-                ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichArticles(articles)));
+                var pr = com.jujin.point.domain.dto.PageRequest.of(
+                    intParam(ctx, "page", 1),
+                    intParam(ctx, "pageSize", 30)
+                );
+                var articles = svc().getRecent(pr.page(), pr.pageSize());
+                var resp = new LinkedHashMap<String, Object>();
+                resp.put("items", ResponseEnricher.enrichArticles(articles));
+                resp.put("page", pr.page());
+                resp.put("pageSize", pr.pageSize());
+                resp.put("total", svc().countRecent());
+                ctx.sendJson(200, ApiResponse.ok(resp));
             }),
             Route.get("/{id}", ctx -> {
                 var a = svc().findById(ctx.pathVar("id", Long.class).orElse(0L)).orElse(null);
@@ -44,7 +51,7 @@ public class ArticleRoutes {
                 long id = ctx.pathVar("id", Long.class).orElse(0L);
                 var a = svc().findById(id).orElse(null);
                 if (a == null || a.getUserId() != user.userId()) { ctx.sendJson(403, ApiResponse.error("无权操作")); return; }
-                svc().update(id, req.title(), req.summary(), req.content(), req.contentType(), req.cover(), req.sourceUrl());
+                svc().update(id, req);
                 ctx.sendJson(200, ApiResponse.ok(ResponseEnricher.enrichArticle(svc().findById(id).orElse(a))));
             }),
             Route.post("/delete/{id}", ctx -> {
@@ -55,8 +62,8 @@ public class ArticleRoutes {
             // Like
             Route.post("/{id}/like", ctx -> {
                 var user = AuthFilter.requireUser();
-                likeSvc().like(user.userId(), "article", ctx.pathVar("id", Long.class).orElse(0L));
-                ctx.sendJson(200, ApiResponse.ok(Map.of("liked", true)));
+                boolean liked = likeSvc().like(user.userId(), "article", ctx.pathVar("id", Long.class).orElse(0L));
+                ctx.sendJson(200, ApiResponse.ok(Map.of("liked", liked)));
             }),
             Route.post("/{id}/unlike", ctx -> {
                 var user = AuthFilter.requireUser();
@@ -99,10 +106,9 @@ public class ArticleRoutes {
                     .countComments("article", articleId));
                 ctx.sendJson(200, ApiResponse.ok(resp));
             }),
-            Route.post("/{id}/comments", ctx -> {
+            Route.post("/{id}/comments", com.jujin.point.domain.dto.CommentDtos.CreateCommentRequest.class, (ctx, req) -> {
                 var user = AuthFilter.requireUser();
                 long articleId = ctx.pathVar("id", Long.class).orElse(0L);
-                var req = ctx.bodyAsJson(com.jujin.point.domain.dto.CommentDtos.CreateCommentRequest.class);
                 var c = AppContext.get(com.jujin.point.service.CommentService.class)
                     .create(user.userId(), "article", articleId, req.content(), req.contentType(), req.imageList(), req.quoteId() != null ? req.quoteId() : 0);
                 ctx.sendJson(201, ApiResponse.ok(com.jujin.point.web.ResponseEnricher.enrichComment(c)));

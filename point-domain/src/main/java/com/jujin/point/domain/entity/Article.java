@@ -3,6 +3,7 @@ package com.jujin.point.domain.entity;
 import com.jujin.freeway.db.schema.Column;
 import com.jujin.freeway.db.schema.Generated;
 import com.jujin.freeway.db.schema.Id;
+import com.jujin.freeway.db.schema.Index;
 import com.jujin.freeway.db.schema.Table;
 
 /**
@@ -12,19 +13,19 @@ import com.jujin.freeway.db.schema.Table;
 public class Article {
     @Id @Generated
     private Long id;
-    @Column(nullable = false)
+    @Index(name = "idx_article_user") @Column(nullable = false)
     private Long userId;
     @Column(length = 128)
     private String title;
     @Column(type = "TEXT")
     private String summary;
-    @Column(type = "LONGTEXT")
+    @Column(type = "TEXT")
     private String content;
     @Column(length = 32)
     private String contentType = "markdown";
     @Column(type = "TEXT")
     private String cover;
-    @Column(nullable = false)
+    @Index(name = "idx_article_status") @Column(nullable = false)
     private int status;
     @Column(type = "TEXT")
     private String sourceUrl;
@@ -34,7 +35,7 @@ public class Article {
     private long commentCount;
     @Column(nullable = false)
     private long likeCount;
-    @Column(nullable = false)
+    @Index(name = "idx_article_status") @Column(nullable = false)
     private long createTime;
     @Column
     private long updateTime;

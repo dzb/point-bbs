@@ -11,10 +11,9 @@
       }
     },
     "db": {
-      "url": "jdbc:mysql://localhost:3306/bbs?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai",
+      "url": "jdbc:postgresql://localhost:5432/bbs",
       "username": "SET_DB_USERNAME",
       "password": "SET_DB_PASSWORD",
-      "dialect": "mysql",
       "pool": {
         "max-size": 30,
         "min-idle": 5
@@ -25,6 +24,10 @@
     "jwt": {
       "secret": "SET_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS",
       "expire-days": 7
+    },
+    "admin": {
+      "username": "",
+      "password": ""
     },
     "upload": {
       "dir": "./uploads"

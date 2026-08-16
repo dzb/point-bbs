@@ -15,9 +15,11 @@ public class AdminTopicRoutes {
         return RouteGroup.of("/api/admin/topic",
             // List all topics with pagination
             Route.get("", ctx -> {
-                int page = ctx.queryParam("page", Integer.class).orElse(1);
-                int pageSize = ctx.queryParam("pageSize", Integer.class).orElse(20);
-                var result = svc().getRecentTopics(PageRequest.of(page, pageSize));
+                var pr = PageRequest.of(
+                    ctx.queryParam("page", Integer.class).orElse(1),
+                    ctx.queryParam("pageSize", Integer.class).orElse(20)
+                );
+                var result = svc().getRecentTopics(pr);
                 ctx.sendJson(200, ApiResponse.ok(result));
             }),
             // Delete/undelete topic
@@ -29,6 +31,8 @@ public class AdminTopicRoutes {
                     return;
                 }
                 svc().delete(topic.getUserId(), id);
+                com.jujin.point.admin.AdminAudit.log(ctx, "delete", "topic", id,
+                    "删除帖子: " + (topic.getTitle() != null ? topic.getTitle() : "#" + id));
                 ctx.sendJson(200, ApiResponse.ok(Map.of("id", id, "deleted", true)));
             }),
             // Recommend/unrecommend topic
@@ -36,6 +40,8 @@ public class AdminTopicRoutes {
                 long id = ctx.pathVar("id", Long.class).orElse(0L);
                 boolean recommend = "true".equals(ctx.queryParam("recommend").orElse(null));
                 svc().recommend(id, recommend);
+                com.jujin.point.admin.AdminAudit.log(ctx, "recommend", "topic", id,
+                    (recommend ? "推荐" : "取消推荐") + "帖子 #" + id);
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             // Sticky/unsticky topic
@@ -43,20 +49,33 @@ public class AdminTopicRoutes {
                 long id = ctx.pathVar("id", Long.class).orElse(0L);
                 boolean sticky = "true".equals(ctx.queryParam("sticky").orElse(null));
                 svc().sticky(id, sticky);
+                com.jujin.point.admin.AdminAudit.log(ctx, "sticky", "topic", id,
+                    (sticky ? "置顶" : "取消置顶") + "帖子 #" + id);
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             // Search topics
             Route.get("/search", ctx -> {
                 String q = ctx.queryParam("q").orElse(null);
-                int page = ctx.queryParam("page", Integer.class).orElse(1);
-                var result = svc().search(q != null ? q : "", PageRequest.of(page, 50));
+                var pr = PageRequest.of(
+                    ctx.queryParam("page", Integer.class).orElse(1),
+                    ctx.queryParam("pageSize", Integer.class).orElse(50)
+                );
+                var result = svc().search(q != null ? q : "", pr);
                 ctx.sendJson(200, ApiResponse.ok(result));
             }),
             // Accept/unaccept answer for QA
             Route.post("/accept_answer/{id}", ctx -> {
                 long topicId = ctx.pathVar("id", Long.class).orElse(0L);
-                long commentId = Long.parseLong(ctx.queryParam("commentId").orElse("0"));
+                long commentId;
+                try {
+                    commentId = Long.parseLong(ctx.queryParam("commentId").orElse("0"));
+                } catch (NumberFormatException e) {
+                    ctx.sendJson(400, ApiResponse.error("commentId 参数无效"));
+                    return;
+                }
                 svc().acceptAnswer(topicId, commentId);
+                com.jujin.point.admin.AdminAudit.log(ctx, "accept_answer", "topic", topicId,
+                    "采纳答案 #" + commentId);
                 ctx.sendJson(200, ApiResponse.ok());
             })
         );

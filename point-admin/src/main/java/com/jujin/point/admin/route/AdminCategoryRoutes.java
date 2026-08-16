@@ -21,6 +21,10 @@ public class AdminCategoryRoutes {
             // Create category
             Route.post("", ctx -> {
                 var req = ctx.bodyAsJson(Map.class);
+                if (req == null || req.get("name") == null) {
+                    ctx.sendJson(400, ApiResponse.error("缺少 name 参数"));
+                    return;
+                }
                 var cat = new Category();
                 cat.setName((String) req.get("name"));
                 cat.setParentId(req.get("parentId") != null ? ((Number) req.get("parentId")).longValue() : 0L);
@@ -30,6 +34,8 @@ public class AdminCategoryRoutes {
                 cat.setStatus(1);
                 cat.setCreateTime(System.currentTimeMillis());
                 catSvc().create(cat);
+                com.jujin.point.admin.AdminAudit.log(ctx, "create", "category", cat.getId(),
+                    "新建分类: " + cat.getName());
                 ctx.sendJson(201, ApiResponse.ok(Map.of("created", true, "id", cat.getId())));
             }),
             // Update category
@@ -39,6 +45,10 @@ public class AdminCategoryRoutes {
                 if (existing.isEmpty()) { ctx.sendJson(404, ApiResponse.error("分类不存在")); return; }
                 var cat = existing.get();
                 var req = ctx.bodyAsJson(Map.class);
+                if (req == null) {
+                    ctx.sendJson(400, ApiResponse.error("请求体不能为空"));
+                    return;
+                }
                 if (req.containsKey("name")) cat.setName((String) req.get("name"));
                 if (req.containsKey("parentId")) cat.setParentId(((Number) req.get("parentId")).longValue());
                 if (req.containsKey("type")) cat.setType((String) req.get("type"));
@@ -46,6 +56,8 @@ public class AdminCategoryRoutes {
                 if (req.containsKey("sortNo")) cat.setSortNo(((Number) req.get("sortNo")).intValue());
                 if (req.containsKey("status")) cat.setStatus(((Number) req.get("status")).intValue());
                 catSvc().update(cat);
+                com.jujin.point.admin.AdminAudit.log(ctx, "update", "category", id,
+                    "更新分类: " + cat.getName());
                 ctx.sendJson(200, ApiResponse.ok(Map.of("id", id, "updated", true)));
             }),
             // Delete category (soft-delete)
@@ -54,6 +66,8 @@ public class AdminCategoryRoutes {
                 var existing = catSvc().findById(id);
                 if (existing.isEmpty()) { ctx.sendJson(404, ApiResponse.error("分类不存在")); return; }
                 catSvc().delete(id);
+                com.jujin.point.admin.AdminAudit.log(ctx, "delete", "category", id,
+                    "删除分类: " + existing.get().getName());
                 ctx.sendJson(200, ApiResponse.ok(Map.of("id", id, "deleted", true)));
             })
         );

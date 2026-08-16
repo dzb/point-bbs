@@ -1,5 +1,6 @@
 package com.jujin.point.service;
 
+import com.jujin.point.domain.dto.ArticleDtos.UpdateArticleRequest;
 import com.jujin.point.domain.entity.Article;
 import com.jujin.point.domain.event.UserMentionedEvent;
 import com.jujin.freeway.db.Database;
@@ -30,17 +31,25 @@ public class ArticleService {
 
     public Article create(long userId, String title, String summary, String content, String contentType) {
         var now = System.currentTimeMillis();
-        var result = new Article[1];
+        var article = new Article();
+        article.setUserId(userId);
+        article.setTitle(title);
+        article.setSummary(summary);
+        article.setContent(content);
+        article.setContentType(contentType != null ? contentType : "markdown");
+        article.setStatus(1);
+        article.setCreateTime(now);
+        article.setUpdateTime(now);
 
         db.transaction(() -> {
-            db.execute(
+            var result = db.execute(
                 "INSERT INTO bbs_article (user_id, title, summary, content, content_type, status, view_count, comment_count, like_count, create_time, update_time) " +
                 "VALUES (?, ?, ?, ?, ?, 1, 0, 0, 0, ?, ?)",
                 userId, title, summary, content, contentType != null ? contentType : "markdown", now, now
             );
-            var article = db.query("SELECT * FROM bbs_article WHERE user_id = ? ORDER BY create_time DESC LIMIT 1", userId)
-                .one(Article.class).orElseThrow();
-            result[0] = article;
+            if (result.hasKey()) {
+                article.setId(result.longKey());
+            }
 
             // Notify @mentioned users
             var mentioned = MentionParser.extractMentions(content);
@@ -57,20 +66,34 @@ public class ArticleService {
             }
         });
 
-        return result[0];
+        return article;
     }
 
     public List<Article> getRecent(int page, int pageSize) {
-        int offset = (page - 1) * pageSize;
+        long offset = (long) (page - 1) * pageSize;
         return db.query("SELECT * FROM bbs_article WHERE status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
             .param("limit", pageSize).param("offset", offset).list(Article.class);
     }
 
-    public void update(long id, String title, String summary, String content,
-                       String contentType, String cover, String sourceUrl) {
+    public void update(long id, UpdateArticleRequest req) {
+        // Partial update: only persist fields the client actually sent, so a
+        // partial edit cannot wipe summary/content/cover/sourceUrl.
+        var sets = new java.util.ArrayList<String>();
+        var params = new java.util.ArrayList<Object>();
+        if (req.title() != null) { sets.add("title=?"); params.add(req.title()); }
+        if (req.summary() != null) { sets.add("summary=?"); params.add(req.summary()); }
+        if (req.content() != null) { sets.add("content=?"); params.add(req.content()); }
+        if (req.contentType() != null) { sets.add("content_type=?"); params.add(req.contentType()); }
+        if (req.cover() != null) { sets.add("cover=?"); params.add(req.cover()); }
+        if (req.sourceUrl() != null) { sets.add("source_url=?"); params.add(req.sourceUrl()); }
+        if (sets.isEmpty()) return;
+        params.add(System.currentTimeMillis());
+        params.add(id);
         db.execute(
-            "UPDATE bbs_article SET title=?, summary=?, content=?, content_type=?, cover=?, source_url=?, update_time=? WHERE id=?",
-            title, summary, content, contentType, cover, sourceUrl, System.currentTimeMillis(), id);
+            "UPDATE bbs_article SET " + String.join(", ", sets) + ", update_time=? WHERE id=?",
+            params.toArray()
+        );
+        if (req.tags() != null) updateTags(id, req.tags());
     }
 
     public void updateCover(long id, String cover) {
@@ -94,10 +117,16 @@ public class ArticleService {
     }
 
     public List<Article> getByUser(long userId, int page, int pageSize) {
-        int offset = (page - 1) * pageSize;
+        long offset = (long) (page - 1) * pageSize;
         return db.query(
             "SELECT * FROM bbs_article WHERE user_id = $userId AND status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
             .param("userId", userId).param("limit", pageSize).param("offset", offset).list(Article.class);
+    }
+
+    public long countRecent() {
+        var row = db.query("SELECT COUNT(*) AS cnt FROM bbs_article WHERE status = 1")
+            .one(Row.class).orElse(null);
+        return row != null ? row.longValue("cnt") : 0;
     }
 
     public long countByUser(long userId) {

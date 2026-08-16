@@ -7,11 +7,18 @@
       <v-text-field v-model="form.nickname" placeholder="昵称" variant="outlined" class="mb-3" hide-details="auto" />
       <v-text-field v-model="form.email" placeholder="邮箱" variant="outlined" class="mb-3" hide-details="auto" />
       <v-text-field v-model="form.username" placeholder="用户名" variant="outlined" class="mb-3" hide-details="auto" />
-      <v-text-field v-model="form.password" placeholder="密码" type="password" variant="outlined" class="mb-2" hide-details="auto" />
+      <v-text-field
+        v-model="form.password"
+        placeholder="密码"
+        type="password"
+        variant="outlined"
+        class="mb-2"
+        hide-details="auto"
+      />
 
       <div v-if="error" class="auth-error">{{ error }}</div>
 
-      <v-btn block :loading="loading" @click="doRegister" class="auth-btn" variant="flat" size="large" :ripple="false">
+      <v-btn block :loading="loading" class="auth-btn" variant="flat" size="large" :ripple="false" @click="doRegister">
         注册
       </v-btn>
 
@@ -34,14 +41,22 @@ const loading = ref(false)
 const error = ref('')
 
 async function doRegister() {
-  if (!form.nickname || !form.email || !form.password) { error.value = '请填写完整信息'; return }
-  loading.value = true; error.value = ''
+  if (!form.nickname || !form.email || !form.password) {
+    error.value = '请填写完整信息'
+    return
+  }
+  loading.value = true
+  error.value = ''
   try {
     const res = await auth.register({ ...form })
     if (res.code === 0) router.push('/')
     else error.value = res.message || '注册失败'
-  } catch (e: any) { error.value = e.response?.data?.message || '注册失败' }
+  } catch (e: any) {
+    const d = e.response?.data
+    // freeway validation errors: { error: "Validation Failed", details: [{field, message}] }
+    if (d?.details?.length) error.value = d.details.map((x: any) => x.message).join('；')
+    else error.value = d?.message || '注册失败'
+  }
   loading.value = false
 }
 </script>
-

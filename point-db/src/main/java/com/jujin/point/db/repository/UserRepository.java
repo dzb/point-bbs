@@ -32,27 +32,12 @@ public class UserRepository extends BaseRepository<User> {
             .param("phone", phone).one(User.class);
     }
 
-    public Optional<User> findByNickname(String nickname) {
-        return query("SELECT * FROM bbs_user WHERE nickname = $nickname AND status <> 0")
-            .param("nickname", nickname).one(User.class);
-    }
 
-    public List<User> findTopByScore(int limit) {
-        return query("SELECT * FROM bbs_user WHERE status <> 0 ORDER BY score DESC LIMIT $limit")
-            .param("limit", limit).list(User.class);
-    }
 
-    public List<User> findLatest(int limit) {
-        return query("SELECT * FROM bbs_user WHERE status <> 0 ORDER BY create_time DESC LIMIT $limit")
-            .param("limit", limit).list(User.class);
-    }
 
-    public void incrTopicCount(long userId) {
-        execute("UPDATE bbs_user SET topic_count = topic_count + 1 WHERE id = ?", userId);
-    }
 
     public List<User> findPage(int page, int pageSize) {
-        int offset = (page - 1) * pageSize;
+        long offset = (long) (page - 1) * pageSize;
         return query("SELECT * FROM bbs_user WHERE status <> 0 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
             .param("limit", pageSize).param("offset", offset).list(User.class);
     }
@@ -63,14 +48,14 @@ public class UserRepository extends BaseRepository<User> {
         return row != null ? row.longValue("cnt") : 0;
     }
 
-    public void incrCommentCount(long userId) {
-        execute("UPDATE bbs_user SET comment_count = comment_count + 1 WHERE id = ?", userId);
-    }
 
     public List<User> searchByPrefix(String prefix, int limit) {
+        // Escape LIKE wildcards with ESCAPE '!' (same dialect-neutral convention
+        // as TopicRepository) so %/_ in the prefix match literally.
+        var escaped = prefix.replace("!", "!!").replace("%", "!%").replace("_", "!_");
         return query(
-            "SELECT id, username, nickname, avatar FROM bbs_user WHERE (username LIKE ? OR nickname LIKE ?) AND status <> 0 ORDER BY score DESC LIMIT ?",
-            prefix + "%", prefix + "%", limit)
+            "SELECT id, username, nickname, avatar FROM bbs_user WHERE (username LIKE ? ESCAPE '!' OR nickname LIKE ? ESCAPE '!') AND status <> 0 ORDER BY score DESC LIMIT ?",
+            escaped + "%", escaped + "%", limit)
             .list(User.class);
     }
 }

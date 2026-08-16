@@ -27,6 +27,12 @@ public class UserRoutes {
                 full.ifPresent(u -> u.setPassword(null));
                 ctx.sendJson(200, ApiResponse.ok(full.orElse(null)));
             }),
+            // Permission codes of the current user (drives admin UI visibility)
+            Route.get("/current/permissions", ctx -> {
+                var user = AuthFilter.currentUser();
+                if (user == null) { ctx.sendJson(200, ApiResponse.ok(List.of())); return; }
+                ctx.sendJson(200, ApiResponse.ok(user.roles()));
+            }),
             // User search for @mention autocomplete
             Route.get("/search", ctx -> {
                 String q = ctx.queryParam("q").orElse(null);
@@ -40,7 +46,8 @@ public class UserRoutes {
             }),
             Route.get("/{id}", ctx -> {
                 var u = userSvc().findById(resolveUserId(ctx));
-                u.ifPresent(x -> x.setPassword(null));
+                // Public profile — never expose credentials or contact info
+                u.ifPresent(UserRoutes::sanitizePublic);
                 ctx.sendJson(200, ApiResponse.ok(u.orElse(null)));
             }),
             Route.post("/edit/{id}", ctx -> {
@@ -50,7 +57,12 @@ public class UserRoutes {
                     ctx.sendJson(403, ApiResponse.error(403, "只能编辑自己的资料"));
                     return;
                 }
-                userSvc().updateUser(targetId, ctx.bodyAsJson(UpdateUserRequest.class));
+                var editReq = ctx.bodyAsJson(UpdateUserRequest.class);
+                if (editReq == null) {
+                    ctx.sendJson(400, ApiResponse.error("请求体不能为空"));
+                    return;
+                }
+                userSvc().updateUser(targetId, editReq);
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             Route.get("/{id}/topics", ctx -> {
@@ -103,9 +115,20 @@ public class UserRoutes {
                 long uid = ctx.pathVar("id", Long.class).orElse(0L);
                 if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能操作自己的消息")); return; }
                 var req = ctx.bodyAsJson(Map.class);
+                if (req == null || req.get("ids") == null) {
+                    ctx.sendJson(400, ApiResponse.error("缺少 ids 参数"));
+                    return;
+                }
                 @SuppressWarnings("unchecked")
                 var ids = ((List<Number>) req.get("ids")).stream().map(Number::longValue).toList();
                 msgSvc().markRead(uid, ids);
+                ctx.sendJson(200, ApiResponse.ok());
+            }),
+            Route.post("/{id}/messages/read-all", ctx -> {
+                var user = AuthFilter.requireUser();
+                long uid = ctx.pathVar("id", Long.class).orElse(0L);
+                if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能操作自己的消息")); return; }
+                msgSvc().markAllRead(uid);
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             Route.post("/{id}/follow", ctx -> {
@@ -128,6 +151,7 @@ public class UserRoutes {
                 int page = intParam(ctx, "page", 1);
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var items = followSvc().getFollowers(uid, page, pageSize);
+                items.forEach(UserRoutes::sanitizePublic);
                 var resp = new LinkedHashMap<String, Object>();
                 resp.put("items", items);
                 resp.put("page", page);
@@ -140,6 +164,7 @@ public class UserRoutes {
                 int page = intParam(ctx, "page", 1);
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var items = followSvc().getFollowing(uid, page, pageSize);
+                items.forEach(UserRoutes::sanitizePublic);
                 var resp = new LinkedHashMap<String, Object>();
                 resp.put("items", items);
                 resp.put("page", page);
@@ -148,7 +173,9 @@ public class UserRoutes {
                 ctx.sendJson(200, ApiResponse.ok(resp));
             }),
             Route.get("/{id}/favorites", ctx -> {
-                long uid = resolveUserId(ctx);
+                var user = AuthFilter.requireUser();
+                long uid = ctx.pathVar("id", Long.class).orElse(0L);
+                if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能查看自己的收藏")); return; }
                 int page = intParam(ctx, "page", 1);
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var items = favSvc().getUserFavorites(uid, page, pageSize);
@@ -170,6 +197,15 @@ public class UserRoutes {
             return AppContext.get(UserService.class).findByUsername(idStr)
                 .map(com.jujin.point.domain.entity.User::getId).orElse(0L);
         }
+    }
+
+    /** Strip credentials and private contact info before exposing a user in public responses. */
+    private static void sanitizePublic(com.jujin.point.domain.entity.User u) {
+        u.setPassword(null);
+        u.setEmail(null);
+        u.setPhone(null);
+        u.setBirthday(null);
+        u.setHomePage(null);
     }
 
     private static UserService userSvc() { return AppContext.get(UserService.class); }

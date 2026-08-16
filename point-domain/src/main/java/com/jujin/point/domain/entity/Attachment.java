@@ -2,6 +2,7 @@ package com.jujin.point.domain.entity;
 
 import com.jujin.freeway.db.schema.Column;
 import com.jujin.freeway.db.schema.Generated;
+import com.jujin.freeway.db.schema.Index;
 import com.jujin.freeway.db.schema.Id;
 import com.jujin.freeway.db.schema.Table;
 
@@ -9,7 +10,7 @@ import com.jujin.freeway.db.schema.Table;
 public class Attachment {
     @Id
     private String id;           // UUID string
-    @Column(nullable = false) Long topicId;
+    @Index(name = "idx_attachment_topic") @Column(nullable = false) Long topicId;
     @Column(nullable = false) Long userId;
     @Column(length = 256) String fileName;
     @Column(type = "TEXT") String fileUrl;

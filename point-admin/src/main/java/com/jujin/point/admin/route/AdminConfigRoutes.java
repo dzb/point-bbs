@@ -20,10 +20,18 @@ public class AdminConfigRoutes {
             // Save all configs
             Route.post("", ctx -> {
                 var req = ctx.bodyAsJson(Map.class);
+                if (req == null) {
+                    ctx.sendJson(400, ApiResponse.error("请求体不能为空"));
+                    return;
+                }
                 @SuppressWarnings("unchecked")
                 var configs = (Map<String, String>) req.get("configs");
                 if (configs != null) {
-                    configs.forEach((k, v) -> configSvc().set(k, v));
+                    configs.forEach((k, v) -> {
+                    configSvc().set(k, v);
+                    com.jujin.point.admin.AdminAudit.log(ctx, "update", "config", 0,
+                        "修改配置: " + k);
+                });
                 }
                 ctx.sendJson(200, ApiResponse.ok());
             }),
@@ -37,8 +45,14 @@ public class AdminConfigRoutes {
             Route.post("/{key}", ctx -> {
                 String key = ctx.pathVar("key").orElse(null);
                 var req = ctx.bodyAsJson(Map.class);
-                String value = (String) req.get("value");
+                if (req == null || req.get("value") == null) {
+                    ctx.sendJson(400, ApiResponse.error("缺少 value 参数"));
+                    return;
+                }
+                String value = String.valueOf(req.get("value"));
                 configSvc().set(key, value);
+                com.jujin.point.admin.AdminAudit.log(ctx, "update", "config", 0,
+                    "修改配置: " + key);
                 ctx.sendJson(200, ApiResponse.ok());
             })
         );

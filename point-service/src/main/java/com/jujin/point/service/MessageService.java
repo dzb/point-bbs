@@ -34,7 +34,7 @@ public class MessageService {
     }
 
     public List<Message> getUserMessages(long userId, int page, int pageSize) {
-        int offset = (page - 1) * pageSize;
+        long offset = (long) (page - 1) * pageSize;
         return db.query(
             "SELECT * FROM bbs_message WHERE user_id = ? ORDER BY create_time DESC LIMIT ? OFFSET ?",
             userId, pageSize, offset).list(Message.class);

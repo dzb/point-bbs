@@ -6,6 +6,7 @@ const CreateAside = () => import('@/components/CreateAside.vue')
 
 const router = createRouter({
   history: createWebHashHistory(),
+  scrollBehavior: () => ({ top: 0 }),
   routes: [
     {
       path: '/',
@@ -22,6 +23,7 @@ const router = createRouter({
         {
           path: 'following',
           name: 'following',
+          meta: { requiresAuth: true },
           components: {
             default: () => import('@/views/home/FollowingPage.vue'),
             aside: PageAside,
@@ -46,6 +48,7 @@ const router = createRouter({
         {
           path: 'articles/create',
           name: 'article-create',
+          meta: { requiresAuth: true },
           components: {
             default: () => import('@/views/article/ArticleCreate.vue'),
             aside: CreateAside,
@@ -62,6 +65,7 @@ const router = createRouter({
         {
           path: 'topics/create',
           name: 'topic-create',
+          meta: { requiresAuth: true },
           components: {
             default: () => import('@/views/topic/TopicCreate.vue'),
             aside: PageAside,
@@ -78,6 +82,7 @@ const router = createRouter({
         {
           path: 'topics/:id/edit',
           name: 'topic-edit',
+          meta: { requiresAuth: true },
           components: {
             default: () => import('@/views/topic/TopicEdit.vue'),
             aside: PageAside,
@@ -94,6 +99,7 @@ const router = createRouter({
         {
           path: 'users/:id/edit',
           name: 'user-profile-edit',
+          meta: { requiresAuth: true },
           components: {
             default: () => import('@/views/user/UserProfileEdit.vue'),
             aside: PageAside,
@@ -108,8 +114,18 @@ const router = createRouter({
           },
         },
         {
+          path: 'admin',
+          name: 'admin',
+          meta: { requiresAuth: true, requiresAdmin: true },
+          components: {
+            default: () => import('@/views/admin/AdminPanel.vue'),
+            aside: PageAside,
+          },
+        },
+        {
           path: 'messages',
           name: 'messages',
+          meta: { requiresAuth: true },
           components: {
             default: () => import('@/views/user/MessagesPage.vue'),
             aside: PageAside,
@@ -118,6 +134,7 @@ const router = createRouter({
         {
           path: 'favorites',
           name: 'favorites',
+          meta: { requiresAuth: true },
           components: {
             default: () => import('@/views/user/FavoritesPage.vue'),
             aside: PageAside,
@@ -158,6 +175,26 @@ const router = createRouter({
       ],
     },
   ],
+})
+
+// Centralized auth guard — replaces ad-hoc in-component redirects
+router.beforeEach(async (to) => {
+  if (to.meta.requiresAuth) {
+    const { useAuthStore } = await import('@/stores/auth')
+    const auth = useAuthStore()
+    if (!auth.sessionChecked) {
+      await auth.fetchCurrentUser()
+    }
+    if (!auth.isLoggedIn) {
+      return { path: '/login', query: { redirect: to.fullPath } }
+    }
+    if (to.meta.requiresAdmin) {
+      await auth.fetchPermissions()
+      if (!auth.isAdmin) {
+        return { path: '/' }
+      }
+    }
+  }
 })
 
 export default router

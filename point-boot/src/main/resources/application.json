@@ -17,7 +17,7 @@
       }
     },
     "db": {
-      "url": "jdbc:h2:file:./data/bbs;MODE=MySQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE,KEY,LABEL,TYPE,LEVEL,INDEX",
+      "url": "jdbc:h2:file:./data/bbs;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE,KEY,LABEL,TYPE,LEVEL,INDEX",
       "username": "sa",
       "password": "",
       "pool": {
@@ -29,6 +29,10 @@
     "jwt": {
       "secret": "change-me-in-production-use-a-long-random-string",
       "expire-days": 7
+    },
+    "admin": {
+      "username": "",
+      "password": ""
     },
     "upload": {
       "dir": "./uploads"

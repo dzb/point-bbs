@@ -23,16 +23,24 @@ public class FavoriteService {
 
     public void add(long userId, String entityType, long entityId) {
         if (isFavorited(userId, entityType, entityId)) return;
-        orm.insert(new Favorite(userId, entityType, entityId, System.currentTimeMillis()));
+        try {
+            db.transaction(() ->
+                orm.insert(new Favorite(userId, entityType, entityId, System.currentTimeMillis()))
+            );
+        } catch (com.jujin.freeway.db.SqlException e) {
+            // Unique (user_id, entity_type, entity_id) index — concurrent add; ignore.
+        }
     }
 
     public void remove(long userId, String entityType, long entityId) {
-        db.execute("DELETE FROM bbs_favorite WHERE user_id = ? AND entity_type = ? AND entity_id = ?",
-            userId, entityType, entityId);
+        db.transaction(() ->
+            db.execute("DELETE FROM bbs_favorite WHERE user_id = ? AND entity_type = ? AND entity_id = ?",
+                userId, entityType, entityId)
+        );
     }
 
     public List<Favorite> getUserFavorites(long userId, int page, int pageSize) {
-        int offset = (page - 1) * pageSize;
+        long offset = (long) (page - 1) * pageSize;
         return db.query(
             "SELECT * FROM bbs_favorite WHERE user_id = ? ORDER BY create_time DESC LIMIT ? OFFSET ?",
             userId, pageSize, offset).list(Favorite.class);

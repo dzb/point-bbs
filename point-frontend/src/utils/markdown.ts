@@ -26,8 +26,8 @@ function imageGridPlugin(md: MarkdownIt) {
       const children = inline.children
       const imageCount = children.filter((c: any) => c.type === 'image').length
       if (imageCount < 2) continue
-      const allImgOrBreak = children.every((c: any) =>
-        c.type === 'image' || c.type === 'hardbreak' || c.type === 'softbreak'
+      const allImgOrBreak = children.every(
+        (c: any) => c.type === 'image' || c.type === 'hardbreak' || c.type === 'softbreak',
       )
       if (!allImgOrBreak) continue
 
@@ -43,8 +43,7 @@ function imageGridPlugin(md: MarkdownIt) {
 }
 
 /** Shared markdown-it instance. */
-export const md = new MarkdownIt({ breaks: true, linkify: true })
-  .use(imageGridPlugin)
+export const md = new MarkdownIt({ breaks: true, linkify: true }).use(imageGridPlugin)
 
 /**
  * Render markdown to HTML with image grid support.
@@ -78,15 +77,27 @@ export function renderMarkdown(content: string): string {
     if (match.index > lastIndex) {
       parts.push(md.render(content.substring(lastIndex, match.index)))
     }
-    // Build grid HTML for the image group directly
+    // Build grid HTML for the image group directly. src/alt come from raw
+    // user input, so they MUST be HTML-escaped — interpolation without
+    // escaping is a stored-XSS vector (attribute breakout via onerror=...).
     const imgs = match[1].match(/!\[[^\]]*\]\([^)]+\)/g) || []
     const count = imgs.length
     const cols = count === 2 ? 'cols-2' : count === 3 ? 'cols-3' : 'cols-4'
-    const tags = imgs.map(img => {
-      const src = img.match(/\(([^)]+)\)/)?.[1] || ''
-      const alt = img.match(/!\[([^\]]*)\]/)?.[1] || ''
-      return `<img src="${src}" alt="${alt}" />`
-    }).join('')
+    const tags = imgs
+      .map((img) => {
+        const src = img.match(/\(([^)]+)\)/)?.[1] || ''
+        const alt = img.match(/!\[([^\]]*)\]/)?.[1] || ''
+        // Three layers of defense against attribute-breakout:
+        // 1. md.validateLink enforces markdown-it's scheme whitelist
+        //    (blocks javascript:, data:, vbscript: and bare junk).
+        // 2. Raw spaces are percent-encoded — a space is what splits HTML
+        //    attributes, and quoting alone does not stop `x onerror=...`.
+        // 3. escapeHtml neutralizes any remaining ", ', <, >, &.
+        if (!md.validateLink(src)) return ''
+        const safeSrc = src.replace(/ /g, '%20')
+        return `<img src="${md.utils.escapeHtml(safeSrc)}" alt="${md.utils.escapeHtml(alt)}" />`
+      })
+      .join('')
     parts.push(`<div class="img-grid ${cols}">${tags}</div>`)
     lastIndex = match.index + match[0].length
   }

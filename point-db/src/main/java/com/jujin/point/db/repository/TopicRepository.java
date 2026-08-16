@@ -40,13 +40,6 @@ public class TopicRepository extends BaseRepository<Topic> {
             .list(Topic.class);
     }
 
-    public List<Topic> findTweets(int page, int pageSize) {
-        long offset = (long) (page - 1) * pageSize;
-        return query(
-            "SELECT * FROM bbs_topic WHERE status = 1 AND type = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
-            .param("limit", pageSize).param("offset", offset)
-            .list(Topic.class);
-    }
 
     public List<Topic> findRecommended(int limit) {
         return query(
@@ -55,11 +48,6 @@ public class TopicRepository extends BaseRepository<Topic> {
             .list(Topic.class);
     }
 
-    public List<Topic> findSticky() {
-        return query(
-            "SELECT * FROM bbs_topic WHERE sticky = TRUE AND status = 1 ORDER BY sticky_time DESC"
-        ).list(Topic.class);
-    }
 
     public List<Topic> findByTagId(long tagId, int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
@@ -72,9 +60,11 @@ public class TopicRepository extends BaseRepository<Topic> {
 
     public List<Topic> searchByTitle(String keyword, int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
-        var escaped = keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        // ESCAPE '!' — a dialect-neutral escape char (H2 PostgreSQL-mode and
+        // real PostgreSQL both accept it; no backslash-lexing ambiguity).
+        var escaped = keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_");
         return query(
-            "SELECT * FROM bbs_topic WHERE status = 1 AND title LIKE $keyword ESCAPE '\\' ORDER BY last_comment_time DESC LIMIT $limit OFFSET $offset")
+            "SELECT * FROM bbs_topic WHERE status = 1 AND title LIKE $keyword ESCAPE '!' ORDER BY last_comment_time DESC LIMIT $limit OFFSET $offset")
             .param("keyword", "%" + escaped + "%").param("limit", pageSize).param("offset", offset)
             .list(Topic.class);
     }
@@ -91,10 +81,16 @@ public class TopicRepository extends BaseRepository<Topic> {
         return row != null ? row.longValue("cnt") : 0;
     }
 
+    public long countByType(int type) {
+        var row = query("SELECT COUNT(*) AS cnt FROM bbs_topic WHERE type = $type AND status = 1")
+            .param("type", type).one(Row.class).orElse(null);
+        return row != null ? row.longValue("cnt") : 0;
+    }
+
     public long countByTitleSearch(String keyword) {
-        var escaped = keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        var escaped = keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_");
         var row = query(
-            "SELECT COUNT(*) AS cnt FROM bbs_topic WHERE status = 1 AND title LIKE $keyword ESCAPE '\\'")
+            "SELECT COUNT(*) AS cnt FROM bbs_topic WHERE status = 1 AND title LIKE $keyword ESCAPE '!'")
             .param("keyword", "%" + escaped + "%")
             .one(Row.class).orElse(null);
         return row != null ? row.longValue("cnt") : 0;
@@ -105,8 +101,4 @@ public class TopicRepository extends BaseRepository<Topic> {
         return result;
     }
 
-    public void updateLastComment(long topicId, long userId, long time) {
-        execute("UPDATE bbs_topic SET comment_count = comment_count + 1, last_comment_time = ?, last_comment_user_id = ? WHERE id = ?",
-            time, userId, topicId);
-    }
 }

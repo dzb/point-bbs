@@ -3,6 +3,7 @@ package com.jujin.point.domain.entity;
 import com.jujin.freeway.db.schema.Column;
 import com.jujin.freeway.db.schema.Generated;
 import com.jujin.freeway.db.schema.Id;
+import com.jujin.freeway.db.schema.Index;
 import com.jujin.freeway.db.schema.Table;
 
 /**
@@ -14,7 +15,7 @@ public class Message {
     private Long id;
     @Column(nullable = false)
     private Long fromId;
-    @Column(nullable = false)
+    @Index(name = "idx_message_user") @Column(nullable = false)
     private Long userId;
     @Column(length = 1024)
     private String title;
@@ -26,7 +27,7 @@ public class Message {
     private int type;
     @Column(type = "TEXT")
     private String extraData;
-    @Column(nullable = false)
+    @Index(name = "idx_message_user") @Column(nullable = false)
     private int status;          // 0=unread, 1=read
     @Column(nullable = false)
     private long createTime;

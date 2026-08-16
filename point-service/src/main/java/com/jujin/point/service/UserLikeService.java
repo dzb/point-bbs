@@ -33,25 +33,34 @@ public class UserLikeService {
     /** Like — idempotent, returns true if newly liked. */
     public boolean like(long userId, String entityType, long entityId) {
         if (hasLiked(userId, entityType, entityId)) return false;
-        db.transaction(() -> {
-            orm.insert(new UserLike(userId, entityId, entityType, System.currentTimeMillis()));
-            incrLikeCount(entityType, entityId, 1);
-            bus.publish(new UserLikedEvent(userId, entityId, entityType, System.currentTimeMillis()));
-        });
+        try {
+            db.transaction(() -> {
+                orm.insert(new UserLike(userId, entityId, entityType, System.currentTimeMillis()));
+                incrLikeCount(entityType, entityId, 1);
+                bus.publish(new UserLikedEvent(userId, entityId, entityType, System.currentTimeMillis()));
+            });
+        } catch (com.jujin.freeway.db.SqlException e) {
+            // Unique (user_id, entity_id, entity_type) index — a concurrent
+            // request already inserted this like; treat as already-liked.
+            return false;
+        }
         return true;
     }
 
     /** Unlike — returns true if previously liked. */
     public boolean unlike(long userId, String entityType, long entityId) {
-        long deleted = db.execute(
-            "DELETE FROM bbs_user_like WHERE user_id = ? AND entity_type = ? AND entity_id = ?",
-            userId, entityType, entityId).rows();
-        if (deleted > 0) {
-            incrLikeCount(entityType, entityId, -1);
-            bus.publish(new UserUnlikedEvent(userId, entityId, entityType, System.currentTimeMillis()));
-            return true;
-        }
-        return false;
+        var removed = new boolean[1];
+        db.transaction(() -> {
+            long deleted = db.execute(
+                "DELETE FROM bbs_user_like WHERE user_id = ? AND entity_type = ? AND entity_id = ?",
+                userId, entityType, entityId).rows();
+            if (deleted > 0) {
+                removed[0] = true;
+                incrLikeCount(entityType, entityId, -1);
+                bus.publish(new UserUnlikedEvent(userId, entityId, entityType, System.currentTimeMillis()));
+            }
+        });
+        return removed[0];
     }
 
     public long count(String entityType, long entityId) {
@@ -60,21 +69,9 @@ public class UserLikeService {
             entityType, entityId);
     }
 
-    public List<Long> getLikedEntityIds(long userId, String entityType, List<Long> entityIds) {
-        if (entityIds.isEmpty()) return List.of();
-        var placeholders = entityIds.stream().map(id -> "?").reduce((a, b) -> a + "," + b).orElse("?");
-        var params = new Object[entityIds.size() + 2];
-        params[0] = userId;
-        params[1] = entityType;
-        for (int i = 0; i < entityIds.size(); i++) params[i + 2] = entityIds.get(i);
-        var rows = db.query(
-            "SELECT entity_id FROM bbs_user_like WHERE user_id = ? AND entity_type = ? AND entity_id IN (" + placeholders + ")",
-            params).list(Row.class);
-        return rows.stream().map(r -> r.longValue("entity_id")).toList();
-    }
 
     public List<UserLike> getUserLikes(long userId, int page, int pageSize) {
-        int offset = (page - 1) * pageSize;
+        long offset = (long) (page - 1) * pageSize;
         return db.query(
             "SELECT * FROM bbs_user_like WHERE user_id = ? ORDER BY create_time DESC LIMIT ? OFFSET ?",
             userId, pageSize, offset).list(UserLike.class);
@@ -87,6 +84,9 @@ public class UserLikeService {
             case "comment" -> "bbs_comment";
             default -> throw new ServiceException("未知实体类型: " + entityType);
         };
-        db.execute("UPDATE " + table + " SET like_count = like_count + ? WHERE id = ?", delta, entityId);
+        db.execute(
+            "UPDATE " + table + " SET like_count = GREATEST(0, like_count + ?) WHERE id = ?",
+            delta, entityId
+        );
     }
 }

@@ -63,6 +63,9 @@ export interface Comment {
   content: string
   contentType: string
   quoteId: number
+  quoteContent?: string | null
+  /** client-side like state (set by views, not from the API) */
+  _liked?: boolean
   likeCount: number
   commentCount: number
   status: number
@@ -77,10 +80,12 @@ export interface Message {
   userId: number
   title: string
   content: string
+  quoteContent?: string | null
   type: number
   status: number
   createTime: number
   extraData?: string
+  senderName?: string
 }
 
 export interface Favorite {
@@ -88,4 +93,27 @@ export interface Favorite {
   entityType: string
   entityId: number
   createTime: number
+}
+
+/** Standard paginated list envelope returned by list endpoints. */
+export interface PageResult<T> {
+  items: T[]
+  page: number
+  pageSize: number
+  total: number
+}
+
+/** Auth endpoints return a minimal profile alongside the token. */
+export interface AuthResult {
+  token: string
+  id: number
+  nickname: string
+  avatar: string | null
+}
+
+/** API envelope: { code, message, data }. */
+export interface ApiEnvelope<T> {
+  code: number
+  message: string
+  data: T
 }

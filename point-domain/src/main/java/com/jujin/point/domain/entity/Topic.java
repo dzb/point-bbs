@@ -3,6 +3,7 @@ package com.jujin.point.domain.entity;
 import com.jujin.freeway.db.schema.Column;
 import com.jujin.freeway.db.schema.Generated;
 import com.jujin.freeway.db.schema.Id;
+import com.jujin.freeway.db.schema.Index;
 import com.jujin.freeway.db.schema.Table;
 
 /**
@@ -12,9 +13,9 @@ import com.jujin.freeway.db.schema.Table;
 public class Topic {
     @Id @Generated
     private Long id;
-    @Column(nullable = false)
+    @Index(name = "idx_topic_list") @Column(nullable = false)
     private int type;           // 0=discussion, 1=tweet, 2=QA
-    @Column(nullable = false)
+    @Index(name = "idx_topic_category") @Column(nullable = false)
     private Long categoryId;
     @Column(length = 16)
     private String qaStatus;    // unsolved, solved
@@ -24,17 +25,17 @@ public class Topic {
     private long solvedAt;
     @Column
     private int bountyScore;
-    @Column(nullable = false)
+    @Index(name = "idx_topic_user") @Column(nullable = false)
     private Long userId;
     @Column(length = 128)
     private String title;
     @Column(length = 32)
     private String contentType = "markdown";
-    @Column(type = "LONGTEXT")
+    @Column(type = "TEXT")
     private String content;
-    @Column(type = "LONGTEXT")
+    @Column(type = "TEXT")
     private String imageList;
-    @Column(type = "LONGTEXT")
+    @Column(type = "TEXT")
     private String hideContent;
     @Column
     private Long voteId;
@@ -52,9 +53,9 @@ public class Topic {
     private long commentCount;
     @Column(nullable = false)
     private long likeCount;
-    @Column(nullable = false)
+    @Index(name = "idx_topic_list") @Column(nullable = false)
     private int status;
-    @Column
+    @Index(name = "idx_topic_list") @Column
     private long lastCommentTime;
     @Column
     private Long lastCommentUserId;
@@ -64,7 +65,7 @@ public class Topic {
     private String ip;
     @Column(length = 64)
     private String ipLocation;
-    @Column
+    @Index(name = "idx_topic_created") @Column
     private long createTime;
     @Column(type = "TEXT")
     private String extraData;

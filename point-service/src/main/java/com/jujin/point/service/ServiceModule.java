@@ -7,6 +7,8 @@ import com.jujin.point.db.repository.*;
 import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.event.*;
 import com.jujin.point.service.eventhandler.NotificationHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Service module — binds all business services and event subscribers.
@@ -16,6 +18,7 @@ import com.jujin.point.service.eventhandler.NotificationHandler;
  * NotificationHandler (not AppContext.container()).
  */
 public class ServiceModule implements ModuleEx {
+    private static final Logger log = LoggerFactory.getLogger(ServiceModule.class);
 
     @Override
     public void bind(Binder binder) {
@@ -54,42 +57,58 @@ public class ServiceModule implements ModuleEx {
         // Event subscribers — NotificationHandler receives DI via container
         binder.bind(NotificationHandler.class).to(NotificationHandler.class);
 
+        // Notification handlers are best-effort: a failure in the handler must
+        // never roll back the business operation that published the event.
         binder
             .contribute(EventSubscriber.class)
             .add(
                 "notify-comment",
-                EventSubscriber.of(CommentCreatedEvent.class, e ->
-                    AppContext.get(NotificationHandler.class).onCommentCreated(
-                        e
-                    )
-                )
+                EventSubscriber.of(CommentCreatedEvent.class, e -> {
+                    try {
+                        AppContext.get(NotificationHandler.class).onCommentCreated(e);
+                    } catch (Exception ex) {
+                        log.warn("comment notification failed", ex);
+                    }
+                })
             );
 
         binder
             .contribute(EventSubscriber.class)
             .add(
                 "notify-like",
-                EventSubscriber.of(UserLikedEvent.class, e ->
-                    AppContext.get(NotificationHandler.class).onUserLiked(e)
-                )
+                EventSubscriber.of(UserLikedEvent.class, e -> {
+                    try {
+                        AppContext.get(NotificationHandler.class).onUserLiked(e);
+                    } catch (Exception ex) {
+                        log.warn("notification failed", ex);
+                    }
+                })
             );
 
         binder
             .contribute(EventSubscriber.class)
             .add(
                 "notify-follow",
-                EventSubscriber.of(UserFollowedEvent.class, e ->
-                    AppContext.get(NotificationHandler.class).onUserFollowed(e)
-                )
+                EventSubscriber.of(UserFollowedEvent.class, e -> {
+                    try {
+                        AppContext.get(NotificationHandler.class).onUserFollowed(e);
+                    } catch (Exception ex) {
+                        log.warn("notification failed", ex);
+                    }
+                })
             );
 
         binder
             .contribute(EventSubscriber.class)
             .add(
                 "notify-mention",
-                EventSubscriber.of(UserMentionedEvent.class, e ->
-                    AppContext.get(NotificationHandler.class).onUserMentioned(e)
-                )
+                EventSubscriber.of(UserMentionedEvent.class, e -> {
+                    try {
+                        AppContext.get(NotificationHandler.class).onUserMentioned(e);
+                    } catch (Exception ex) {
+                        log.warn("notification failed", ex);
+                    }
+                })
             );
     }
 }

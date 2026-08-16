@@ -17,7 +17,7 @@ public class Category {
     @Column(length = 32)
     private String name;
     @Column(length = 16)
-    private String type = "normal";  // normal, qa
+    private String type = "free";  // free, qa
     @Column(length = 1024)
     private String description;
     @Column(length = 1024)

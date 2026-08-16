@@ -6,7 +6,7 @@
       }
     },
     "db": {
-      "url": "jdbc:h2:file:./data/bbs;MODE=MySQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE,KEY,LABEL,TYPE,LEVEL,INDEX",
+      "url": "jdbc:h2:file:./data/bbs;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE,KEY,LABEL,TYPE,LEVEL,INDEX",
       "username": "sa",
       "password": ""
     }
@@ -14,7 +14,8 @@
   "bbs": {
     "jwt": {
       "secret": "dev-secret-do-not-use-in-production",
-      "expire-days": 30
+      "expire-days": 30,
+      "cookie-domain": "localhost"
     },
     "oauth": {
       "github": {

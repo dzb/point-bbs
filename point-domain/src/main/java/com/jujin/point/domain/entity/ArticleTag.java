@@ -2,13 +2,14 @@ package com.jujin.point.domain.entity;
 
 import com.jujin.freeway.db.schema.Column;
 import com.jujin.freeway.db.schema.Generated;
+import com.jujin.freeway.db.schema.Index;
 import com.jujin.freeway.db.schema.Id;
 import com.jujin.freeway.db.schema.Table;
 
 @Table("bbs_article_tag")
 public record ArticleTag(
     @Id @Generated Long id,
-    @Column(nullable = false) Long articleId,
+    @Index(name = "idx_article_tag_article") @Column(nullable = false) Long articleId,
     @Column(nullable = false) Long tagId,
     @Column(nullable = false) int status,
     @Column(nullable = false) long createTime

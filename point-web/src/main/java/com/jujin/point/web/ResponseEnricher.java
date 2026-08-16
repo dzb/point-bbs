@@ -3,6 +3,7 @@ package com.jujin.point.web;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Row;
 import com.jujin.point.domain.entity.*;
+import com.jujin.point.service.Strings;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,7 +60,10 @@ public class ResponseEnricher {
     }
 
     private Map<String, Object> enrichComment0(Comment c) {
-        return buildComment(c, queryUser(c.getUserId()));
+        var quoted = c.getQuoteId() != null && c.getQuoteId() > 0
+            ? queryQuotePreview(c.getQuoteId())
+            : null;
+        return buildComment(c, queryUser(c.getUserId()), quoted);
     }
 
     private Map<String, Object> enrichArticle0(Article a) {
@@ -85,9 +89,21 @@ public class ResponseEnricher {
                 .map(Comment::getUserId)
                 .collect(Collectors.toSet())
         );
+        var quoteIds = comments
+            .stream()
+            .map(Comment::getQuoteId)
+            .filter(q -> q != null && q > 0)
+            .collect(Collectors.toSet());
+        var previews = batchQueryQuotePreviews(quoteIds);
         return comments
             .stream()
-            .map(c -> buildComment(c, users.get(c.getUserId())))
+            .map(c ->
+                buildComment(
+                    c,
+                    users.get(c.getUserId()),
+                    c.getQuoteId() != null ? previews.get(c.getQuoteId()) : null
+                )
+            )
             .toList();
     }
 
@@ -140,7 +156,8 @@ public class ResponseEnricher {
 
     private Map<String, Object> buildComment(
         Comment c,
-        Map<String, Object> user
+        Map<String, Object> user,
+        String quoteContent
     ) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", c.getId());
@@ -149,6 +166,7 @@ public class ResponseEnricher {
         m.put("content", c.getContent());
         m.put("contentType", c.getContentType());
         m.put("quoteId", c.getQuoteId());
+        m.put("quoteContent", quoteContent);
         m.put("likeCount", c.getLikeCount());
         m.put("commentCount", c.getCommentCount());
         m.put("status", c.getStatus());
@@ -250,6 +268,43 @@ public class ResponseEnricher {
         m.put("username", r.string("username"));
         m.put("avatar", r.string("avatar"));
         return m;
+    }
+
+    /** Preview of a single quoted comment (content truncated). */
+    private String queryQuotePreview(long quoteId) {
+        return db
+            .query(
+                "SELECT content FROM bbs_comment WHERE id = ? AND status = 1",
+                quoteId
+            )
+            .one(Row.class)
+            .map(r -> Strings.truncate(r.string("content"), 120))
+            .orElse(null);
+    }
+
+    /** Batch previews for quoted comments — one IN query, no N+1. */
+    private Map<Long, String> batchQueryQuotePreviews(Set<Long> quoteIds) {
+        if (quoteIds.isEmpty()) return Map.of();
+        var placeholders = quoteIds
+            .stream()
+            .map(id -> "?")
+            .collect(Collectors.joining(","));
+        var rows = db
+            .query(
+                "SELECT id, content FROM bbs_comment WHERE id IN (" +
+                    placeholders +
+                    ") AND status = 1",
+                quoteIds.toArray()
+            )
+            .list(Row.class);
+        Map<Long, String> result = new HashMap<>();
+        for (var r : rows) {
+            result.put(
+                r.longValue("id"),
+                Strings.truncate(r.string("content"), 120)
+            );
+        }
+        return result;
     }
 
     private List<String> queryTags(long articleId) {

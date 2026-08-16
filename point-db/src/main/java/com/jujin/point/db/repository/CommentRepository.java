@@ -26,9 +26,6 @@ public class CommentRepository extends BaseRepository<Comment> {
             .list(Comment.class);
     }
 
-    public List<Comment> findReplies(long commentId, int page, int pageSize) {
-        return findByEntity("comment", commentId, page, pageSize);
-    }
 
     public List<Comment> findByUserId(long userId, int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;

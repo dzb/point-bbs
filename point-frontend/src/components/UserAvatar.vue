@@ -8,13 +8,27 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const props = withDefaults(defineProps<{
-  src?: string | null
-  name?: string
-  size?: number
-}>(), { size: 36 })
+const props = withDefaults(
+  defineProps<{
+    src?: string | null
+    name?: string
+    size?: number
+  }>(),
+  { size: 36 },
+)
 
-const avatarPalette = ['#c43d3d','#5b8c5a','#d4893a','#6b5e4f','#8b5a2b','#4a6fa5','#b5838d','#7b6c5d','#9c6b4a','#5a7a8a']
+const avatarPalette = [
+  '#c43d3d',
+  '#5b8c5a',
+  '#d4893a',
+  '#6b5e4f',
+  '#8b5a2b',
+  '#4a6fa5',
+  '#b5838d',
+  '#7b6c5d',
+  '#9c6b4a',
+  '#5a7a8a',
+]
 
 const initial = computed(() => {
   const n = props.name || '?'
@@ -31,7 +45,8 @@ const bgColor = computed(() => {
 
 <style scoped>
 .avatar-initial {
-  font-weight: 600; color: #fff;
+  font-weight: 600;
+  color: #fff;
   font-family: 'Noto Serif SC', Georgia, serif;
 }
 </style>

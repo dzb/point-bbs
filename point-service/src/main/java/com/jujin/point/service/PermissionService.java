@@ -13,6 +13,11 @@ import java.util.*;
 public class PermissionService {
     private final Database db;
     private final Orm orm;
+    // Permission sets are re-read from the DB at most once per 60s per user —
+    // AuthFilter resolves them on every request, and a 3-table JOIN per
+    // request is wasteful. Role changes invalidate the entry explicitly.
+    private final com.jujin.point.cache.SimpleCache<Long, Set<String>> permCache =
+        new com.jujin.point.cache.SimpleCache<>(60_000, 10_000);
 
     public PermissionService(Database db, Orm orm) {
         this.db = db;
@@ -30,8 +35,12 @@ public class PermissionService {
         return !rows.isEmpty();
     }
 
-    /** Get all permission codes for a user. */
+    /** Get all permission codes for a user (cached for 60s). */
     public Set<String> getUserPermissionCodes(long userId) {
+        return permCache.getOrCompute(userId, () -> loadPermissionCodes(userId));
+    }
+
+    private Set<String> loadPermissionCodes(long userId) {
         var rows = db.query("""
             SELECT p.code FROM bbs_user_role ur
             JOIN bbs_role_permission rp ON ur.role_id = rp.role_id
@@ -53,11 +62,13 @@ public class PermissionService {
         if (count == 0) {
             orm.insert(new UserRole(userId, roleId, System.currentTimeMillis()));
         }
+        permCache.invalidate(userId);
     }
 
     /** Remove a role from a user. */
     public void removeRole(long userId, long roleId) {
         db.execute("DELETE FROM bbs_user_role WHERE user_id=? AND role_id=?", userId, roleId);
+        permCache.invalidate(userId);
     }
 
     // --- Role CRUD ---

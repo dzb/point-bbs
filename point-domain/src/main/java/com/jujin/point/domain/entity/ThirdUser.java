@@ -1,6 +1,7 @@
 package com.jujin.point.domain.entity;
 
 import com.jujin.freeway.db.schema.Column;
+import com.jujin.freeway.db.schema.Index;
 import com.jujin.freeway.db.schema.Generated;
 import com.jujin.freeway.db.schema.Id;
 import com.jujin.freeway.db.schema.Table;
@@ -9,12 +10,12 @@ import com.jujin.freeway.db.schema.Table;
 public class ThirdUser {
     @Id @Generated
     private Long id;
-    @Column(nullable = false) Long userId;
-    @Column(length = 64, nullable = false) String openId;
-    @Column(length = 32, nullable = false) String thirdType;  // weixin, google, github
+    @Index(name = "idx_third_user_user") @Column(nullable = false) Long userId;
+    @Index(name = "uq_third_user", unique = true) @Column(length = 64, nullable = false) String openId;
+    @Index(name = "uq_third_user", unique = true) @Column(length = 32, nullable = false) String thirdType;  // weixin, google, github
     @Column(length = 32) String nickname;
     @Column(length = 1024) String avatar;
-    @Column(type = "LONGTEXT") String extraData;
+    @Column(type = "TEXT") String extraData;
     @Column long createTime;
     @Column long updateTime;
 

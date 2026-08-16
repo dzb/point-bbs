@@ -91,6 +91,13 @@ public class UserService {
             throw new ServiceException("密码错误");
         }
 
+        // Transparently upgrade legacy SHA-256 hashes to PBKDF2 on login
+        if (!isPbkdf2(user.getPassword())) {
+            user.setPassword(hashPassword(password));
+            user.setUpdateTime(System.currentTimeMillis());
+            userRepo.update(user);
+        }
+
         return user;
     }
 
@@ -120,6 +127,14 @@ public class UserService {
         userRepo.update(user);
     }
 
+    /** Set the mute/forbid deadline (epoch millis; 0 lifts the forbid). */
+    public void setForbiddenEndTime(long userId, long endTime) {
+        db.execute(
+            "UPDATE bbs_user SET forbidden_end_time = ?, update_time = ? WHERE id = ?",
+            endTime, System.currentTimeMillis(), userId
+        );
+    }
+
     public void addScore(long userId, int score) {
         db.execute("UPDATE bbs_user SET score = score + ? WHERE id = ?", score, userId);
     }
@@ -129,22 +144,65 @@ public class UserService {
     }
 
     // --- password helpers ---
+    // PBKDF2WithHmacSHA256 (OWASP-recommended KDF) with per-user random salt.
+    // Stored format: "pbkdf2$<iterations>$<saltHex>$<hashHex>".
+    // Legacy format "saltHex:hashHex" (single-round SHA-256) is still accepted
+    // for verification and transparently upgraded on next successful login.
+    private static final int PBKDF2_ITERATIONS = 120_000;
 
     private static String hashPassword(String password) {
         try {
-            var md = MessageDigest.getInstance("SHA-256");
             byte[] salt = new byte[16];
             new SecureRandom().nextBytes(salt);
-            md.update(salt);
-            byte[] hash = md.digest(password.getBytes("UTF-8"));
-            return HexFormat.of().formatHex(salt) + ":" + HexFormat.of().formatHex(hash);
+            var spec = new javax.crypto.spec.PBEKeySpec(
+                password.toCharArray(),
+                salt,
+                PBKDF2_ITERATIONS,
+                256
+            );
+            var factory = javax.crypto.SecretKeyFactory.getInstance(
+                "PBKDF2WithHmacSHA256"
+            );
+            byte[] hash = factory.generateSecret(spec).getEncoded();
+            return (
+                "pbkdf2$" +
+                PBKDF2_ITERATIONS +
+                "$" +
+                HexFormat.of().formatHex(salt) +
+                "$" +
+                HexFormat.of().formatHex(hash)
+            );
         } catch (Exception e) {
             throw new RuntimeException("hash error", e);
         }
     }
 
     private static boolean verifyPassword(String password, String stored) {
-        if (stored == null || !stored.contains(":")) return false;
+        if (stored == null) return false;
+        if (stored.startsWith("pbkdf2$")) {
+            try {
+                var parts = stored.split("\\$");
+                if (parts.length != 4) return false;
+                int iterations = Integer.parseInt(parts[1]);
+                byte[] salt = HexFormat.of().parseHex(parts[2]);
+                byte[] expected = HexFormat.of().parseHex(parts[3]);
+                var spec = new javax.crypto.spec.PBEKeySpec(
+                    password.toCharArray(),
+                    salt,
+                    iterations,
+                    expected.length * 8
+                );
+                var factory = javax.crypto.SecretKeyFactory.getInstance(
+                    "PBKDF2WithHmacSHA256"
+                );
+                byte[] actual = factory.generateSecret(spec).getEncoded();
+                return MessageDigest.isEqual(actual, expected);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        // Legacy single-round SHA-256 format (salt:hash)
+        if (!stored.contains(":")) return false;
         try {
             var parts = stored.split(":");
             byte[] salt = HexFormat.of().parseHex(parts[0]);
@@ -155,5 +213,10 @@ public class UserService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /** True when the stored hash uses the current PBKDF2 format. */
+    private static boolean isPbkdf2(String stored) {
+        return stored != null && stored.startsWith("pbkdf2$");
     }
 }

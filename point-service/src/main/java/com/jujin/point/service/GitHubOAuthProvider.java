@@ -78,6 +78,16 @@ public class GitHubOAuthProvider implements OAuthProvider {
         return redirectUri;
     }
 
+    /** The SPA origin derived from the configured callback redirect URI. */
+    public String spaOrigin() {
+        try {
+            var uri = URI.create(redirectUri);
+            return uri.getScheme() + "://" + uri.getAuthority();
+        } catch (Exception e) {
+            return "http://localhost:3000";
+        }
+    }
+
     private static String encode(String s) {
         return URLEncoder.encode(s, StandardCharsets.UTF_8);
     }

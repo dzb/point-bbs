@@ -56,6 +56,9 @@ public class AuthFilter implements HttpFilter {
             if (auth.startsWith("Bearer ")) return auth.substring(7);
             return auth;
         }
+        // HttpOnly session cookie (SameSite=Lax) — the primary session carrier
+        var cookie = AuthService.tokenFromCookie(ctx.header("Cookie").orElse(null));
+        if (cookie != null) return cookie;
         return ctx.queryParam("token").orElse(null);
     }
 }

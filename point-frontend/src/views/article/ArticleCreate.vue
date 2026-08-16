@@ -1,6 +1,13 @@
 <template>
   <div class="detail-main">
-    <v-text-field v-model="form.title" placeholder="文章标题..." variant="plain" hide-details class="title-input mb-3" density="compact" />
+    <v-text-field
+      v-model="form.title"
+      placeholder="文章标题..."
+      variant="plain"
+      hide-details
+      class="title-input mb-3"
+      density="compact"
+    />
 
     <!-- Markdown toolbar -->
     <div class="md-toolbar">
@@ -20,13 +27,24 @@
       <v-btn icon="mdi-format-list-numbered" variant="text" size="small" @click="insertLine('1. ')" />
     </div>
 
-    <MentionTextarea ref="contentArea" v-model="form.content" placeholder="开始写作..." rows="18" variant="plain" hide-details class="content-area" />
+    <MentionTextarea
+      ref="contentArea"
+      v-model="form.content"
+      placeholder="开始写作..."
+      rows="18"
+      variant="plain"
+      hide-details
+      class="content-area"
+    />
 
     <v-alert v-if="error" type="error" density="compact" class="mt-3" variant="tonal">{{ error }}</v-alert>
     <div class="d-flex justify-end mt-4">
-      <v-btn class="post-btn" variant="flat" size="large" :loading="submitting" @click="submit">{{ editId ? '保存修改' : '发布文章' }}</v-btn>
+      <v-btn class="post-btn" variant="flat" size="large" :loading="submitting" @click="submit">
+        {{
+          editId ? '保存修改' : '发布文章'
+        }}
+      </v-btn>
     </div>
-
   </div>
 </template>
 
@@ -40,7 +58,9 @@ import MentionTextarea from '@/components/MentionTextarea.vue'
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-if (!auth.isLoggedIn) { router.replace('/login') }
+if (!auth.isLoggedIn) {
+  router.replace('/login')
+}
 const contentArea = ref<any>(null)
 const form = reactive({ title: '', content: '', contentType: 'markdown' as string })
 const submitting = ref(false)
@@ -58,17 +78,24 @@ onMounted(async () => {
         form.content = data.data.content || ''
         form.contentType = data.data.contentType || 'markdown'
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 })
 
 function insertMd(before: string, after: string) {
   const el = contentArea.value?.$el?.querySelector('textarea')
   if (!el) return
-  const start = el.selectionStart; const end = el.selectionEnd
+  const start = el.selectionStart
+  const end = el.selectionEnd
   const selected = form.content.substring(start, end)
   form.content = form.content.substring(0, start) + before + selected + after + form.content.substring(end)
-  setTimeout(() => { el.selectionStart = start + before.length; el.selectionEnd = end + before.length; el.focus() }, 0)
+  setTimeout(() => {
+    el.selectionStart = start + before.length
+    el.selectionEnd = end + before.length
+    el.focus()
+  }, 0)
 }
 
 function insertLine(prefix: string) {
@@ -77,7 +104,10 @@ function insertLine(prefix: string) {
   const start = el.selectionStart
   const lineStart = form.content.lastIndexOf('\n', start - 1) + 1
   form.content = form.content.substring(0, lineStart) + prefix + form.content.substring(lineStart)
-  setTimeout(() => { el.selectionStart = el.selectionEnd = lineStart + prefix.length; el.focus() }, 0)
+  setTimeout(() => {
+    el.selectionStart = el.selectionEnd = lineStart + prefix.length
+    el.focus()
+  }, 0)
 }
 
 function insertTable() {
@@ -89,7 +119,10 @@ function insertTable() {
 }
 
 async function submit() {
-  if (!form.title || !form.content) { error.value = '标题和内容不能为空'; return }
+  if (!form.title || !form.content) {
+    error.value = '标题和内容不能为空'
+    return
+  }
   submitting.value = true
   try {
     if (editId.value) {
@@ -101,15 +134,41 @@ async function submit() {
       if (data.code === 0) router.push(`/articles/${data.data.id}`)
       else error.value = data.message
     }
-  } catch (e: any) { error.value = e.response?.data?.message || (editId.value ? '保存失败' : '发布失败') }
+  } catch (e: any) {
+    error.value = e.response?.data?.message || (editId.value ? '保存失败' : '发布失败')
+  }
   submitting.value = false
 }
 </script>
 
 <style scoped>
-.title-input :deep(input) { font-size: 28px; font-weight: 700; }
-.md-toolbar { display: flex; align-items: center; gap: 2px; padding: 4px 0; border-top: 1px solid var(--paper-border); border-bottom: 1px solid var(--paper-border); margin-bottom: 8px; }
-.content-area :deep(textarea) { font-size: 17px; line-height: 1.9; }
-.post-btn { background: var(--paper-accent) !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 8px; font-weight: 500; padding: 0 32px; }
-.post-btn:hover { background: var(--paper-accent-hover) !important; }
+.title-input :deep(input) {
+  font-size: 28px;
+  font-weight: 700;
+}
+.md-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0;
+  border-top: 1px solid var(--paper-border);
+  border-bottom: 1px solid var(--paper-border);
+  margin-bottom: 8px;
+}
+.content-area :deep(textarea) {
+  font-size: 17px;
+  line-height: 1.9;
+}
+.post-btn {
+  background: var(--paper-accent) !important;
+  color: #fff !important;
+  text-transform: none;
+  letter-spacing: 0;
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0 32px;
+}
+.post-btn:hover {
+  background: var(--paper-accent-hover) !important;
+}
 </style>

@@ -3,6 +3,7 @@ package com.jujin.point.domain.entity;
 import com.jujin.freeway.db.schema.Column;
 import com.jujin.freeway.db.schema.Generated;
 import com.jujin.freeway.db.schema.Id;
+import com.jujin.freeway.db.schema.Index;
 import com.jujin.freeway.db.schema.Table;
 
 /**
@@ -12,15 +13,15 @@ import com.jujin.freeway.db.schema.Table;
 public class Comment {
     @Id @Generated
     private Long id;
-    @Column(nullable = false)
+    @Index(name = "idx_comment_user") @Column(nullable = false)
     private Long userId;
-    @Column(length = 64, nullable = false)
+    @Index(name = "idx_comment_entity") @Column(length = 64, nullable = false)
     private String entityType;   // "topic" or "comment"
-    @Column(nullable = false)
+    @Index(name = "idx_comment_entity") @Column(nullable = false)
     private Long entityId;
     @Column(type = "TEXT", nullable = false)
     private String content;
-    @Column(type = "LONGTEXT")
+    @Column(type = "TEXT")
     private String imageList;
     @Column(length = 32)
     private String contentType = "markdown";

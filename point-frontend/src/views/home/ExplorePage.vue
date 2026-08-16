@@ -1,11 +1,19 @@
 <template>
-    <div class="home-feed">
-      <div class="moments-list">
-        <MomentCard v-for="m in moments" :key="m.id" :moment="m" @toggle-like="toggleLike" @delete-moment="removeMoment" />
-      </div>
-      <div v-if="moments.length===0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无随想</div>
-      <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="var(--paper-accent)" />
-      <LoadMore :has-more="hasMore" :loading="loadingMore" @load-more="loadMore" />
+  <div class="home-feed">
+    <div class="moments-list">
+      <MomentCard
+        v-for="m in moments"
+        :key="m.id"
+        :moment="m"
+        @toggle-like="toggleLike"
+        @delete-moment="removeMoment"
+      />
+    </div>
+    <div v-if="moments.length === 0 && !loading" class="text-center py-16" style="color: var(--paper-text2)">
+      暂无随想
+    </div>
+    <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="var(--paper-accent)" />
+    <LoadMore :has-more="hasMore" :loading="loadingMore" @load-more="loadMore" />
   </div>
 </template>
 
@@ -14,6 +22,7 @@ import { ref, onMounted } from 'vue'
 import client from '@/api/client'
 import MomentCard from '@/components/MomentCard.vue'
 import LoadMore from '@/components/LoadMore.vue'
+import type { PageResult, Topic } from '@/types'
 
 const moments = ref<any[]>([])
 const loading = ref(true)
@@ -28,24 +37,40 @@ async function loadItems(reset = false) {
   if (reset) page.value = 1
   try {
     const { data } = await client.get('/topics/moments', { params: { page: page.value, pageSize } })
-    if (data.code===0) {
-      const newItems = (data.data||[]).map((m:any)=>({...m,liked:false}))
+    if (data.code === 0) {
+      const payload = (data.data || {}) as PageResult<Topic>
+      const newItems = payload.items.map((m: Topic) => ({ ...m, liked: false }))
       moments.value = page.value === 1 ? newItems : [...moments.value, ...newItems]
-      hasMore.value = newItems.length === pageSize
+      hasMore.value = (payload.total ?? 0) > page.value * pageSize
     }
-  } catch { console.error('api error') }
+  } catch {
+    console.error('api error')
+  }
   loading.value = false
 }
 
-async function loadMore() { page.value++; loadingMore.value = true; await loadItems(); loadingMore.value = false }
-
-async function toggleLike(m: any) {
-  if (m.liked) { await client.post(`/topics/${m.id}/unlike`); m.liked=false; m.likeCount-- }
-  else { await client.post(`/topics/${m.id}/like`); m.liked=true; m.likeCount++ }
+async function loadMore() {
+  page.value++
+  loadingMore.value = true
+  await loadItems()
+  loadingMore.value = false
 }
 
-function removeMoment(id: number) { moments.value = moments.value.filter(m => m.id !== id) }
+async function toggleLike(m: any) {
+  if (m.liked) {
+    await client.post(`/topics/${m.id}/unlike`)
+    m.liked = false
+    m.likeCount--
+  } else {
+    await client.post(`/topics/${m.id}/like`)
+    m.liked = true
+    m.likeCount++
+  }
+}
+
+function removeMoment(id: number) {
+  moments.value = moments.value.filter((m) => m.id !== id)
+}
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

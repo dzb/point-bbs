@@ -19,6 +19,12 @@ import java.util.Optional;
  * Topic service — CRUD, listing, search.
  */
 public class TopicService {
+    private static final long VIEW_WINDOW_MS = 60_000;
+    // Throttle view-count writes: at most one UPDATE per topic per 60s. A
+    // stale timestamp is harmless (the counter drifts low, never high).
+    private final java.util.concurrent.ConcurrentHashMap<Long, Long> lastViewWrite =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
     private final Database db;
     private final TopicRepository topicRepo;
     private final UserRepository userRepo;
@@ -36,6 +42,9 @@ public class TopicService {
     }
 
     public Topic create(long userId, CreateTopicRequest req) {
+        if (req.type() < 0 || req.type() > 2) {
+            throw new ServiceException("未知帖子类型: " + req.type());
+        }
         var now = System.currentTimeMillis();
         var topic = new Topic();
         topic.setUserId(userId);
@@ -95,17 +104,27 @@ public class TopicService {
             throw new ServiceException("无权删除");
         }
         topic.setStatus(0); // soft delete
-        topicRepo.update(topic);
+        db.transaction(() -> {
+            topicRepo.update(topic);
+            db.execute(
+                "UPDATE bbs_user SET topic_count = GREATEST(0, topic_count - 1) WHERE id = ?",
+                userId
+            );
+        });
         eventBus.publish(new TopicDeletedEvent(userId, topicId, userId, System.currentTimeMillis()));
     }
 
     public void incrViewCount(long topicId) {
+        long now = System.currentTimeMillis();
+        Long last = lastViewWrite.get(topicId);
+        if (last != null && now - last < VIEW_WINDOW_MS) return;
+        lastViewWrite.put(topicId, now);
         topicRepo.incrViewCount(topicId);
     }
 
     public PageResult<Topic> getRecentTopics(PageRequest page) {
         var items = topicRepo.findRecentTopics(page.page(), page.pageSize());
-        var total = topicRepo.count();
+        var total = topicRepo.countByType(0);
         return new PageResult<>(items, page.page(), page.pageSize(), total);
     }
 
@@ -125,9 +144,10 @@ public class TopicService {
         return topicRepo.findRecommended(limit);
     }
 
-    public List<Topic> getSticky() {
-        return topicRepo.findSticky();
+    public long countByType(int type) {
+        return topicRepo.countByType(type);
     }
+
 
     public PageResult<Topic> search(String keyword, PageRequest page) {
         var items = topicRepo.searchByTitle(keyword, page.page(), page.pageSize());

@@ -6,8 +6,7 @@ package com.jujin.point.domain.event;
 public sealed interface PointDomainEvent
     permits TopicCreatedEvent, TopicUpdatedEvent, TopicDeletedEvent, TopicRecommendedEvent,
             CommentCreatedEvent, UserLikedEvent, UserUnlikedEvent,
-            UserFollowedEvent, UserUnfollowedEvent, UserFavoritedEvent,
-            CheckInEvent, UserLoginEvent, LevelUpEvent, BadgeGrantedEvent,
+            UserFollowedEvent, UserUnfollowedEvent,
             QaAnswerAcceptedEvent, UserMentionedEvent {
 
     long timestamp();

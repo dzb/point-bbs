@@ -5,7 +5,9 @@
       <v-card-item>
         <v-card-title class="text-body-1">{{ t.title }}</v-card-title>
         <v-card-subtitle>
-          {{ t.user?.nickname }}<span style="font-size:11px;color:var(--paper-text2)">@{{ t.user?.username }}</span> · {{ formatTime(t.createTime) }}
+          {{ t.user?.nickname
+          }}<span style="font-size: 11px; color: var(--paper-text2)">@{{ t.user?.username }}</span> ·
+          {{ formatTime(t.createTime) }}
           <span class="ml-2">评论 {{ t.commentCount }}</span>
         </v-card-subtitle>
       </v-card-item>
@@ -17,13 +19,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import client from '@/api/client'
 import LoadMore from '@/components/LoadMore.vue'
+import type { PageResult, Topic } from '@/types'
 
 const route = useRoute()
-const query = ref(route.query.q as string || '')
+const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const topics = ref<any[]>([])
 const loading = ref(true)
 const page = ref(1)
@@ -31,24 +34,46 @@ const pageSize = 30
 const hasMore = ref(false)
 const loadingMore = ref(false)
 
+// Re-run the search when the ?q= param changes (e.g. searching from the search page)
+watch(
+  () => route.query.q,
+  (q) => {
+    query.value = typeof q === 'string' ? q : ''
+    page.value = 1
+    topics.value = []
+    loading.value = true
+    loadItems(true)
+  },
+)
+
 onMounted(() => loadItems())
 
 async function loadItems(reset = false) {
   if (reset) page.value = 1
-  if (!query.value) { loading.value = false; return }
+  if (!query.value) {
+    loading.value = false
+    return
+  }
   try {
     const { data } = await client.get('/topics/search', { params: { q: query.value, page: page.value, pageSize } })
     if (data.code === 0) {
-      const payload = data.data || {}
-      const newItems = payload.items || []
+      const payload = (data.data || {}) as PageResult<Topic>
+      const newItems = payload.items
       topics.value = page.value === 1 ? newItems : [...topics.value, ...newItems]
       hasMore.value = (payload.items || []).length < (payload.total ?? 0)
     }
-  } catch { console.error('api error') }
+  } catch {
+    console.error('api error')
+  }
   loading.value = false
 }
 
-async function loadMore() { page.value++; loadingMore.value = true; await loadItems(); loadingMore.value = false }
+async function loadMore() {
+  page.value++
+  loadingMore.value = true
+  await loadItems()
+  loadingMore.value = false
+}
 
 function formatTime(ts: number) {
   return ts ? new Date(ts).toLocaleDateString('zh-CN') : ''

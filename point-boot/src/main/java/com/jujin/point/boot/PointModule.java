@@ -17,6 +17,8 @@ import com.jujin.point.domain.entity.*;
 import com.jujin.point.service.DbQuery;
 import com.jujin.point.service.ServiceModule;
 import com.jujin.point.web.WebModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.Map;
@@ -30,6 +32,7 @@ import java.util.random.RandomGenerator;
  * Database health check is registered as an example of freeway's HealthCheck extension.
  */
 public class PointModule implements ModuleEx {
+    private static final Logger log = LoggerFactory.getLogger(PointModule.class);
 
     @Override
     public void bind(Binder binder) {
@@ -72,6 +75,82 @@ public class PointModule implements ModuleEx {
                     @Override
                     public void start(Container container) {
                         var db = container.get(Database.class);
+                        var cfg = container.get(
+                            com.jujin.freeway.boot.AppConfig.class
+                        );
+
+                        // ── H2 PostgreSQL-mode index note ──
+                        // With MODE=PostgreSQL the URL derives PostgresDialect and
+                        // Schema.ensure creates every entity-declared @Index (and
+                        // unique index) natively via INFORMATION_SCHEMA.INDEXES.
+                        // The one index that cannot be entity-declared is
+                        // idx_follow_other (@Index is not repeatable — other_id
+                        // already belongs to the unique uq_user_follow), so it is
+                        // created manually here on both H2 and MySQL.
+                        var dbUrl = cfg.get("freeway.db.url");
+                        if (dbUrl != null && dbUrl.startsWith("jdbc:")) {
+                            boolean isH2 = dbUrl.startsWith("jdbc:h2");
+                            String ddl = isH2
+                                ? "CREATE INDEX IF NOT EXISTS idx_follow_other ON bbs_user_follow(other_id)"
+                                : "CREATE INDEX idx_follow_other ON bbs_user_follow(other_id)";
+                            try {
+                                db.execute(ddl);
+                            } catch (Exception e) {
+                                // MySQL: duplicate-name error means it already exists
+                                log.warn("index create skipped: {}", e.getMessage());
+                            }
+                        }
+
+                        // ── Bootstrap admin (config-gated) ──
+                        // When bbs.admin.username + bbs.admin.password are set
+                        // and no user holds the admin permission yet, create
+                        // the admin account and assign the admin role. Default
+                        // configs leave both empty — no-op.
+                        String adminName = cfg.get("bbs.admin.username");
+                        String adminPass = cfg.get("bbs.admin.password");
+                        boolean hasAdmin = DbQuery.count(
+                            db,
+                            "SELECT COUNT(*) AS cnt FROM bbs_user_role ur JOIN bbs_role_permission rp ON ur.role_id = rp.role_id " +
+                            "JOIN bbs_permission p ON rp.permission_id = p.id WHERE p.code = 'admin' AND p.status = 1"
+                        ) > 0;
+                        long adminUserExists = DbQuery.count(
+                            db,
+                            "SELECT COUNT(*) AS cnt FROM bbs_user WHERE username = ?",
+                            adminName
+                        );
+                        if (
+                            !hasAdmin &&
+                            adminName != null &&
+                            !adminName.isBlank() &&
+                            adminPass != null &&
+                            adminPass.length() >= 8 &&
+                            adminUserExists == 0
+                        ) {
+                            long t = System.currentTimeMillis();
+                            String pw = hashPw(adminPass);
+                            db.execute(
+                                "INSERT INTO bbs_user (create_time,update_time,nickname,username,password,email_verified,score,exp,level,status,topic_count,comment_count,follow_count,fans_count,forbidden_end_time) VALUES (?,?,?,?,?,true,0,0,1,1,0,0,0,0,0)",
+                                t, t, adminName, adminName, pw
+                            );
+                            var inserted = db
+                                .query(
+                                    "SELECT id FROM bbs_user WHERE username = ?",
+                                    adminName
+                                )
+                                .one(Row.class);
+                            inserted.ifPresent(row ->
+                                db.execute(
+                                    "INSERT INTO bbs_user_role (user_id, role_id, create_time) VALUES (?,1,?)",
+                                    row.longValue("id"),
+                                    t
+                                )
+                            );
+                            log.info(
+                                "[seed] Bootstrap admin '{}' created",
+                                adminName
+                            );
+                        }
+
                         long count = DbQuery.count(
                             db,
                             "SELECT COUNT(*) AS cnt FROM bbs_permission"
@@ -112,9 +191,7 @@ public class PointModule implements ModuleEx {
                                 now
                             );
                         }
-                        System.out.println(
-                            "[seed] Default roles & permissions created"
-                        );
+                        log.info("[seed] Default roles & permissions created");
                     }
 
                     @Override
@@ -123,7 +200,7 @@ public class PointModule implements ModuleEx {
             )
             .before("app-context-init");
 
-        // ── 4. Seed dev test data (idempotent) ──
+        // ── 4. Seed dev test data (idempotent, dev profiles only) ──
         binder
             .contribute(RuntimeHook.class)
             .add(
@@ -131,12 +208,29 @@ public class PointModule implements ModuleEx {
                 new RuntimeHook() {
                     @Override
                     public void start(Container container) {
+                        // Never seed demo accounts on production: the dev data
+                        // ships known passwords ("123456") and demo content.
+                        var config = container.get(
+                            com.jujin.freeway.boot.AppConfig.class
+                        );
+                        if (
+                            config.profiles().stream().anyMatch("prod"::equals)
+                        ) {
+                            log.info("[dev-data] skipped (prod profile active)");
+                            return;
+                        }
                         var db = container.get(Database.class);
                         long userCount = DbQuery.count(
                             db,
                             "SELECT COUNT(*) AS cnt FROM bbs_user"
                         );
-                        if (userCount > 0) return;
+                        // Dev convenience, idempotent: 墨客 (user 1) gets the
+                        // admin role so the admin panel is usable in dev. Runs
+                        // both on pre-existing databases and after a fresh seed.
+                        if (userCount > 0) {
+                            grantAdminToMoke(db);
+                            return;
+                        }
 
                         long t = System.currentTimeMillis();
                         String pw = hashPw("123456");
@@ -647,17 +741,38 @@ public class PointModule implements ModuleEx {
                             "UPDATE bbs_user SET fans_count = (SELECT COUNT(*) FROM bbs_user_follow WHERE other_id = bbs_user.id AND status = 1)"
                         );
 
-                        System.out.println(
-                            "[dev-data] Seeded " +
-                                users.length +
-                                " users, " +
-                                cats.length +
-                                " categories, " +
-                                topics.length +
-                                " topics, " +
-                                (comments.length + artComments.length) +
-                                " comments, 1 article"
+                        // --- fix entity counters (seed inserts comments/likes without counts) ---
+                        db.execute(
+                            "UPDATE bbs_topic SET comment_count = (SELECT COUNT(*) FROM bbs_comment WHERE entity_type = 'topic' AND entity_id = bbs_topic.id AND status = 1)"
                         );
+                        db.execute(
+                            "UPDATE bbs_article SET comment_count = (SELECT COUNT(*) FROM bbs_comment WHERE entity_type = 'article' AND entity_id = bbs_article.id AND status = 1)"
+                        );
+                        db.execute(
+                            "UPDATE bbs_topic SET like_count = (SELECT COUNT(*) FROM bbs_user_like WHERE entity_type = 'topic' AND entity_id = bbs_topic.id)"
+                        );
+
+                        log.info(
+                            "[dev-data] Seeded {} users, {} categories, {} topics, {} comments, 1 article",
+                            users.length, cats.length, topics.length,
+                            comments.length + artComments.length
+                        );
+                        grantAdminToMoke(db);
+                    }
+
+                    /** Idempotently grant the admin role to 墨客 (user 1) — dev convenience. */
+                    private static void grantAdminToMoke(Database db) {
+                        long adminRoleCount = DbQuery.count(
+                            db,
+                            "SELECT COUNT(*) AS cnt FROM bbs_user_role WHERE user_id = 1 AND role_id = 1"
+                        );
+                        if (adminRoleCount == 0) {
+                            db.execute(
+                                "INSERT INTO bbs_user_role (user_id, role_id, create_time) VALUES (1,1,?)",
+                                System.currentTimeMillis()
+                            );
+                            log.info("[dev-data] granted admin role to user 1 (墨客)");
+                        }
                     }
 
                     @Override
@@ -704,6 +819,12 @@ public class PointModule implements ModuleEx {
     }
 
     /** All entity classes for Schema.ensure auto-migration. */
+    // Entities actively managed by Schema.ensure. The legacy bbs-go tables
+    // without any code (Vote*, CheckIn, Badge*, LevelConfig, TaskConfig,
+    // Dict*, SmsCode, EmailCode/Log, UserReport, ForbiddenWord, UserFeed,
+    // UserToken, UserExpLog/ScoreLog, UserTask*, Link) are intentionally left
+    // OUT — their tables stay in the DB untouched, and they no longer
+    // participate in schema migration. Re-add when a feature uses them.
     static final Class<?>[] ALL_ENTITIES = {
         User.class,
         Topic.class,
@@ -713,40 +834,18 @@ public class PointModule implements ModuleEx {
         Tag.class,
         TopicTag.class,
         ArticleTag.class,
-        Vote.class,
-        VoteOption.class,
-        VoteRecord.class,
         UserLike.class,
         Favorite.class,
         UserFollow.class,
         Message.class,
-        CheckIn.class,
-        UserScoreLog.class,
-        UserExpLog.class,
         OperateLog.class,
-        UserTaskEvent.class,
-        UserTaskLog.class,
-        TaskConfig.class,
-        Badge.class,
-        UserBadge.class,
-        LevelConfig.class,
         SysConfig.class,
-        Link.class,
-        ForbiddenWord.class,
         Attachment.class,
         AttachmentDownloadLog.class,
-        UserFeed.class,
-        UserReport.class,
-        EmailCode.class,
-        EmailLog.class,
-        SmsCode.class,
-        UserToken.class,
         ThirdUser.class,
         Role.class,
         Permission.class,
         RolePermission.class,
         UserRole.class,
-        DictType.class,
-        Dict.class,
     };
 }

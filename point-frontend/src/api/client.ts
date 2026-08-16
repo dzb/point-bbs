@@ -7,21 +7,14 @@ const client = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Inject auth token
-client.interceptors.request.use((config) => {
-  const token = localStorage.getItem('point_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+// Session auth: the HttpOnly SameSite=Lax cookie rides along automatically
+// on same-origin requests — no token handling here.
 
 // Handle errors
 client.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('point_token')
       router.push('/login')
     }
     return Promise.reject(err)

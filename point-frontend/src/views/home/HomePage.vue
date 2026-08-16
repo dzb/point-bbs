@@ -1,37 +1,68 @@
 <template>
-    <div class="home-feed">
-      <!-- Composer -->
-      <div v-if="auth.isLoggedIn" class="composer mb-4">
-        <div class="d-flex">
-          <v-avatar size="36" class="mr-3 mt-1 flex-shrink-0"><v-icon>mdi-pen</v-icon></v-avatar>
-          <div class="flex-grow-1" style="min-width:0">
-            <MentionTextarea v-model="newMoment" placeholder="记录思考，分享见闻..." rows="2" auto-grow variant="plain" hide-details density="compact" @paste="onPaste" class="composer-input" />
-            <div v-if="images.length" class="composer-images">
-              <div v-for="(img,i) in images" :key="i" class="composer-img">
-                <img :src="img.url" />
-                <v-btn icon="mdi-close" variant="flat" size="x-small" class="img-remove-btn" @click="images.splice(i,1)" />
-              </div>
-              <div v-if="uploading" class="composer-img uploading">
-                <v-progress-circular indeterminate size="20" color="var(--paper-accent)" />
-              </div>
+  <div class="home-feed">
+    <!-- Composer -->
+    <div v-if="auth.isLoggedIn" class="composer mb-4">
+      <div class="d-flex">
+        <v-avatar size="36" class="mr-3 mt-1 flex-shrink-0"><v-icon>mdi-pen</v-icon></v-avatar>
+        <div class="flex-grow-1" style="min-width: 0">
+          <MentionTextarea
+            v-model="newMoment"
+            placeholder="记录思考，分享见闻..."
+            rows="2"
+            auto-grow
+            variant="plain"
+            hide-details
+            density="compact"
+            class="composer-input"
+            @paste="onPaste"
+          />
+          <div v-if="images.length" class="composer-images">
+            <div v-for="(img, i) in images" :key="i" class="composer-img">
+              <img :src="img.url" />
+              <v-btn
+                icon="mdi-close"
+                variant="flat"
+                size="x-small"
+                class="img-remove-btn"
+                @click="images.splice(i, 1)"
+              />
             </div>
-            <div class="d-flex align-center mt-2 composer-bar">
-              <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="onFileChange" />
-              <v-btn icon="mdi-image-outline" variant="text" size="small" :loading="uploading" @click="triggerUpload" :style="{color:'var(--paper-text2)'}" />
-              <v-spacer />
-              <v-btn class="post-btn" variant="flat" size="small" :loading="posting" @click="postMoment">发布</v-btn>
+            <div v-if="uploading" class="composer-img uploading">
+              <v-progress-circular indeterminate size="20" color="var(--paper-accent)" />
             </div>
+          </div>
+          <div class="d-flex align-center mt-2 composer-bar">
+            <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="onFileChange" />
+            <v-btn
+              icon="mdi-image-outline"
+              variant="text"
+              size="small"
+              :loading="uploading"
+              :style="{ color: 'var(--paper-text2)' }"
+              @click="triggerUpload"
+            />
+            <v-spacer />
+            <v-btn class="post-btn" variant="flat" size="small" :loading="posting" @click="postMoment">发布</v-btn>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Moments -->
-      <div class="moments-list">
-        <MomentCard v-for="m in moments" :key="m.id" :moment="m" @toggle-like="toggleLike" @delete-moment="removeMoment" />
-      </div>
-      <div v-if="moments.length===0 && !loading" class="text-center py-16" style="color:var(--paper-text2)">暂无随想</div>
-      <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="var(--paper-accent)" />
-      <LoadMore :has-more="hasMore" :loading="loadingMore" @load-more="loadMore" />
+    <!-- Moments -->
+    <div class="moments-list">
+      <MomentCard
+        v-for="m in moments"
+        :key="m.id"
+        :moment="m"
+        @toggle-like="toggleLike"
+        @delete-moment="removeMoment"
+      />
+    </div>
+    <div v-if="moments.length === 0 && !loading" class="text-center py-16" style="color: var(--paper-text2)">
+      暂无随想
+    </div>
+    <v-progress-circular v-if="loading" indeterminate class="d-block mx-auto mt-8" color="var(--paper-accent)" />
+    <LoadMore :has-more="hasMore" :loading="loadingMore" @load-more="loadMore" />
   </div>
 </template>
 
@@ -42,7 +73,7 @@ import client from '@/api/client'
 import MomentCard from '@/components/MomentCard.vue'
 import MentionTextarea from '@/components/MentionTextarea.vue'
 import LoadMore from '@/components/LoadMore.vue'
-import type { Topic } from '@/types'
+import type { PageResult, Topic } from '@/types'
 
 const auth = useAuthStore()
 const moments = ref<Topic[]>([])
@@ -57,21 +88,29 @@ const loadingMore = ref(false)
 const images = ref<{ url: string }[]>([])
 const fileInput = ref<HTMLInputElement>()
 
-function triggerUpload() { fileInput.value?.click() }
+function triggerUpload() {
+  fileInput.value?.click()
+}
 
 async function uploadImage(file: Blob): Promise<string> {
   uploading.value = true
-  return new Promise<string>((resolve) => {
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const base64 = reader.result as string
-      const { data } = await client.post('/upload', base64, {
-        headers: { 'Content-Type': 'text/plain' }
-      })
-      resolve(data.code === 0 && data.data?.url ? data.data.url : '')
-    }
-    reader.readAsDataURL(file)
-  }).finally(() => { uploading.value = false })
+  try {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(new Error('读取文件失败'))
+      reader.readAsDataURL(file)
+    })
+    const { data } = await client.post('/upload', base64, {
+      headers: { 'Content-Type': 'text/plain' },
+    })
+    return data.code === 0 && data.data?.url ? data.data.url : ''
+  } catch (e) {
+    console.error('upload error', e)
+    return ''
+  } finally {
+    uploading.value = false
+  }
 }
 
 async function onPaste(e: ClipboardEvent) {
@@ -81,7 +120,10 @@ async function onPaste(e: ClipboardEvent) {
     if (item.type.startsWith('image/')) {
       e.preventDefault()
       const blob = item.getAsFile()
-      if (blob) { const url = await uploadImage(blob); if (url) images.value.push({ url }) }
+      if (blob) {
+        const url = await uploadImage(blob)
+        if (url) images.value.push({ url })
+      }
     }
   }
 }
@@ -101,25 +143,37 @@ async function loadItems(reset = false) {
   try {
     const { data } = await client.get('/topics/moments', { params: { page: page.value, pageSize } })
     if (data.code === 0) {
-      const newItems = (data.data || []).map((m: Topic) => ({ ...m, liked: false }))
+      const payload = (data.data || {}) as PageResult<Topic>
+      const newItems = payload.items.map((m: Topic) => ({ ...m, liked: false }))
       moments.value = page.value === 1 ? newItems : [...moments.value, ...newItems]
-      hasMore.value = newItems.length === pageSize
+      hasMore.value = (payload.total ?? 0) > page.value * pageSize
     }
-  } catch { console.error('api error') }
+  } catch {
+    console.error('api error')
+  }
   loading.value = false
 }
 
-async function loadMore() { page.value++; loadingMore.value = true; await loadItems(); loadingMore.value = false }
+async function loadMore() {
+  page.value++
+  loadingMore.value = true
+  await loadItems()
+  loadingMore.value = false
+}
 
 async function postMoment() {
   if (!newMoment.value.trim() && !images.value.length) return
   posting.value = true
   let content = newMoment.value
   if (images.value.length) {
-    const imgs = images.value.map(i => `![](${i.url})`).join('\n')
+    const imgs = images.value.map((i) => `![](${i.url})`).join('\n')
     content = content ? content + '\n' + imgs : imgs
   }
-  try { await client.post('/topics', { title: '', content, type: 1 }) } catch { console.error('api error') }
+  try {
+    await client.post('/topics', { title: '', content, type: 1 })
+  } catch {
+    console.error('api error')
+  }
   posting.value = false
   newMoment.value = ''
   images.value = []
@@ -127,30 +181,92 @@ async function postMoment() {
 }
 
 async function toggleLike(m: Topic) {
-  if (m.liked) { await client.post(`/topics/${m.id}/unlike`); m.liked = false; m.likeCount-- }
-  else { await client.post(`/topics/${m.id}/like`); m.liked = true; m.likeCount++ }
+  if (m.liked) {
+    await client.post(`/topics/${m.id}/unlike`)
+    m.liked = false
+    m.likeCount--
+  } else {
+    await client.post(`/topics/${m.id}/like`)
+    m.liked = true
+    m.likeCount++
+  }
 }
 
 function removeMoment(id: number) {
-  moments.value = moments.value.filter(m => m.id !== id)
+  moments.value = moments.value.filter((m) => m.id !== id)
 }
 </script>
 
 <style scoped>
-.composer { border: 1px solid var(--paper-border); border-radius: 12px; padding: 12px 12px 10px; background: var(--paper-bg); }
-.composer-input :deep(.v-field) { border: none !important; box-shadow: none !important; outline: none !important; background: transparent !important; }
-.composer-input :deep(.v-field__input) { padding: 8px 0 4px !important; font-size: 15px; line-height: 1.5; }
+.composer {
+  border: 1px solid var(--paper-border);
+  border-radius: 12px;
+  padding: 12px 12px 10px;
+  background: var(--paper-bg);
+}
+.composer-input :deep(.v-field) {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}
+.composer-input :deep(.v-field__input) {
+  padding: 8px 0 4px !important;
+  font-size: 15px;
+  line-height: 1.5;
+}
 .composer-input :deep(.v-field__outline),
 .composer-input :deep(.v-field__overlay),
 .composer-input :deep(.v-field__loader),
 .composer-input :deep(.v-field__clearable),
-.composer-input :deep(.v-input__details) { display: none !important; }
-.composer-images { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; margin-top: 6px; }
-.composer-img { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; }
-.composer-img img { width: 100%; height: 100%; object-fit: cover; }
-.composer-img.uploading { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.03); }
-.img-remove-btn { opacity: 0; position: absolute; top: 4px; right: 4px; transition: opacity .15s; background: rgba(0,0,0,.5) !important; color: #fff !important; }
-.composer-img:hover .img-remove-btn { opacity: 1; }
-.post-btn { background: var(--paper-accent) !important; color: #fff !important; text-transform: none; letter-spacing: 0; border-radius: 20px; padding: 0 20px; font-weight: 500; }
-.post-btn:hover { background: var(--paper-accent-hover) !important; }
+.composer-input :deep(.v-input__details) {
+  display: none !important;
+}
+.composer-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+.composer-img {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 1;
+}
+.composer-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.composer-img.uploading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.03);
+}
+.img-remove-btn {
+  opacity: 0;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  transition: opacity 0.15s;
+  background: rgba(0, 0, 0, 0.5) !important;
+  color: #fff !important;
+}
+.composer-img:hover .img-remove-btn {
+  opacity: 1;
+}
+.post-btn {
+  background: var(--paper-accent) !important;
+  color: #fff !important;
+  text-transform: none;
+  letter-spacing: 0;
+  border-radius: 20px;
+  padding: 0 20px;
+  font-weight: 500;
+}
+.post-btn:hover {
+  background: var(--paper-accent-hover) !important;
+}
 </style>

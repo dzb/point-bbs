@@ -20,13 +20,15 @@ public class AdminUserRoutes {
         return RouteGroup.of("/api/admin/user",
             // List users (paginated)
             Route.get("", ctx -> {
-                int page = ctx.queryParam("page", Integer.class).orElse(1);
-                int pageSize = ctx.queryParam("pageSize", Integer.class).orElse(20);
+                var pr = PageRequest.of(
+                    ctx.queryParam("page", Integer.class).orElse(1),
+                    ctx.queryParam("pageSize", Integer.class).orElse(20)
+                );
                 var repo = userRepo();
-                var users = repo.findPage(page, pageSize);
+                var users = repo.findPage(pr.page(), pr.pageSize());
                 users.forEach(u -> u.setPassword(null));
                 var result = Map.of("items", (Object) users, "total", repo.countAll(),
-                    "page", page, "pageSize", pageSize);
+                    "page", pr.page(), "pageSize", pr.pageSize());
                 ctx.sendJson(200, ApiResponse.ok(result));
             }),
             // Get user detail
@@ -46,27 +48,23 @@ public class AdminUserRoutes {
             // Forbid user (temporary ban)
             Route.post("/forbidden/{id}", ctx -> {
                 long id = ctx.pathVar("id", Long.class).orElse(0L);
-                var user = userSvc().findById(id).orElse(null);
-                if (user != null) {
-                    user.setForbiddenEndTime(System.currentTimeMillis() + 365L * 86400 * 1000);
-                    userSvc().updateUser(id, new UpdateUserRequest(
-                        user.getNickname(), user.getAvatar(), user.getGender(),
-                        user.getDescription(), user.getHomePage(), user.getBackgroundImage()
-                    ));
+                if (userSvc().findById(id).isEmpty()) {
+                    ctx.sendJson(404, ApiResponse.error("用户不存在"));
+                    return;
                 }
+                userSvc().setForbiddenEndTime(id, System.currentTimeMillis() + 365L * 86400 * 1000);
+                com.jujin.point.admin.AdminAudit.log(ctx, "forbid", "user", id, "禁言用户一年");
                 ctx.sendJson(200, ApiResponse.ok());
             }),
             // Unforbid user
             Route.post("/unforbidden/{id}", ctx -> {
                 long id = ctx.pathVar("id", Long.class).orElse(0L);
-                var user = userSvc().findById(id).orElse(null);
-                if (user != null) {
-                    user.setForbiddenEndTime(0);
-                    userSvc().updateUser(id, new UpdateUserRequest(
-                        user.getNickname(), user.getAvatar(), user.getGender(),
-                        user.getDescription(), user.getHomePage(), user.getBackgroundImage()
-                    ));
+                if (userSvc().findById(id).isEmpty()) {
+                    ctx.sendJson(404, ApiResponse.error("用户不存在"));
+                    return;
                 }
+                userSvc().setForbiddenEndTime(id, 0);
+                com.jujin.point.admin.AdminAudit.log(ctx, "unforbid", "user", id, "解除禁言");
                 ctx.sendJson(200, ApiResponse.ok());
             })
         );

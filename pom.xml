@@ -31,8 +31,9 @@
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <freeway.version>1.3.8-SNAPSHOT</freeway.version>
-        <slf4j.version>2.0.17</slf4j.version>
-        <h2.version>2.3.232</h2.version>
+        <slf4j.version>2.0.18</slf4j.version>
+        <h2.version>2.4.240</h2.version>
+        <postgresql.version>42.7.7</postgresql.version>
         <!-- JWT library for auth -->
     </properties>
 
@@ -60,11 +61,18 @@
                             <version>${freeway.version}</version>
                         </dependency>
 
-            <!-- H2 database -->
+            <!-- H2 database (dev) -->
             <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>${h2.version}</version>
+            </dependency>
+
+            <!-- PostgreSQL JDBC driver (production) -->
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
             </dependency>
 
             <!-- SLF4J -->
