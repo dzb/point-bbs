@@ -107,6 +107,45 @@ Full design system documented in `point-frontend/DESIGN.md`.
 
 `src/utils/markdown.ts` — `renderMarkdown()` splits content into text segments (rendered by markdown-it) and consecutive image groups (rendered as `<div class="img-grid cols-N">` directly). This is the ONLY approach that works with `breaks:true` + XSS-safe `html:false`. Simpler alternatives (pre-injecting HTML, post-processing rendered output) were tested and failed. The code comment documents all three approaches and why each simpler one was rejected.
 
+## Recent changes (2026-08-15)
+
+### Audit round: security + correctness + quality (2026-08-15)
+- Verified freeway HEAD == 1.3.8-SNAPSHOT (b6ff921); reinstalled HEAD-level artifacts; all 7 modules compile unchanged; full API smoke + tests green. See `AUDIT-2026-08-15.md` for the complete report.
+- **Search fix (dialect lexer conflict)**: `LIKE ... ESCAPE '\'` broke under the MySQL-dialect lexer (H2 MODE=MySQL URL derives MySqlDialect; `\'` = escaped quote swallows `$limit/$offset` → 500). H2 runtime wants `'\'`, real MySQL wants `'\\'` — dialect-neutral fix: `ESCAPE '!'` + `!`-escaping in TopicRepository.
+- **Security**: PBKDF2 password hashing (legacy SHA-256 auto-upgrade on login); constant-time HMAC compare; JWT placeholder-secret fail-fast (prod) / loud warning (dev); OAuth redirect pinned to configured redirect-uri origin; upload restricted to `image/*` with sanitized filenames + nosniff + attachment disposition for non-images; followers/following/profile no longer expose password/email/phone; unique composite indexes on user_like/favorite/follow/third_user/username/email (H2: created via seed hook because MySQL-dialect introspection fails on H2; prod MySQL via Schema.ensure); auth rate limiting (10/10min per IP); signup/signin now use freeway typed-body validation; error handler no longer leaks exception class names.
+- **Correctness**: comment delete now decrements parent + user counts (transactional); topic delete decrements topic_count; comment create increments user count; `getRecentTopics` total now counts type=0 only; deleted topics return 404; ArticleService partial updates + generated-key insert; unlike/unfollow/favorite transactional; event subscribers isolated (best-effort notifications); 400s instead of 500s for bad params/empty bodies; long offsets; pageSize clamps.
+- **Bootstrap**: data-seed creates a config-driven admin (`bbs.admin.username`/`password`, no-op by default); dev seed grants admin role to 墨客 (id 1) idempotently; dev seed skipped on prod profile; seeded topic/article counters fixed up.
+- **Frontend**: fixed critical stored XSS in markdown image-grid path (validateLink + space-encoding + escapeHtml); MomentCard comment envelope; upload promise hang; ArticleDetail error handling + route watch; read-all messages; auth store awaits full user; route guards + scrollBehavior; SearchPage query watch; favorites article navigation; mention debounce cleanup; optimistic-toggle error handling.
+- **Production target switched from MySQL to real PostgreSQL** (`application-prod.json` now uses `jdbc:postgresql://localhost:5432/bbs`, no forced dialect — the URL derives `PostgresDialect`; `org.postgresql:postgresql` 42.7.7 added as a runtime driver in `point-boot`). All `@Column(type="LONGTEXT")` became dialect-neutral `TEXT`. Verified end-to-end against a real PostgreSQL 18.4 instance: Schema.ensure creates all 21 tables + 20 indexes (14 query + 6 unique) natively, seed/bootstrap/admin grant run, 16/16 API smoke, audit logs, JSON notifications and a 50k-char TEXT body all pass. Default config remains H2 `MODE=PostgreSQL` for zero-setup dev; the dev H2 and prod PG now share one dialect family.
+- **H2 switched to PostgreSQL compatibility mode** (`MODE=PostgreSQL` in the JDBC URL, dev + tests): the URL now derives `PostgresDialect`, whose `INFORMATION_SCHEMA.INDEXES` introspection works natively on H2 — `Schema.ensure` now creates every entity-declared `@Index` (13 query + 6 unique) by itself, the MySQL-flavored introspection warnings are gone, and `CREATE INDEX IF NOT EXISTS` is native H2/Postgres syntax. Legacy MySQL-mode databases still open fine (identifiers were stored upper-cased; keep `NON_KEYWORDS` in the URL and avoid quoted identifiers — `bbs_sys_config.key` is referenced bare). The one index `@Index` cannot express (`idx_follow_other`, since `@Index` is not repeatable and `other_id` already belongs to unique `uq_user_follow`) is created by a one-line seed hook. Prod MySQL is unaffected.
+
+### X-style comments (2026-08-15)
+- Comment replies follow the Twitter/X flat-timeline model — **not** 楼中楼 (threaded nesting): all comments are flat rows ordered by time; a reply carries `quoteId` and is rendered with a quote-preview block of the replied-to content, an auto-`@nickname ` composer prefix, and a "回复" affordance on each comment. Posting appends the new comment and scrolls to it (visible even beyond page 1). The backend enriches comments with `quoteContent` (batch-queried, no N+1) and counts replies against the quoted comment + notifies its author.
+
+### Optimization round 2 — full 15-item list (2026-08-15)
+- OAuth state via HttpOnly SameSite=Lax cookie (login-CSRF closed); signout now clears the session cookie.
+- Comment replies activated: quoteId > 0 bumps the quoted comment's count and notifies its author.
+- WebSocket push: `/ws/notify` (token or cookie auth) + NotificationHub + event-driven pings; SPA refreshes unread on ping, 15s polling stays as fallback.
+- Admin UI at `/admin` (topics/users/categories/config tabs) with `requiresAdmin` guard + `/api/users/current/permissions`; sidebar entry when admin.
+- Tests: AuthService/UserService/CommentService suites (19 total, all green) + `tools/smoke-api.sh` (16 end-to-end checks). The new tests caught a real bug: hand-rolled JWT claim extraction broke on escaped quotes → payload parsing now uses freeway JsonUtils.
+- CI: `.github/workflows/ci.yml` (JDK 25 + Node 22, Sonatype snapshots repo for freeway, backend tests + frontend build/lint + smoke).
+- ESLint (flat config, typescript-eslint, eslint-plugin-vue) + Prettier + `.editorconfig`; `npm run lint` / `npm run format:check`.
+- Frontend types: PageResult/AuthResult/ApiEnvelope; `any` refs removed from 8 views.
+- List endpoints unified on `{items,page,pageSize,total}` (following/moments/recommended/articles).
+- Dead code removed: 5 unpublished event classes, `User.roles` column, 12 unused methods.
+- System.out/err → slf4j across services/modules.
+- View-count writes throttled to one UPDATE per topic per 60s.
+- **Session auth migrated to HttpOnly cookie**: signin/signup/OAuth set `point_token` (HttpOnly; SameSite=Lax = built-in CSRF protection since all mutations are POST); AuthFilter + WS endpoint read the cookie; frontend no longer stores the JWT in localStorage; `bbs.jwt.cookie-domain` config (dev sets `localhost` for the Vite proxy). Legacy Bearer header and `?token=` still accepted.
+- Attachments: upload size cap (`bbs.upload.max-size`, default 10MB); downloads stream instead of buffering.
+
+### Optimization round (2026-08-15, same day)
+- SVG uploads rejected (script-capable image type); attachment disposition fallback.
+- Global security headers filter (`SecurityHeadersFilter`): CSP self-only + X-Frame-Options DENY + nosniff + Referrer-Policy; ordered before SpaFilter so SPA routes carry them too.
+- Permission codes cached 60s per user (PermissionService + SimpleCache); invalidated on role changes — AuthFilter no longer runs a 3-table JOIN per request.
+- Frontend bundle -82%: `vite-plugin-vuetify` auto-import replaces the full Vuetify import; vendor manualChunks (vue/markdown-it). index chunk 722KB → 110KB (gzip 234KB → 41KB).
+- Dependencies aligned with freeway HEAD: slf4j 2.0.18, H2 2.4.240 (existing 2.3 data file opens fine).
+- `tools/sync-frontend.sh` — builds the frontend and copies dist into `point-boot/src/main/resources/static/` (previously a manual step).
+
 ## Recent changes (2026-06-14)
 
 ### freeway 1.3.8-SNAPSHOT upgrade (2026-08-14)
