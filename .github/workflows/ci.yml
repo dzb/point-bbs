@@ -24,7 +24,7 @@ jobs:
           cache: npm
           cache-dependency-path: point-frontend/package-lock.json
 
-      # freeway 1.3.8 is a release on Maven Central — no extra repos needed
+      # freeway 1.3.9 is a release on Maven Central — no extra repos needed
 
       - name: Build backend (compile + tests + jar)
         run: mvn -B package -pl point-boot -am

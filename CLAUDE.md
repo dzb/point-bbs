@@ -11,7 +11,7 @@ Two independent projects live in this repo:
 | Directory | Stack | Purpose |
 |---|---|---|
 | `point-frontend/` | Vue 3 + Vuetify + Vite + TypeScript | SPA frontend |
-| `point-boot/` + sibling modules | Java (JDK 25) + freeway 1.3.8-SNAPSHOT + Maven | REST API backend |
+| `point-boot/` + sibling modules | Java (JDK 25) + freeway 1.3.9 + Maven | REST API backend |
 
 The backend source spans **7 Maven modules** at the repo root: `point-domain`, `point-db`, `point-cache`, `point-service`, `point-web`, `point-admin`, `point-boot`. The `point-boot` module is the executable launcher (shade JAR with `PointApp.main()`).
 
