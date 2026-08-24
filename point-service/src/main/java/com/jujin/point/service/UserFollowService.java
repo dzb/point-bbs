@@ -3,7 +3,6 @@ package com.jujin.point.service;
 import com.jujin.point.domain.entity.User;
 import com.jujin.point.domain.entity.UserFollow;
 import com.jujin.point.domain.event.UserFollowedEvent;
-import com.jujin.point.domain.event.UserUnfollowedEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
 import com.jujin.freeway.db.Row;
@@ -50,7 +49,6 @@ public class UserFollowService {
             if (deleted > 0) {
                 db.execute("UPDATE bbs_user SET follow_count = GREATEST(0, follow_count - 1) WHERE id = ?", userId);
                 db.execute("UPDATE bbs_user SET fans_count = GREATEST(0, fans_count - 1) WHERE id = ?", otherId);
-                bus.publish(new UserUnfollowedEvent(userId, otherId, System.currentTimeMillis()));
             }
         });
     }

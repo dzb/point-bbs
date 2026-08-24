@@ -26,12 +26,9 @@ public class ArticleRoutes {
                     intParam(ctx, "pageSize", 30)
                 );
                 var articles = svc().getRecent(pr.page(), pr.pageSize());
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", ResponseEnricher.enrichArticles(articles));
-                resp.put("page", pr.page());
-                resp.put("pageSize", pr.pageSize());
-                resp.put("total", svc().countRecent());
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(
+                    ResponseEnricher.enrichArticles(articles),
+                    pr.page(), pr.pageSize(), svc().countRecent())));
             }),
             Route.get("/{id}", ctx -> {
                 var a = svc().findById(ctx.pathVar("id", Long.class).orElse(0L)).orElse(null);
@@ -98,13 +95,10 @@ public class ArticleRoutes {
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var comments = AppContext.get(com.jujin.point.service.CommentService.class)
                     .getComments("article", articleId, com.jujin.point.domain.dto.PageRequest.of(page, pageSize));
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", ResponseEnricher.enrichComments(comments));
-                resp.put("page", page);
-                resp.put("pageSize", pageSize);
-                resp.put("total", AppContext.get(com.jujin.point.service.CommentService.class)
-                    .countComments("article", articleId));
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                long total = AppContext.get(com.jujin.point.service.CommentService.class)
+                    .countComments("article", articleId);
+                ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(
+                    ResponseEnricher.enrichComments(comments), page, pageSize, total)));
             }),
             Route.post("/{id}/comments", com.jujin.point.domain.dto.CommentDtos.CreateCommentRequest.class, (ctx, req) -> {
                 var user = AuthFilter.requireUser();

@@ -58,8 +58,21 @@ public class CategoryService {
         orm.update(cat);
     }
 
+    /**
+     * Soft-delete a category. Propagates the change: refuses when active
+     * child categories would be orphaned, and re-homes referencing topics to
+     * categoryId=0 (未分类) so they stay visible in lists.
+     */
     public void delete(long id) {
-        db.execute("UPDATE bbs_category SET status = 0 WHERE id = ?", id);
+        long children = DbQuery.count(db,
+            "SELECT COUNT(*) AS cnt FROM bbs_category WHERE parent_id = ? AND status = 1", id);
+        if (children > 0) {
+            throw new ServiceException("存在子分类，请先删除或移动子分类");
+        }
+        db.transaction(() -> {
+            db.execute("UPDATE bbs_topic SET category_id = 0 WHERE category_id = ?", id);
+            db.execute("UPDATE bbs_category SET status = 0 WHERE id = ?", id);
+        });
     }
 
     public record CategoryTree(

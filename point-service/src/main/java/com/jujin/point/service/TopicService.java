@@ -1,17 +1,16 @@
 package com.jujin.point.service;
 
 import com.jujin.point.db.repository.TopicRepository;
-import com.jujin.point.db.repository.UserRepository;
 import com.jujin.point.domain.dto.PageRequest;
 import com.jujin.point.domain.dto.PageResult;
 import com.jujin.point.domain.dto.TopicDtos.*;
 import com.jujin.point.domain.entity.Topic;
 import com.jujin.point.domain.entity.TopicTag;
-import com.jujin.point.domain.event.*;
+import com.jujin.point.domain.event.QaAnswerAcceptedEvent;
+import com.jujin.point.domain.event.TopicDeletedEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.ioc.EventBus;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,13 +26,13 @@ public class TopicService {
 
     private final Database db;
     private final TopicRepository topicRepo;
-    private final UserRepository userRepo;
+    private final MentionNotifier mentionSvc;
     private final EventBus eventBus;
 
-    public TopicService(Database db, TopicRepository topicRepo, UserRepository userRepo, EventBus eventBus) {
+    public TopicService(Database db, TopicRepository topicRepo, MentionNotifier mentionSvc, EventBus eventBus) {
         this.db = db;
         this.topicRepo = topicRepo;
-        this.userRepo = userRepo;
+        this.mentionSvc = mentionSvc;
         this.eventBus = eventBus;
     }
 
@@ -63,18 +62,7 @@ public class TopicService {
         db.transaction(() -> {
             topicRepo.insert(topic);
             db.execute("UPDATE bbs_user SET topic_count = topic_count + 1 WHERE id = ?", userId);
-            eventBus.publish(new TopicCreatedEvent(userId, topic.getId(), req.type(), now));
-            // Notify @mentioned users
-            var mentioned = MentionParser.extractMentions(req.content());
-            var notified = new HashSet<Long>();
-            for (String username : mentioned) {
-                userRepo.findByUsername(username).ifPresent(u -> {
-                    if (u.getId() != userId && notified.add(u.getId())) {
-                        eventBus.publish(new UserMentionedEvent(userId, u.getId(),
-                            "topic", topic.getId(), Strings.truncate(req.content(), 100), now));
-                    }
-                });
-            }
+            mentionSvc.notifyMentions(userId, req.content(), "topic", topic.getId(), now);
         });
 
         return topic;
@@ -93,7 +81,6 @@ public class TopicService {
         if (req.hideContent() != null) topic.setHideContent(req.hideContent());
 
         topicRepo.update(topic);
-        eventBus.publish(new TopicUpdatedEvent(userId, topicId, System.currentTimeMillis()));
         return topic;
     }
 
@@ -103,15 +90,29 @@ public class TopicService {
         if (topic.getUserId() != userId) {
             throw new ServiceException("无权删除");
         }
-        topic.setStatus(0); // soft delete
+        deleteInternal(topic);
+        // Author deleting their own post: no notification needed.
+    }
+
+    /** Admin removal — skips the ownership check and notifies the author.
+     *  {@code operatorId} identifies the acting admin; removing their own
+     *  post notifies nobody. */
+    public void deleteAsAdmin(long operatorId, long topicId) {
+        var topic = topicRepo.findById(topicId)
+            .orElseThrow(() -> new ServiceException("帖子不存在"));
+        deleteInternal(topic);
+        eventBus.publish(new TopicDeletedEvent(operatorId, topic.getUserId(), topic.getId(), System.currentTimeMillis()));
+    }
+
+    private void deleteInternal(Topic topic) {
         db.transaction(() -> {
+            topic.setStatus(0); // soft delete
             topicRepo.update(topic);
             db.execute(
                 "UPDATE bbs_user SET topic_count = GREATEST(0, topic_count - 1) WHERE id = ?",
-                userId
+                topic.getUserId()
             );
         });
-        eventBus.publish(new TopicDeletedEvent(userId, topicId, userId, System.currentTimeMillis()));
     }
 
     public void incrViewCount(long topicId) {
@@ -161,7 +162,6 @@ public class TopicService {
         topic.setRecommend(recommend);
         topic.setRecommendTime(recommend ? System.currentTimeMillis() : 0);
         topicRepo.update(topic);
-        eventBus.publish(new TopicRecommendedEvent(topicId, recommend, System.currentTimeMillis()));
     }
 
     public void sticky(long topicId, boolean sticky) {

@@ -7,11 +7,11 @@ import com.jujin.freeway.db.schema.SchemaEntity;
 import com.jujin.freeway.http.HttpModule;
 import com.jujin.freeway.http.filter.HealthCheck;
 import com.jujin.freeway.ioc.Binder;
+import com.jujin.freeway.ioc.CallBus;
 import com.jujin.freeway.ioc.Container;
 import com.jujin.freeway.ioc.ModuleEx;
 import com.jujin.freeway.ioc.RuntimeHook;
 import com.jujin.point.admin.AdminWebModule;
-import com.jujin.point.cache.PointCacheModule;
 import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.entity.*;
 import com.jujin.point.service.DbQuery;
@@ -39,10 +39,14 @@ public class PointModule implements ModuleEx {
         // ── Explicit module composition (freeway 1.3.8: binder.install() over SPI) ──
         binder.install(new DbModule());
         binder.install(new HttpModule());
-        binder.install(new PointCacheModule());
         binder.install(new ServiceModule());
         binder.install(new WebModule());
         binder.install(new AdminWebModule());
+
+        // ── CallBus — topic-addressed request-reply shared by all modules ──
+        // freeway 1.3.9: providers register eagerly via RuntimeHooks (e.g. the
+        // web module's "auth-rpc"), consumers bind typed proxies.
+        binder.bind(CallBus.class).to(container -> new CallBus(container));
 
         // ── 1. Schema auto-migration via SchemaEntity ──
         // DbModule will automatically run Schema.ensure at startup for all contributed entities.

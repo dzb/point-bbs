@@ -1,16 +1,14 @@
 package com.jujin.point.service;
 
 import com.jujin.point.db.repository.CommentRepository;
-import com.jujin.point.db.repository.UserRepository;
+import com.jujin.point.domain.EntityTables;
 import com.jujin.point.domain.dto.PageRequest;
 import com.jujin.point.domain.dto.PageResult;
 import com.jujin.point.domain.entity.Comment;
 import com.jujin.point.domain.event.CommentCreatedEvent;
-import com.jujin.point.domain.event.UserMentionedEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.ioc.EventBus;
 
-import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -19,13 +17,13 @@ import java.util.List;
 public class CommentService {
     private final Database db;
     private final CommentRepository commentRepo;
-    private final UserRepository userRepo;
+    private final MentionNotifier mentionSvc;
     private final EventBus eventBus;
 
-    public CommentService(Database db, CommentRepository commentRepo, UserRepository userRepo, EventBus eventBus) {
+    public CommentService(Database db, CommentRepository commentRepo, MentionNotifier mentionSvc, EventBus eventBus) {
         this.db = db;
         this.commentRepo = commentRepo;
-        this.userRepo = userRepo;
+        this.mentionSvc = mentionSvc;
         this.eventBus = eventBus;
     }
 
@@ -63,29 +61,17 @@ public class CommentService {
                 incrCommentCount("comment", quoteId, 1);
                 eventBus.publish(new CommentCreatedEvent(userId, comment.getId(), quoteId, "comment", now));
             }
-            // Notify @mentioned users
-            var mentioned = MentionParser.extractMentions(content);
-            var notified = new HashSet<Long>();
-            for (String username : mentioned) {
-                userRepo.findByUsername(username).ifPresent(u -> {
-                    if (u.getId() != userId && notified.add(u.getId())) {
-                        eventBus.publish(new UserMentionedEvent(userId, u.getId(),
-                            entityType, entityId, Strings.truncate(content, 100), now));
-                    }
-                });
-            }
+            mentionSvc.notifyMentions(userId, content, entityType, entityId, now);
         });
 
         return comment;
     }
 
-    /** Touch the parent entity's last_comment_time / last_comment_user_id. */
+    /** Touch the parent entity's last_comment_time / last_comment_user_id.
+     *  Only topics/articles carry these columns; comments are leaves. */
     private void touchLastComment(String entityType, long entityId, long userId, long now) {
-        String table = switch (entityType) {
-            case "topic" -> "bbs_topic";
-            case "article" -> "bbs_article";
-            default -> null;
-        };
+        if ("comment".equals(entityType)) return;
+        String table = EntityTables.tableOf(entityType);
         if (table != null) {
             db.execute(
                 "UPDATE " + table + " SET last_comment_time = ?, last_comment_user_id = ? WHERE id = ?",
@@ -95,12 +81,7 @@ public class CommentService {
     }
 
     private void incrCommentCount(String entityType, long entityId, int delta) {
-        String table = switch (entityType) {
-            case "topic" -> "bbs_topic";
-            case "article" -> "bbs_article";
-            case "comment" -> "bbs_comment";
-            default -> null;
-        };
+        String table = EntityTables.tableOf(entityType);
         if (table != null) {
             // GREATEST guards the decrement path against drifting to negative counts
             db.execute(
@@ -125,12 +106,10 @@ public class CommentService {
                 "UPDATE bbs_user SET comment_count = GREATEST(0, comment_count - 1) WHERE id = ?",
                 comment.getUserId()
             );
-            // Re-anchor the parent's sort time on the newest surviving comment
-            String table = switch (comment.getEntityType()) {
-                case "topic" -> "bbs_topic";
-                case "article" -> "bbs_article";
-                default -> null;
-            };
+            // Re-anchor the parent's sort time on the newest surviving comment.
+            // Only topics/articles carry last_comment_*; comments are leaves.
+            if ("comment".equals(comment.getEntityType())) return;
+            String table = EntityTables.tableOf(comment.getEntityType());
             if (table != null) {
                 db.execute(
                     "UPDATE " + table +

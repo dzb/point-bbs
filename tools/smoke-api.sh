@@ -63,6 +63,13 @@ echo "$BODY" | grep -q '"data":null' && { PASS=$((PASS+1)); echo "ok   current u
 CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/admin/topic")
 check "GET /api/admin/topic (anon → 403)" 403 "$CODE"
 
+# admin positive: dev-seed admin (moke) must pass the AdminFilter — exercises
+# the AuthApi CallBus round-trip (admin module → bus → web AuthRpc → ScopedValue)
+if [ -n "$TOKEN" ]; then
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/admin/topic" -H "Authorization: Bearer $TOKEN")
+  check "GET /api/admin/topic (admin via CallBus → 200)" 200 "$CODE"
+fi
+
 # security headers present
 HDR=$(curl -s -D - -o /dev/null "$BASE/" | grep -ci "content-security-policy" || true)
 [ "$HDR" -ge 1 ] && { PASS=$((PASS+1)); echo "ok   CSP header"; } || { FAIL=$((FAIL+1)); echo "FAIL CSP header"; }

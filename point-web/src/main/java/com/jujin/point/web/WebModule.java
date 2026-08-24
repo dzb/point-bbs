@@ -82,6 +82,25 @@ public class WebModule implements ModuleEx {
             .add(AuthFilter.class)
             .after("security-headers");
 
+        // Serve session identity over the CallBus ("auth.*" topics) so other
+        // modules (admin) can ask who is calling without importing point-web.
+        binder
+            .contribute(com.jujin.freeway.ioc.RuntimeHook.class)
+            .add(
+                "auth-rpc",
+                new com.jujin.freeway.ioc.RuntimeHook() {
+                    @Override
+                    public void start(com.jujin.freeway.ioc.Container container) {
+                        container.get(com.jujin.freeway.ioc.CallBus.class)
+                            .register("auth", new AuthRpc());
+                    }
+
+                    @Override
+                    public void stop(com.jujin.freeway.ioc.Container container) {}
+                }
+            )
+            .before("freeway.http.server");
+
         // Exception mappers
         binder.contribute(ErrorHandler.class).add((resp, ex) -> {
             if (ex instanceof AuthException ae) {
@@ -115,95 +134,22 @@ public class WebModule implements ModuleEx {
             return true;
         });
 
-        // Push "refresh" pings over WebSocket when notifications are created.
-        // Recipient resolution mirrors NotificationHandler; the SPA re-fetches
-        // the unread count on ping (15s polling remains as fallback).
+        // Push "refresh" pings over WebSocket when a notification row is
+        // actually written. MessageService publishes NotificationSentEvent
+        // once per persisted message — the single push signal. Recipient
+        // resolution lives entirely in the notification flow; the SPA
+        // re-fetches the unread count on ping (15s polling remains as
+        // fallback).
         binder
             .contribute(com.jujin.freeway.ioc.EventSubscriber.class)
             .add(
-                "ws-ping-comment",
+                "ws-ping",
                 com.jujin.freeway.ioc.EventSubscriber.of(
-                    com.jujin.point.domain.event.CommentCreatedEvent.class,
-                    e -> {
-                        var db = com.jujin.point.domain.AppContext.get(
-                            com.jujin.freeway.db.Database.class
-                        );
-                        var hub = com.jujin.point.domain.AppContext.get(
-                            NotificationHub.class
-                        );
-                        String table = switch (e.entityType()) {
-                            case "topic" -> "bbs_topic";
-                            case "article" -> "bbs_article";
-                            case "comment" -> "bbs_comment";
-                            default -> null;
-                        };
-                        if (table == null) return;
-                        db.query(
-                            "SELECT user_id FROM " + table + " WHERE id = ?",
-                            e.entityId()
-                        )
-                            .one(com.jujin.freeway.db.Row.class)
-                            .ifPresent(r -> {
-                                long to = r.longValue("user_id");
-                                if (to != e.userId()) hub.pingUnread(to);
-                            });
-                    }
-                )
-            );
-        binder
-            .contribute(com.jujin.freeway.ioc.EventSubscriber.class)
-            .add(
-                "ws-ping-like",
-                com.jujin.freeway.ioc.EventSubscriber.of(
-                    com.jujin.point.domain.event.UserLikedEvent.class,
-                    e -> {
-                        var db = com.jujin.point.domain.AppContext.get(
-                            com.jujin.freeway.db.Database.class
-                        );
-                        var hub = com.jujin.point.domain.AppContext.get(
-                            NotificationHub.class
-                        );
-                        String table = switch (e.entityType()) {
-                            case "topic" -> "bbs_topic";
-                            case "comment" -> "bbs_comment";
-                            case "article" -> "bbs_article";
-                            default -> null;
-                        };
-                        if (table == null) return;
-                        db.query(
-                            "SELECT user_id FROM " + table + " WHERE id = ?",
-                            e.entityId()
-                        )
-                            .one(com.jujin.freeway.db.Row.class)
-                            .ifPresent(r -> {
-                                long to = r.longValue("user_id");
-                                if (to != e.userId()) hub.pingUnread(to);
-                            });
-                    }
-                )
-            );
-        binder
-            .contribute(com.jujin.freeway.ioc.EventSubscriber.class)
-            .add(
-                "ws-ping-follow",
-                com.jujin.freeway.ioc.EventSubscriber.of(
-                    com.jujin.point.domain.event.UserFollowedEvent.class,
+                    com.jujin.point.domain.event.NotificationSentEvent.class,
                     e ->
                         com.jujin.point.domain.AppContext
                             .get(NotificationHub.class)
-                            .pingUnread(e.otherId())
-                )
-            );
-        binder
-            .contribute(com.jujin.freeway.ioc.EventSubscriber.class)
-            .add(
-                "ws-ping-mention",
-                com.jujin.freeway.ioc.EventSubscriber.of(
-                    com.jujin.point.domain.event.UserMentionedEvent.class,
-                    e ->
-                        com.jujin.point.domain.AppContext
-                            .get(NotificationHub.class)
-                            .pingUnread(e.mentionedUserId())
+                            .pingUnread(e.toUserId())
                 )
             );
 

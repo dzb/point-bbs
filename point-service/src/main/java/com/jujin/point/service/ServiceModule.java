@@ -10,12 +10,16 @@ import com.jujin.point.service.eventhandler.NotificationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Consumer;
+
 /**
  * Service module — binds all business services and event subscribers.
  *
- * freeway 1.3.8: SINGLETON is the default scope, so explicit .scope() is omitted.
- * Event subscribers use canonical IDs for ordering and rely on container-injected
- * NotificationHandler (not AppContext.container()).
+ * SINGLETON is the default scope, so explicit .scope() is omitted.
+ * Subscribers resolve NotificationHandler via AppContext (lambdas have no
+ * container handle at bind time) and are best-effort: a failure in a
+ * notification must never roll back the business operation that published
+ * the event.
  */
 public class ServiceModule implements ModuleEx {
     private static final Logger log = LoggerFactory.getLogger(ServiceModule.class);
@@ -41,6 +45,7 @@ public class ServiceModule implements ModuleEx {
         binder.bind(FavoriteService.class).to(FavoriteService.class);
         binder.bind(UserFollowService.class).to(UserFollowService.class);
         binder.bind(MessageService.class).to(MessageService.class);
+        binder.bind(MentionNotifier.class).to(MentionNotifier.class);
 
         // Permission & RBAC
         binder.bind(PermissionService.class).to(PermissionService.class);
@@ -54,61 +59,40 @@ public class ServiceModule implements ModuleEx {
         // Auth
         binder.bind(AuthService.class).to(AuthService.class);
 
-        // Event subscribers — NotificationHandler receives DI via container
         binder.bind(NotificationHandler.class).to(NotificationHandler.class);
 
-        // Notification handlers are best-effort: a failure in the handler must
-        // never roll back the business operation that published the event.
-        binder
-            .contribute(EventSubscriber.class)
-            .add(
-                "notify-comment",
-                EventSubscriber.of(CommentCreatedEvent.class, e -> {
-                    try {
-                        AppContext.get(NotificationHandler.class).onCommentCreated(e);
-                    } catch (Exception ex) {
-                        log.warn("comment notification failed", ex);
-                    }
-                })
-            );
+        var handlers = binder.contribute(EventSubscriber.class);
+        handlers.add("notify-comment", bestEffort(CommentCreatedEvent.class,
+            "comment notification", e -> handler().onCommentCreated(e)));
+        handlers.add("notify-like", bestEffort(UserLikedEvent.class,
+            "like notification", e -> handler().onUserLiked(e)));
+        handlers.add("notify-favorite", bestEffort(UserFavoritedEvent.class,
+            "favorite notification", e -> handler().onUserFavorited(e)));
+        handlers.add("notify-follow", bestEffort(UserFollowedEvent.class,
+            "follow notification", e -> handler().onUserFollowed(e)));
+        handlers.add("notify-mention", bestEffort(UserMentionedEvent.class,
+            "mention notification", e -> handler().onUserMentioned(e)));
+        handlers.add("notify-qa-accepted", bestEffort(QaAnswerAcceptedEvent.class,
+            "qa-accepted notification", e -> handler().onQaAnswerAccepted(e)));
+        handlers.add("notify-topic-deleted", bestEffort(TopicDeletedEvent.class,
+            "topic-deleted notification", e -> handler().onTopicDeleted(e)));
+        handlers.add("notify-forbidden", bestEffort(UserForbiddenEvent.class,
+            "forbidden notification", e -> handler().onUserForbidden(e)));
+    }
 
-        binder
-            .contribute(EventSubscriber.class)
-            .add(
-                "notify-like",
-                EventSubscriber.of(UserLikedEvent.class, e -> {
-                    try {
-                        AppContext.get(NotificationHandler.class).onUserLiked(e);
-                    } catch (Exception ex) {
-                        log.warn("notification failed", ex);
-                    }
-                })
-            );
+    private static NotificationHandler handler() {
+        return AppContext.get(NotificationHandler.class);
+    }
 
-        binder
-            .contribute(EventSubscriber.class)
-            .add(
-                "notify-follow",
-                EventSubscriber.of(UserFollowedEvent.class, e -> {
-                    try {
-                        AppContext.get(NotificationHandler.class).onUserFollowed(e);
-                    } catch (Exception ex) {
-                        log.warn("notification failed", ex);
-                    }
-                })
-            );
-
-        binder
-            .contribute(EventSubscriber.class)
-            .add(
-                "notify-mention",
-                EventSubscriber.of(UserMentionedEvent.class, e -> {
-                    try {
-                        AppContext.get(NotificationHandler.class).onUserMentioned(e);
-                    } catch (Exception ex) {
-                        log.warn("notification failed", ex);
-                    }
-                })
-            );
+    /** Wraps a handler call as an isolated subscriber: failures log, never propagate. */
+    private static <E extends PointDomainEvent> EventSubscriber<E> bestEffort(
+        Class<E> type, String what, Consumer<E> call) {
+        return EventSubscriber.of(type, e -> {
+            try {
+                call.accept(e);
+            } catch (Exception ex) {
+                log.warn("{} failed", what, ex);
+            }
+        });
     }
 }

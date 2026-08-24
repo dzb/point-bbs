@@ -70,12 +70,9 @@ public class UserRoutes {
                 int page = intParam(ctx, "page", 1);
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var r = topicSvc().getUserTopics(uid, PageRequest.of(page, pageSize));
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", ResponseEnricher.enrichTopics(r.items()));
-                resp.put("page", r.page());
-                resp.put("pageSize", r.pageSize());
-                resp.put("total", r.total());
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(
+                    ApiResponse.page(ResponseEnricher.enrichTopics(r.items()),
+                        r.page(), r.pageSize(), r.total())));
             }),
             Route.get("/{id}/articles", ctx -> {
                 long uid = resolveUserId(ctx);
@@ -83,12 +80,8 @@ public class UserRoutes {
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var items = articleSvc().getByUser(uid, page, pageSize);
                 var total = articleSvc().countByUser(uid);
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", ResponseEnricher.enrichArticles(items));
-                resp.put("page", page);
-                resp.put("pageSize", pageSize);
-                resp.put("total", total);
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(
+                    ApiResponse.page(ResponseEnricher.enrichArticles(items), page, pageSize, total)));
             }),
             Route.get("/{id}/messages", ctx -> {
                 var user = AuthFilter.requireUser();
@@ -97,12 +90,8 @@ public class UserRoutes {
                 int page = intParam(ctx, "page", 1);
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var items = msgSvc().getUserMessages(uid, page, pageSize);
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", items);
-                resp.put("page", page);
-                resp.put("pageSize", pageSize);
-                resp.put("total", msgSvc().count(uid));
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(
+                    ApiResponse.page(items, page, pageSize, msgSvc().count(uid))));
             }),
             Route.get("/{id}/messages/unread", ctx -> {
                 var user = AuthFilter.requireUser();
@@ -152,12 +141,8 @@ public class UserRoutes {
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var items = followSvc().getFollowers(uid, page, pageSize);
                 items.forEach(UserRoutes::sanitizePublic);
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", items);
-                resp.put("page", page);
-                resp.put("pageSize", pageSize);
-                resp.put("total", followSvc().countFollowers(uid));
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(
+                    ApiResponse.page(items, page, pageSize, followSvc().countFollowers(uid))));
             }),
             Route.get("/{id}/following", ctx -> {
                 long uid = resolveUserId(ctx);
@@ -165,12 +150,8 @@ public class UserRoutes {
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var items = followSvc().getFollowing(uid, page, pageSize);
                 items.forEach(UserRoutes::sanitizePublic);
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", items);
-                resp.put("page", page);
-                resp.put("pageSize", pageSize);
-                resp.put("total", followSvc().countFollowing(uid));
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(
+                    ApiResponse.page(items, page, pageSize, followSvc().countFollowing(uid))));
             }),
             Route.get("/{id}/favorites", ctx -> {
                 var user = AuthFilter.requireUser();
@@ -179,12 +160,8 @@ public class UserRoutes {
                 int page = intParam(ctx, "page", 1);
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var items = favSvc().getUserFavorites(uid, page, pageSize);
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", items);
-                resp.put("page", page);
-                resp.put("pageSize", pageSize);
-                resp.put("total", favSvc().count(uid));
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(
+                    ApiResponse.page(items, page, pageSize, favSvc().count(uid))));
             })
         );
     }

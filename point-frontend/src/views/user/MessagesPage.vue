@@ -248,6 +248,7 @@ function actionText(m: Message): string {
   if (m.type === 1) return '赞了你'
   if (m.type === 2) return '关注了你'
   if (m.type === 3) return '提到了你'
+  if (m.type === 4) return '收藏了你'
   return m.title || '评论了你'
 }
 

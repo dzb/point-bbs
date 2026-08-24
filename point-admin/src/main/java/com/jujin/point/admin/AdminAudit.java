@@ -2,15 +2,21 @@ package com.jujin.point.admin;
 
 import com.jujin.freeway.http.HttpContext;
 import com.jujin.point.domain.AppContext;
+import com.jujin.point.domain.auth.AuthApi;
 import com.jujin.point.domain.entity.OperateLog;
-import com.jujin.point.web.filter.AuthFilter;
 import com.jujin.freeway.db.Orm;
 
 /**
  * Admin action audit trail — every mutating admin operation writes a row to
  * bbs_operate_log (operator, target, description).
+ *
+ * Operator identity comes from the AuthApi CallBus consumer (served by the
+ * web layer) — no compile-time dependency on point-web.
  */
 public final class AdminAudit {
+
+    private static final org.slf4j.Logger log =
+        org.slf4j.LoggerFactory.getLogger(AdminAudit.class);
 
     private AdminAudit() {}
 
@@ -22,9 +28,7 @@ public final class AdminAudit {
         String description
     ) {
         try {
-            long operatorId = AuthFilter.currentUser() != null
-                ? AuthFilter.currentUser().userId()
-                : 0L;
+            long operatorId = AppContext.get(AuthApi.class).currentUserId();
             var log = new OperateLog(
                 operatorId,
                 opType,
@@ -39,8 +43,7 @@ public final class AdminAudit {
             AppContext.get(Orm.class).insert(log);
         } catch (Exception e) {
             // Auditing must never break the admin action itself
-            org.slf4j.LoggerFactory.getLogger(AdminAudit.class)
-                .warn("audit log write failed: {}", e.getMessage());
+            log.warn("audit log write failed: {}", e.getMessage());
         }
     }
 }

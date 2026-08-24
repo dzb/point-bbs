@@ -30,7 +30,8 @@ public class AdminTopicRoutes {
                     ctx.sendJson(404, ApiResponse.error("帖子不存在"));
                     return;
                 }
-                svc().delete(topic.getUserId(), id);
+                svc().deleteAsAdmin(
+                    com.jujin.point.domain.AppContext.get(com.jujin.point.domain.auth.AuthApi.class).currentUserId(), id);
                 com.jujin.point.admin.AdminAudit.log(ctx, "delete", "topic", id,
                     "删除帖子: " + (topic.getTitle() != null ? topic.getTitle() : "#" + id));
                 ctx.sendJson(200, ApiResponse.ok(Map.of("id", id, "deleted", true)));
