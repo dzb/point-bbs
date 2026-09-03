@@ -9,6 +9,7 @@ data/
 *.iml
 .vscode/
 .vite/
+.soloncode/
 *.swp
 *.swo
 .DS_Store
