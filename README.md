@@ -6,7 +6,7 @@
   <!-- badges -->
   <p>
     <img src="https://img.shields.io/badge/Java-25-%23ED8B00?logo=openjdk&logoColor=white" alt="Java 25"/>
-    <img src="https://img.shields.io/badge/Freeway-1.3.2-%238B5CF6?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij48cGF0aCBkPSJNOCAwbDggNC04IDQtOC00eiIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0wIDRsOCA0LTggNHoiIGZpbGw9IiNjNDNkM2QiLz48L3N2Zz4=&amp;label=Freeway&amp;labelColor=%23374151" alt="Freeway 1.3.2"/>
+    <img src="https://img.shields.io/badge/Freeway-1.4.0-%238B5CF6?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij48cGF0aCBkPSJNOCAwbDggNC04IDQtOC00eiIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0wIDRsOCA0LTggNHoiIGZpbGw9IiNjNDNkM2QiLz48L3N2Zz4=&amp;label=Freeway&amp;labelColor=%23374151" alt="Freeway 1.4.0"/>
     <img src="https://img.shields.io/badge/Vue_3-3.5-%234FC08D?logo=vue.js&logoColor=white" alt="Vue 3"/>
     <img src="https://img.shields.io/badge/JDK_25_+_Vue_3_+_H2-SPA_%2B_REST-%23c43d3d" alt="SPA+REST"/>
   </p>

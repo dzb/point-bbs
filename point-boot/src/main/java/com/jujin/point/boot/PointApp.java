@@ -31,7 +31,7 @@ public class PointApp {
             ||P ||||O ||||I ||||N ||||T ||
             ||__||||__||||__||||__||||__||
             |/__\\\\||/__\\\\||/__\\\\||/__\\\\||/__\\\\|
-            point v1.0.1 -- powered by freeway 1.3.8 + JDK %s
+            point v1.0.2 -- powered by freeway 1.4.0 + JDK %s
             """.formatted(Runtime.version().feature())
         );
 
@@ -40,7 +40,7 @@ public class PointApp {
             .args(args)
             .start();
 
-        var port = runtime.config().get("freeway.http.server.port");
+        var port = runtime.config().snapshot().get("freeway.http.server.port");
         System.out.println(
             "point running on http://localhost:" + (port != null ? port : 8082)
         );

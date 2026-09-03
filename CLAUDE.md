@@ -11,7 +11,7 @@ Two independent projects live in this repo:
 | Directory | Stack | Purpose |
 |---|---|---|
 | `point-frontend/` | Vue 3 + Vuetify + Vite + TypeScript | SPA frontend |
-| `point-boot/` + sibling modules | Java (JDK 25) + freeway 1.3.8-SNAPSHOT + Maven | REST API backend |
+| `point-boot/` + sibling modules | Java (JDK 25) + freeway 1.4.0 + Maven | REST API backend |
 
 The backend source spans **7 Maven modules** at the repo root: `point-domain`, `point-db`, `point-cache`, `point-service`, `point-web`, `point-admin`, `point-boot`. The `point-boot` module is the executable launcher (shade JAR with `PointApp.main()`).
 
@@ -147,6 +147,11 @@ Full design system documented in `point-frontend/DESIGN.md`.
 - `tools/sync-frontend.sh` — builds the frontend and copies dist into `point-boot/src/main/resources/static/` (previously a manual step).
 
 ## Recent changes (2026-06-14)
+
+### freeway 1.4.0 upgrade (2026-09-03)
+- `freeway.version` 1.3.8-SNAPSHOT → 1.4.0 in parent POM
+- `ExecuteResult.hasKey()` → `ExecuteResult.hasGeneratedKey()` (field `key` renamed to `generatedKey`); `longKey()` unchanged
+- `AppConfig.get(String)` → `AppConfig.snapshot().get(String)` — config no longer has a direct `get()`; `asMap()` was renamed to `snapshot()` (AppConfig is no longer a read API; typed reads go through `SymbolSource`/`ConfigSpec`)
 
 ### freeway 1.3.8-SNAPSHOT upgrade (2026-08-14)
 - `freeway.version` 1.3.2 → 1.3.8-SNAPSHOT in parent POM

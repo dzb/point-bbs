@@ -124,7 +124,7 @@ public class AuthRoutes {
             try {
                 db.transaction(() -> {
                     var r = db.execute("INSERT INTO bbs_user (nickname, avatar, score, exp, level, status, topic_count, comment_count, follow_count, fans_count, forbidden_end_time, create_time, update_time) VALUES (?,?,0,0,1,1,0,0,0,0,0,?,?)", info.nickname(), info.avatar(), now, now);
-                    if (r.hasKey()) created[0].setId(r.longKey());
+                    if (r.hasGeneratedKey()) created[0].setId(r.longKey());
                     var tu = new ThirdUser(); tu.setUserId(created[0].getId()); tu.setOpenId(info.openId()); tu.setThirdType(provider);
                     tu.setNickname(info.nickname()); tu.setAvatar(info.avatar()); tu.setCreateTime(now); tu.setUpdateTime(now);
                     orm.insert(tu);

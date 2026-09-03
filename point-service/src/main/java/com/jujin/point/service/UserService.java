@@ -66,7 +66,7 @@ public class UserService {
                 "VALUES (?, ?, ?, ?, ?, 0, 0, 1, 1, 0, 0, 0, 0, 0, ?, ?)",
                 user.getNickname(), user.getEmail(), user.getUsername(), user.getPassword(),
                 user.isEmailVerified(), now, now);
-            if (result.hasKey()) {
+            if (result.hasGeneratedKey()) {
                 user.setId(result.longKey());
             }
         });

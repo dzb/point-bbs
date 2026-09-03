@@ -87,7 +87,7 @@ public class PointModule implements ModuleEx {
                         // idx_follow_other (@Index is not repeatable — other_id
                         // already belongs to the unique uq_user_follow), so it is
                         // created manually here on both H2 and MySQL.
-                        var dbUrl = cfg.get("freeway.db.url");
+                        var dbUrl = cfg.snapshot().get("freeway.db.url");
                         if (dbUrl != null && dbUrl.startsWith("jdbc:")) {
                             boolean isH2 = dbUrl.startsWith("jdbc:h2");
                             String ddl = isH2
@@ -106,8 +106,8 @@ public class PointModule implements ModuleEx {
                         // and no user holds the admin permission yet, create
                         // the admin account and assign the admin role. Default
                         // configs leave both empty — no-op.
-                        String adminName = cfg.get("bbs.admin.username");
-                        String adminPass = cfg.get("bbs.admin.password");
+                        String adminName = cfg.snapshot().get("bbs.admin.username");
+                        String adminPass = cfg.snapshot().get("bbs.admin.password");
                         boolean hasAdmin = DbQuery.count(
                             db,
                             "SELECT COUNT(*) AS cnt FROM bbs_user_role ur JOIN bbs_role_permission rp ON ur.role_id = rp.role_id " +

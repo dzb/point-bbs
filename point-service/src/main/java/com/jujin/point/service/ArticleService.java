@@ -47,7 +47,7 @@ public class ArticleService {
                 "VALUES (?, ?, ?, ?, ?, 1, 0, 0, 0, ?, ?)",
                 userId, title, summary, content, contentType != null ? contentType : "markdown", now, now
             );
-            if (result.hasKey()) {
+            if (result.hasGeneratedKey()) {
                 article.setId(result.longKey());
             }
 
