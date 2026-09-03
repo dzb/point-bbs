@@ -40,26 +40,26 @@
     <dependencyManagement>
         <dependencies>
             <!-- Freeway framework -->
-                        <dependency>
-                            <groupId>com.jujin8.freeway</groupId>
-                            <artifactId>freeway-boot</artifactId>
-                            <version>${freeway.version}</version>
-                        </dependency>
-                        <dependency>
-                            <groupId>com.jujin8.freeway</groupId>
-                            <artifactId>freeway-http</artifactId>
-                            <version>${freeway.version}</version>
-                        </dependency>
-                        <dependency>
-                            <groupId>com.jujin8.freeway</groupId>
-                            <artifactId>freeway-db</artifactId>
-                            <version>${freeway.version}</version>
-                        </dependency>
-                        <dependency>
-                            <groupId>com.jujin8.freeway</groupId>
-                            <artifactId>freeway-ioc</artifactId>
-                            <version>${freeway.version}</version>
-                        </dependency>
+            <dependency>
+                <groupId>com.jujin8.freeway</groupId>
+                <artifactId>freeway-boot</artifactId>
+                <version>${freeway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jujin8.freeway</groupId>
+                <artifactId>freeway-http</artifactId>
+                <version>${freeway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jujin8.freeway</groupId>
+                <artifactId>freeway-db</artifactId>
+                <version>${freeway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jujin8.freeway</groupId>
+                <artifactId>freeway-ioc</artifactId>
+                <version>${freeway.version}</version>
+            </dependency>
 
             <!-- H2 database (dev) -->
             <dependency>
