@@ -1,18 +1,22 @@
 package com.jujin.point.service;
 
 import com.jujin.point.domain.entity.Message;
+import com.jujin.point.domain.event.NotificationSentEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
+import com.jujin.freeway.ioc.EventBus;
 
 import java.util.List;
 
 public class MessageService {
     private final Database db;
     private final Orm orm;
+    private final EventBus eventBus;
 
-    public MessageService(Database db, Orm orm) {
+    public MessageService(Database db, Orm orm, EventBus eventBus) {
         this.db = db;
         this.orm = orm;
+        this.eventBus = eventBus;
     }
 
     public Message send(long fromId, long toUserId, String title, String content,
@@ -30,6 +34,11 @@ public class MessageService {
         msg.setStatus(0);
         msg.setCreateTime(now);
         orm.insert(msg);
+        // Single push signal: the WebSocket layer listens for this instead of
+        // re-resolving recipients per business event. Buffered until the
+        // surrounding transaction commits (EventBus Defer), so a rollback
+        // never produces a phantom ping.
+        eventBus.publish(new NotificationSentEvent(fromId, toUserId, now));
         return msg;
     }
 

@@ -11,7 +11,6 @@ import com.jujin.freeway.ioc.Container;
 import com.jujin.freeway.ioc.ModuleEx;
 import com.jujin.freeway.ioc.RuntimeHook;
 import com.jujin.point.admin.AdminWebModule;
-import com.jujin.point.cache.PointCacheModule;
 import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.entity.*;
 import com.jujin.point.service.DbQuery;
@@ -39,10 +38,12 @@ public class PointModule implements ModuleEx {
         // ── Explicit module composition (freeway 1.3.8: binder.install() over SPI) ──
         binder.install(new DbModule());
         binder.install(new HttpModule());
-        binder.install(new PointCacheModule());
         binder.install(new ServiceModule());
         binder.install(new WebModule());
         binder.install(new AdminWebModule());
+
+        // ── CallBus — provided as a container-managed builtin by freeway 1.4.0
+        // (ContainerImpl.registerBuiltinLazy); do NOT bind a second instance.
 
         // ── 1. Schema auto-migration via SchemaEntity ──
         // DbModule will automatically run Schema.ensure at startup for all contributed entities.

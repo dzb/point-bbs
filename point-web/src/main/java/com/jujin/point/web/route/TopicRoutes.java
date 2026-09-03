@@ -30,12 +30,8 @@ public class TopicRoutes {
                     PageRequest.of(page, pageSize)
                 );
                 var enriched = ResponseEnricher.enrichTopics(result.items());
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", enriched);
-                resp.put("page", result.page());
-                resp.put("pageSize", result.pageSize());
-                resp.put("total", result.total());
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(
+                    ApiResponse.page(enriched, result.page(), result.pageSize(), result.total())));
             }),
             // Following feed
             Route.get("/following", ctx -> {
@@ -56,12 +52,7 @@ public class TopicRoutes {
                     .map(r -> r.longValue("other_id"))
                     .toList();
                 if (followedIds.isEmpty()) {
-                    var empty = new LinkedHashMap<String, Object>();
-                    empty.put("items", List.of());
-                    empty.put("page", page);
-                    empty.put("pageSize", pageSize);
-                    empty.put("total", 0);
-                    ctx.sendJson(200, ApiResponse.ok(empty));
+                    ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(List.of(), page, pageSize, 0)));
                     return;
                 }
                 var placeholders = followedIds
@@ -95,12 +86,7 @@ public class TopicRoutes {
                     .map(r -> r.longValue("cnt"))
                     .orElse(0L);
                 var enriched = ResponseEnricher.enrichTopics(tweets);
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", enriched);
-                resp.put("page", page);
-                resp.put("pageSize", pageSize);
-                resp.put("total", total);
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(enriched, page, pageSize, total)));
             }),
             // Moments (tweets — type=1)
             Route.get("/moments", ctx -> {
@@ -117,12 +103,8 @@ public class TopicRoutes {
                     )
                     .list(com.jujin.point.domain.entity.Topic.class);
                 var enriched = ResponseEnricher.enrichTopics(tweets);
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", enriched);
-                resp.put("page", page);
-                resp.put("pageSize", pageSize);
-                resp.put("total", topicSvc().countByType(1));
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(
+                    ApiResponse.page(enriched, page, pageSize, topicSvc().countByType(1))));
             }),
             // Recommended topics
             Route.get("/recommended", ctx -> {
@@ -137,23 +119,15 @@ public class TopicRoutes {
             Route.get("/search", ctx -> {
                 String q = ctx.queryParam("q").orElse(null);
                 if (q == null || q.isBlank()) {
-                    var empty = new LinkedHashMap<String, Object>();
-                    empty.put("items", List.of());
-                    empty.put("page", 1);
-                    empty.put("pageSize", 30);
-                    empty.put("total", 0);
-                    ctx.sendJson(200, ApiResponse.ok(empty));
+                    ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(List.of(), 1, 30, 0)));
                     return;
                 }
                 int page = intParam(ctx, "page", 1);
                 int pageSize = intParam(ctx, "pageSize", 30);
                 var r = topicSvc().search(q, PageRequest.of(page, pageSize));
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", ResponseEnricher.enrichTopics(r.items()));
-                resp.put("page", r.page());
-                resp.put("pageSize", r.pageSize());
-                resp.put("total", r.total());
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(
+                    ApiResponse.page(ResponseEnricher.enrichTopics(r.items()),
+                        r.page(), r.pageSize(), r.total())));
             }),
             // Topic detail
             Route.get("/{id}", ctx -> {
@@ -209,12 +183,9 @@ public class TopicRoutes {
                     topicId,
                     PageRequest.of(page, pageSize)
                 );
-                var resp = new LinkedHashMap<String, Object>();
-                resp.put("items", ResponseEnricher.enrichComments(comments));
-                resp.put("page", page);
-                resp.put("pageSize", pageSize);
-                resp.put("total", commentSvc().countComments("topic", topicId));
-                ctx.sendJson(200, ApiResponse.ok(resp));
+                ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(
+                    ResponseEnricher.enrichComments(comments),
+                    page, pageSize, commentSvc().countComments("topic", topicId))));
             }),
             Route.post(
                 "/{id}/comments",

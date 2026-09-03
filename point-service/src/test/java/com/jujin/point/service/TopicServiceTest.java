@@ -40,6 +40,7 @@ class TopicServiceTest {
             binder.bind(Orm.class).to(orm);
             binder.bind(TopicRepository.class).to(new TopicRepository(db, orm));
             binder.bind(UserRepository.class).to(new UserRepository(db, orm));
+            binder.bind(MentionNotifier.class).to(MentionNotifier.class);
             binder.bind(TopicService.class).to(TopicService.class);
         });
         topicService = container.get(TopicService.class);

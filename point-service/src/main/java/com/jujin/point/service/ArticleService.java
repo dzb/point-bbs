@@ -2,12 +2,9 @@ package com.jujin.point.service;
 
 import com.jujin.point.domain.dto.ArticleDtos.UpdateArticleRequest;
 import com.jujin.point.domain.entity.Article;
-import com.jujin.point.domain.event.UserMentionedEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Row;
-import com.jujin.freeway.ioc.EventBus;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,12 +14,12 @@ import java.util.Optional;
 public class ArticleService {
     private final Database db;
     private final TagService tagSvc;
-    private final EventBus eventBus;
+    private final MentionNotifier mentionSvc;
 
-    public ArticleService(Database db, TagService tagSvc, EventBus eventBus) {
+    public ArticleService(Database db, TagService tagSvc, MentionNotifier mentionSvc) {
         this.db = db;
         this.tagSvc = tagSvc;
-        this.eventBus = eventBus;
+        this.mentionSvc = mentionSvc;
     }
 
     public Optional<Article> findById(long id) {
@@ -51,19 +48,7 @@ public class ArticleService {
                 article.setId(result.longKey());
             }
 
-            // Notify @mentioned users
-            var mentioned = MentionParser.extractMentions(content);
-            var notified = new HashSet<Long>();
-            for (String username : mentioned) {
-                db.query("SELECT id FROM bbs_user WHERE username = ? AND status <> 0", username)
-                    .one(Row.class).ifPresent(row -> {
-                        long uid = row.longValue("id");
-                        if (uid != userId && notified.add(uid)) {
-                            eventBus.publish(new UserMentionedEvent(userId, uid,
-                                "article", article.getId(), Strings.truncate(content, 100), now));
-                        }
-                    });
-            }
+            mentionSvc.notifyMentions(userId, content, "article", article.getId(), now);
         });
 
         return article;

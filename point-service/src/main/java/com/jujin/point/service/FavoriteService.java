@@ -1,18 +1,22 @@
 package com.jujin.point.service;
 
 import com.jujin.point.domain.entity.Favorite;
+import com.jujin.point.domain.event.UserFavoritedEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
+import com.jujin.freeway.ioc.EventBus;
 
 import java.util.List;
 
 public class FavoriteService {
     private final Database db;
     private final Orm orm;
+    private final EventBus bus;
 
-    public FavoriteService(Database db, Orm orm) {
+    public FavoriteService(Database db, Orm orm, EventBus bus) {
         this.db = db;
         this.orm = orm;
+        this.bus = bus;
     }
 
     public boolean isFavorited(long userId, String entityType, long entityId) {
@@ -21,12 +25,14 @@ public class FavoriteService {
             userId, entityType, entityId) > 0;
     }
 
+    /** Favorite — idempotent. Unlike/unfavorite is intentionally silent. */
     public void add(long userId, String entityType, long entityId) {
         if (isFavorited(userId, entityType, entityId)) return;
         try {
-            db.transaction(() ->
-                orm.insert(new Favorite(userId, entityType, entityId, System.currentTimeMillis()))
-            );
+            db.transaction(() -> {
+                orm.insert(new Favorite(userId, entityType, entityId, System.currentTimeMillis()));
+                bus.publish(new UserFavoritedEvent(userId, entityId, entityType, System.currentTimeMillis()));
+            });
         } catch (com.jujin.freeway.db.SqlException e) {
             // Unique (user_id, entity_type, entity_id) index — concurrent add; ignore.
         }

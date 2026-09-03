@@ -1,11 +1,10 @@
 package com.jujin.point.service;
 
+import com.jujin.point.domain.EntityTables;
 import com.jujin.point.domain.entity.UserLike;
 import com.jujin.point.domain.event.UserLikedEvent;
-import com.jujin.point.domain.event.UserUnlikedEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
-import com.jujin.freeway.db.Row;
 import com.jujin.freeway.ioc.EventBus;
 
 import java.util.List;
@@ -57,7 +56,6 @@ public class UserLikeService {
             if (deleted > 0) {
                 removed[0] = true;
                 incrLikeCount(entityType, entityId, -1);
-                bus.publish(new UserUnlikedEvent(userId, entityId, entityType, System.currentTimeMillis()));
             }
         });
         return removed[0];
@@ -78,12 +76,10 @@ public class UserLikeService {
     }
 
     private void incrLikeCount(String entityType, long entityId, int delta) {
-        String table = switch (entityType) {
-            case "topic" -> "bbs_topic";
-            case "article" -> "bbs_article";
-            case "comment" -> "bbs_comment";
-            default -> throw new ServiceException("未知实体类型: " + entityType);
-        };
+        String table = EntityTables.tableOf(entityType);
+        if (table == null) {
+            throw new ServiceException("未知实体类型: " + entityType);
+        }
         db.execute(
             "UPDATE " + table + " SET like_count = GREATEST(0, like_count + ?) WHERE id = ?",
             delta, entityId

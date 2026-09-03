@@ -24,12 +24,12 @@
             <artifactId>point-service</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jujin.point</groupId>
-            <artifactId>point-web</artifactId>
+            <groupId>com.jujin8.freeway</groupId>
+            <artifactId>freeway-http</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jujin8.freeway</groupId>
-            <artifactId>freeway-http</artifactId>
+            <artifactId>freeway-ioc</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

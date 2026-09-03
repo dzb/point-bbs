@@ -4,7 +4,10 @@ import com.jujin.point.db.repository.UserRepository;
 import com.jujin.point.domain.dto.CurrentUser;
 import com.jujin.point.domain.dto.UserDtos.*;
 import com.jujin.point.domain.entity.User;
+import com.jujin.point.domain.event.UserForbiddenEvent;
 import com.jujin.freeway.db.Database;
+import com.jujin.freeway.db.Row;
+import com.jujin.freeway.ioc.EventBus;
 
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -16,12 +19,37 @@ import java.util.Optional;
  * User service — registration, login, profile management.
  */
 public class UserService {
+    // Per-request account gate (status + mute deadline), cached 60s so the
+    // auth filter does not hit the DB on every request. setForbiddenEndTime
+    // invalidates the entry, making a mute bite on the next request.
+    private final com.jujin.point.cache.SimpleCache<Long, long[]> gateCache =
+        new com.jujin.point.cache.SimpleCache<>(60_000, 10_000);
+
     private final Database db;
     private final UserRepository userRepo;
+    private final EventBus eventBus;
 
-    public UserService(Database db, UserRepository userRepo) {
+    public UserService(Database db, UserRepository userRepo, EventBus eventBus) {
         this.db = db;
         this.userRepo = userRepo;
+        this.eventBus = eventBus;
+    }
+
+    /**
+     * Rejects banned/muted accounts. Called by the auth filter for
+     * non-GET requests — muted users keep read access.
+     */
+    public void ensureUsable(long userId) {
+        long[] gate = gateCache.getOrCompute(userId, () -> db
+            .query("SELECT status, forbidden_end_time FROM bbs_user WHERE id = $id")
+            .param("id", userId)
+            .one(Row.class)
+            .map(r -> new long[] { r.longValue("status"), r.longValue("forbidden_end_time") })
+            .orElse(new long[] { 0, 0 }));
+        if (gate[0] == 0) throw new ServiceException("账号已被禁用");
+        if (gate[1] > System.currentTimeMillis()) {
+            throw new ServiceException("账号已被禁言至 " + formatTime(gate[1]));
+        }
     }
 
     public Optional<User> findById(long id) {
@@ -84,7 +112,7 @@ public class UserService {
         }
 
         if (user.getForbiddenEndTime() > System.currentTimeMillis()) {
-            throw new ServiceException("用户已被禁言至 " + user.getForbiddenEndTime());
+            throw new ServiceException("用户已被禁言至 " + formatTime(user.getForbiddenEndTime()));
         }
 
         if (!verifyPassword(password, user.getPassword())) {
@@ -133,6 +161,13 @@ public class UserService {
             "UPDATE bbs_user SET forbidden_end_time = ?, update_time = ? WHERE id = ?",
             endTime, System.currentTimeMillis(), userId
         );
+        // Mute/unmute must bite immediately and notify the user
+        gateCache.invalidate(userId);
+        eventBus.publish(new UserForbiddenEvent(userId, endTime, System.currentTimeMillis()));
+    }
+
+    private static String formatTime(long epochMillis) {
+        return Strings.formatTime(epochMillis);
     }
 
     public void addScore(long userId, int score) {

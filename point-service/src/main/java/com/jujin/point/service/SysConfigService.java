@@ -1,6 +1,5 @@
 package com.jujin.point.service;
 
-import com.jujin.point.cache.PointCacheModule;
 import com.jujin.point.db.repository.*;
 import com.jujin.point.domain.entity.SysConfig;
 import com.jujin.freeway.db.Database;
@@ -10,16 +9,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Dynamic system configuration service — DB-backed with in-memory cache.
+ * The whole table is loaded once and served from memory; writes update
+ * the row and the cache together.
  */
 public class SysConfigService {
     private final Database db;
-    private final PointCacheModule.SysConfigCache cache;
     private final Map<String, String> memoryCache = new ConcurrentHashMap<>();
     private volatile boolean loaded = false;
 
-    public SysConfigService(Database db, PointCacheModule.SysConfigCache cache) {
+    public SysConfigService(Database db) {
         this.db = db;
-        this.cache = cache;
     }
 
     private void ensureLoaded() {
@@ -86,7 +85,6 @@ public class SysConfigService {
             }
         });
         memoryCache.put(key, value);
-        cache.invalidate(key);
     }
 
     public Map<String, String> getAll() {
