@@ -31,9 +31,9 @@ class UserServiceTest {
         Schema.ensure(db, new Class<?>[] { User.class });
 
         container = Freeway.create(binder -> {
-            binder.bind(Database.class).to(db);
-            binder.bind(Orm.class).to(orm);
-            binder.bind(UserRepository.class).to(new UserRepository(db, orm));
+            binder.bind(Database.class).to(container -> db);
+            binder.bind(Orm.class).to(container -> orm);
+            binder.bind(UserRepository.class).to(container -> new UserRepository(db, orm));
             binder.bind(UserService.class).to(UserService.class);
         });
         userService = container.get(UserService.class);

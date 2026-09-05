@@ -31,10 +31,10 @@ public class WebModule implements ModuleEx {
         // Response enricher — injected with Database, used by route handlers
         binder.bind(ResponseEnricher.class).to(ResponseEnricher.class);
         // Auth rate limiter (signin/signup brute-force guard)
-        binder.bind(LoginRateLimiter.class).to(new LoginRateLimiter(10, 10 * 60 * 1000));
+        binder.bind(LoginRateLimiter.class).to(c -> new LoginRateLimiter(10, 10 * 60 * 1000));
 
         // WebSocket push notifications
-        binder.bind(NotificationHub.class).to(new NotificationHub());
+        binder.bind(NotificationHub.class).to(c -> new NotificationHub());
         binder
             .contribute(com.jujin.freeway.http.websocket.WebSocketGroup.class)
             .add(

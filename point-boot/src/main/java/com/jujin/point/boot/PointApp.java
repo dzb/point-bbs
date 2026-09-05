@@ -31,7 +31,7 @@ public class PointApp {
             ||P ||||O ||||I ||||N ||||T ||
             ||__||||__||||__||||__||||__||
             |/__\\\\||/__\\\\||/__\\\\||/__\\\\||/__\\\\|
-            point v1.0.3 -- powered by freeway 1.4.0 + JDK %s
+            point v1.0.3 -- powered by freeway 1.5.0 + JDK %s
             """.formatted(Runtime.version().feature())
         );
 

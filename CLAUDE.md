@@ -148,6 +148,12 @@ Full design system documented in `point-frontend/DESIGN.md`.
 
 ## Recent changes (2026-06-14)
 
+### freeway 1.5.0 upgrade (2026-09-05)
+- `freeway.version` 1.4.0 → 1.5.0 in parent POM (freeway HEAD, not yet on Maven Central — installed from the local freeway repo)
+- `Binding.to(instance)` removed → `.to(container -> instance)` (WebModule ×2, three service test files)
+- Everything else compiles and runs unchanged: 1.5.0's breaking surface (ConfigSpec→SymbolSpec move, `XDefault`/`XImpl` renames, cloud rework) does not touch point-bbs's API usage; 19/19 tests + 17/17 API smoke pass
+- Banner: powered by freeway 1.5.0
+
 ### freeway 1.4.0 upgrade (2026-09-03)
 - `freeway.version` 1.3.8-SNAPSHOT → 1.4.0 in parent POM
 - `ExecuteResult.hasKey()` → `ExecuteResult.hasGeneratedKey()` (field `key` renamed to `generatedKey`); `longKey()` unchanged

@@ -37,11 +37,11 @@ class CommentServiceTest {
         Schema.ensure(db, new Class<?>[] { Topic.class, Comment.class, User.class });
 
         container = Freeway.create(binder -> {
-            binder.bind(Database.class).to(db);
-            binder.bind(Orm.class).to(orm);
-            binder.bind(UserRepository.class).to(new UserRepository(db, orm));
-            binder.bind(TopicRepository.class).to(new TopicRepository(db, orm));
-            binder.bind(CommentRepository.class).to(new CommentRepository(db, orm));
+            binder.bind(Database.class).to(container -> db);
+            binder.bind(Orm.class).to(container -> orm);
+            binder.bind(UserRepository.class).to(container -> new UserRepository(db, orm));
+            binder.bind(TopicRepository.class).to(container -> new TopicRepository(db, orm));
+            binder.bind(CommentRepository.class).to(container -> new CommentRepository(db, orm));
             binder.bind(MentionNotifier.class).to(MentionNotifier.class);
             binder.bind(TopicService.class).to(TopicService.class);
             binder.bind(CommentService.class).to(CommentService.class);
