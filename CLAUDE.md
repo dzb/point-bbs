@@ -148,6 +148,12 @@ Full design system documented in `point-frontend/DESIGN.md`.
 
 ## Recent changes (2026-06-14)
 
+### freeway 1.5.1 upgrade (2026-09-06)
+- `freeway.version` 1.5.0 → 1.5.1 in parent POM (local `~/.m2` artifacts; not on Maven Central)
+- Zero code changes required: 1.5.1 is hardening-only (H2 reset-burst guard, event-driven TLS reload, migration-lock owner tokens, private-lock convergence) with no API renames; only the `PointApp` banner string 1.5.0 → 1.5.1
+- 19/19 tests + 17/17 API smoke pass
+- Banner: powered by freeway 1.5.1
+
 ### freeway 1.5.0 upgrade (2026-09-05)
 - `freeway.version` 1.4.0 → 1.5.0 in parent POM (freeway HEAD, not yet on Maven Central — installed from the local freeway repo)
 - `Binding.to(instance)` removed → `.to(container -> instance)` (WebModule ×2, three service test files)
