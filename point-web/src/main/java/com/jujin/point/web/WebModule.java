@@ -6,6 +6,7 @@ import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.staticfile.StaticResourceMount;
 import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.ModuleEx;
+import com.jujin.point.domain.auth.AuthApi;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.service.ServiceException;
 import com.jujin.point.web.filter.AuthException;
@@ -82,24 +83,11 @@ public class WebModule implements ModuleEx {
             .add(AuthFilter.class)
             .after("security-headers");
 
-        // Serve session identity over the CallBus ("auth.*" topics) so other
-        // modules (admin) can ask who is calling without importing point-web.
-        binder
-            .contribute(com.jujin.freeway.ioc.RuntimeHook.class)
-            .add(
-                "auth-rpc",
-                new com.jujin.freeway.ioc.RuntimeHook() {
-                    @Override
-                    public void start(com.jujin.freeway.ioc.Container container) {
-                        container.get(com.jujin.freeway.ioc.CallBus.class)
-                            .register("auth", new AuthRpc());
-                    }
-
-                    @Override
-                    public void stop(com.jujin.freeway.ioc.Container container) {}
-                }
-            )
-            .before("freeway.http.server");
+        // Serve session identity as the AuthApi service so other modules
+        // (admin) can ask who is calling without importing point-web — the
+        // provider reads AuthFilter's ScopedValue-bound CurrentUser inline
+        // on the requesting thread.
+        binder.bind(AuthApi.class).to(AuthRpc.class);
 
         // Exception mappers
         binder.contribute(ErrorHandler.class).add((resp, ex) -> {
@@ -117,7 +105,7 @@ public class WebModule implements ModuleEx {
             if (ex instanceof com.jujin.freeway.http.ValidationException ve) {
                 var details = ve
                     .result()
-                    .getErrors()
+                    .errors()
                     .stream()
                     .map(e -> e.field() + ": " + e.message())
                     .collect(java.util.stream.Collectors.joining("; "));

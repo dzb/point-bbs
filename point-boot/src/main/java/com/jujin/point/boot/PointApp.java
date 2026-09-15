@@ -1,13 +1,16 @@
 package com.jujin.point.boot;
 
 import com.jujin.freeway.boot.FreewayApp;
+import com.jujin.freeway.ioc.ModuleNode;
 
 /**
- * point application entry point.
+ * point application entry point — the single-machine monolith.
  *
- * freeway 1.3.8: explicit module composition via FreewayApp.of() with
- * autoDiscovery(false) — all modules are installed manually by PointModule
- * via binder.install(), avoiding duplicate SPI auto-discovery.
+ * freeway 1.5.2: module composition is an explicit ModuleNode tree built at
+ * the entry point — the app root holds every feature module in bind order —
+ * with autoDiscovery(false) so nothing is silently installed a second time.
+ * {@link PointCloudApp} is the mesh deployment shape; it composes this same
+ * base tree plus the cloud modules.
  */
 public class PointApp {
 
@@ -31,16 +34,20 @@ public class PointApp {
             ||P ||||O ||||I ||||N ||||T ||
             ||__||||__||||__||||__||||__||
             |/__\\\\||/__\\\\||/__\\\\||/__\\\\||/__\\\\|
-            point v1.0.3 -- powered by freeway 1.5.1 + JDK %s
+            point v1.0.3 -- powered by freeway 1.5.2-SNAPSHOT + JDK %s
             """.formatted(Runtime.version().feature())
         );
 
-        var runtime = FreewayApp.of(new PointModule())
-            .autoDiscovery(false) // All modules explicitly composed via PointModule.bind()
+        var runtime = FreewayApp.create(
+            ModuleNode.app("point", PointModules.base())
+        )
+            .autoDiscovery(false) // All modules explicitly composed in the tree
             .args(args)
             .start();
 
-        var port = runtime.config().snapshot().get("freeway.http.server.port");
+        var port = runtime
+            .get(com.jujin.freeway.ioc.symbol.SymbolSource.class)
+            .resolve("freeway.http.server.port", null);
         System.out.println(
             "point running on http://localhost:" + (port != null ? port : 8082)
         );

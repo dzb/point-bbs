@@ -24,9 +24,10 @@ import java.util.Map;
 import java.util.random.RandomGenerator;
 
 /**
- * Primary bbs module — composes all feature modules and initializes AppContext.
+ * Primary bbs module — contributes schema entities, health check, data seeds
+ * and AppContext init. Module composition lives in the entry code
+ * ({@link PointApp}) as a {@link com.jujin.freeway.ioc.ModuleNode} tree.
  *
- * Explicitly installs all sub-modules (freeway 1.3.8 idiom).
  * Schema is auto-migrated via SchemaEntity contribution (not manual Schema.ensure).
  * Database health check is registered as an example of freeway's HealthCheck extension.
  */
@@ -35,16 +36,6 @@ public class PointModule implements ModuleEx {
 
     @Override
     public void bind(Binder binder) {
-        // ── Explicit module composition (freeway 1.3.8: binder.install() over SPI) ──
-        binder.install(new DbModule());
-        binder.install(new HttpModule());
-        binder.install(new ServiceModule());
-        binder.install(new WebModule());
-        binder.install(new AdminWebModule());
-
-        // ── CallBus — provided as a container-managed builtin by freeway 1.4.0
-        // (ContainerImpl.registerBuiltinLazy); do NOT bind a second instance.
-
         // ── 1. Schema auto-migration via SchemaEntity ──
         // DbModule will automatically run Schema.ensure at startup for all contributed entities.
         binder
@@ -76,8 +67,8 @@ public class PointModule implements ModuleEx {
                     @Override
                     public void start(Container container) {
                         var db = container.get(Database.class);
-                        var cfg = container.get(
-                            com.jujin.freeway.boot.AppConfig.class
+                        var symbols = container.get(
+                            com.jujin.freeway.ioc.symbol.SymbolSource.class
                         );
 
                         // ── H2 PostgreSQL-mode index note ──
@@ -88,7 +79,7 @@ public class PointModule implements ModuleEx {
                         // idx_follow_other (@Index is not repeatable — other_id
                         // already belongs to the unique uq_user_follow), so it is
                         // created manually here on both H2 and MySQL.
-                        var dbUrl = cfg.snapshot().get("freeway.db.url");
+                        var dbUrl = symbols.resolve("freeway.db.url", null);
                         if (dbUrl != null && dbUrl.startsWith("jdbc:")) {
                             boolean isH2 = dbUrl.startsWith("jdbc:h2");
                             String ddl = isH2
@@ -107,8 +98,8 @@ public class PointModule implements ModuleEx {
                         // and no user holds the admin permission yet, create
                         // the admin account and assign the admin role. Default
                         // configs leave both empty — no-op.
-                        String adminName = cfg.snapshot().get("bbs.admin.username");
-                        String adminPass = cfg.snapshot().get("bbs.admin.password");
+                        String adminName = symbols.resolve("bbs.admin.username", null);
+                        String adminPass = symbols.resolve("bbs.admin.password", null);
                         boolean hasAdmin = DbQuery.count(
                             db,
                             "SELECT COUNT(*) AS cnt FROM bbs_user_role ur JOIN bbs_role_permission rp ON ur.role_id = rp.role_id " +

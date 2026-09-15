@@ -10,7 +10,7 @@ import com.jujin.point.domain.dto.ApiResponse;
  * Admin authorization filter — must be placed AFTER AuthFilter.
  * Only allows users with admin or owner roles.
  *
- * Identity comes from the AuthApi CallBus consumer (served by the web
+ * Identity comes from the AuthApi service (served by the web
  * layer's AuthRpc) — no compile-time dependency on point-web.
  */
 public class AdminFilter implements HttpFilter {

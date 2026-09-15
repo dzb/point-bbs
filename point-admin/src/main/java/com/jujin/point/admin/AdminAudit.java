@@ -10,7 +10,7 @@ import com.jujin.freeway.db.Orm;
  * Admin action audit trail — every mutating admin operation writes a row to
  * bbs_operate_log (operator, target, description).
  *
- * Operator identity comes from the AuthApi CallBus consumer (served by the
+ * Operator identity comes from the AuthApi service (served by the
  * web layer) — no compile-time dependency on point-web.
  */
 public final class AdminAudit {

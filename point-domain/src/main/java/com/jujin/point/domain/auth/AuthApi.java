@@ -3,15 +3,15 @@ package com.jujin.point.domain.auth;
 import com.jujin.point.domain.dto.CurrentUser;
 
 /**
- * Session-identity queries served by the web layer over the CallBus
- * ({@code register("auth", ...)} / {@code consumer("auth", AuthApi.class)}).
+ * Session-identity queries served by the web layer ({@code AuthRpc}) as a
+ * container-bound service.
  *
  * Declared here so point-admin can ask "who is calling?" without a
- * compile-time dependency on point-web: dispatch is inline on the requesting
- * thread, so the provider simply reads AuthFilter's ScopedValue-bound
- * CurrentUser. No default fallbacks on {@link #current()} on purpose — if the
- * bus or provider is missing, calls fail loudly instead of silently treating
- * every request as anonymous.
+ * compile-time dependency on point-web: the provider reads AuthFilter's
+ * ScopedValue-bound CurrentUser inline on the requesting thread. No default
+ * fallbacks on {@link #current()} on purpose — if the web module is not
+ * installed, resolution fails loudly instead of silently treating every
+ * request as anonymous.
  */
 public interface AuthApi {
 

@@ -30,7 +30,7 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <freeway.version>1.5.1</freeway.version>
+        <freeway.version>1.5.2-SNAPSHOT</freeway.version>
         <slf4j.version>2.0.18</slf4j.version>
         <h2.version>2.4.240</h2.version>
         <postgresql.version>42.7.7</postgresql.version>
@@ -58,6 +58,11 @@
             <dependency>
                 <groupId>com.jujin8.freeway</groupId>
                 <artifactId>freeway-ioc</artifactId>
+                <version>${freeway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jujin8.freeway</groupId>
+                <artifactId>freeway-cloud</artifactId>
                 <version>${freeway.version}</version>
             </dependency>
 
