@@ -39,6 +39,13 @@
             <groupId>com.jujin8.freeway</groupId>
             <artifactId>freeway-db</artifactId>
         </dependency>
+        <!-- Cloud deployment surface: PointApp never installs CloudModule, so
+             these classes are inert in the local single-machine jar; only
+             PointCloudApp activates them. -->
+        <dependency>
+            <groupId>com.jujin8.freeway</groupId>
+            <artifactId>freeway-cloud</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -48,6 +55,12 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.11.4</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
