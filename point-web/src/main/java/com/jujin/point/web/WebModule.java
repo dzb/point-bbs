@@ -27,12 +27,17 @@ import org.slf4j.LoggerFactory;
 public class WebModule implements ModuleEx {
     private static final Logger log = LoggerFactory.getLogger(WebModule.class);
 
+    /** Sliding-window policy for signin/signup: at most 10 attempts per 10 minutes. */
+    private static final int LOGIN_MAX_ATTEMPTS = 10;
+    private static final long LOGIN_WINDOW_MS = 10 * 60 * 1000;
+
     @Override
     public void bind(Binder binder) {
         // Response enricher — injected with Database, used by route handlers
         binder.bind(ResponseEnricher.class).to(ResponseEnricher.class);
         // Auth rate limiter (signin/signup brute-force guard)
-        binder.bind(LoginRateLimiter.class).to(c -> new LoginRateLimiter(10, 10 * 60 * 1000));
+        binder.bind(LoginRateLimiter.class)
+            .to(c -> new LoginRateLimiter(LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS));
 
         // WebSocket push notifications
         binder.bind(NotificationHub.class).to(c -> new NotificationHub());

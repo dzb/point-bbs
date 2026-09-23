@@ -29,7 +29,7 @@
         </dependency>
         <dependency>
             <groupId>com.jujin8.freeway</groupId>
-            <artifactId>freeway-boot</artifactId>
+            <artifactId>freeway-ioc</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jujin8.freeway</groupId>

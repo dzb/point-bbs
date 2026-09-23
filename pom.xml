@@ -42,6 +42,11 @@
             <!-- Freeway framework -->
             <dependency>
                 <groupId>com.jujin8.freeway</groupId>
+                <artifactId>freeway-commons</artifactId>
+                <version>${freeway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jujin8.freeway</groupId>
                 <artifactId>freeway-boot</artifactId>
                 <version>${freeway.version}</version>
             </dependency>

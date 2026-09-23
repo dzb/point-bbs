@@ -28,6 +28,14 @@
             <artifactId>freeway-http</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.jujin8.freeway</groupId>
+            <artifactId>freeway-ioc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jujin8.freeway</groupId>
+            <artifactId>freeway-db</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
