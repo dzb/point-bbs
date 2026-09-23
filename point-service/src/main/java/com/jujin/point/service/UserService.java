@@ -1,6 +1,7 @@
 package com.jujin.point.service;
 
 import com.jujin.point.db.repository.UserRepository;
+import com.jujin.point.domain.auth.Passwords;
 import com.jujin.point.domain.dto.CurrentUser;
 import com.jujin.point.domain.dto.UserDtos.*;
 import com.jujin.point.domain.entity.User;
@@ -9,9 +10,6 @@ import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Row;
 import com.jujin.freeway.ioc.EventBus;
 
-import java.security.MessageDigest;
-import java.security.SecureRandom;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 
@@ -78,7 +76,7 @@ public class UserService {
         user.setEmail(req.email());
         user.setUsername(req.username() != null ? req.username() : req.email());
         user.setNickname(req.nickname() != null ? req.nickname() : ("用户" + Long.toHexString(now).substring(4)));
-        user.setPassword(hashPassword(req.password()));
+        user.setPassword(Passwords.hash(req.password()));
         user.setEmailVerified(false);
         user.setScore(0);
         user.setExp(0);
@@ -115,13 +113,13 @@ public class UserService {
             throw new ServiceException("用户已被禁言至 " + formatTime(user.getForbiddenEndTime()));
         }
 
-        if (!verifyPassword(password, user.getPassword())) {
+        if (!Passwords.verify(password, user.getPassword())) {
             throw new ServiceException("密码错误");
         }
 
         // Transparently upgrade legacy SHA-256 hashes to PBKDF2 on login
-        if (!isPbkdf2(user.getPassword())) {
-            user.setPassword(hashPassword(password));
+        if (!Passwords.isCurrentFormat(user.getPassword())) {
+            user.setPassword(Passwords.hash(password));
             user.setUpdateTime(System.currentTimeMillis());
             userRepo.update(user);
         }
@@ -147,10 +145,10 @@ public class UserService {
     public void setPassword(long userId, String oldPassword, String newPassword) {
         var user = userRepo.findById(userId)
             .orElseThrow(() -> new ServiceException("用户不存在"));
-        if (!verifyPassword(oldPassword, user.getPassword())) {
+        if (!Passwords.verify(oldPassword, user.getPassword())) {
             throw new ServiceException("原密码错误");
         }
-        user.setPassword(hashPassword(newPassword));
+        user.setPassword(Passwords.hash(newPassword));
         user.setUpdateTime(System.currentTimeMillis());
         userRepo.update(user);
     }
@@ -178,80 +176,4 @@ public class UserService {
         db.execute("UPDATE bbs_user SET exp = exp + ? WHERE id = ?", exp, userId);
     }
 
-    // --- password helpers ---
-    // PBKDF2WithHmacSHA256 (OWASP-recommended KDF) with per-user random salt.
-    // Stored format: "pbkdf2$<iterations>$<saltHex>$<hashHex>".
-    // Legacy format "saltHex:hashHex" (single-round SHA-256) is still accepted
-    // for verification and transparently upgraded on next successful login.
-    private static final int PBKDF2_ITERATIONS = 120_000;
-
-    private static String hashPassword(String password) {
-        try {
-            byte[] salt = new byte[16];
-            new SecureRandom().nextBytes(salt);
-            var spec = new javax.crypto.spec.PBEKeySpec(
-                password.toCharArray(),
-                salt,
-                PBKDF2_ITERATIONS,
-                256
-            );
-            var factory = javax.crypto.SecretKeyFactory.getInstance(
-                "PBKDF2WithHmacSHA256"
-            );
-            byte[] hash = factory.generateSecret(spec).getEncoded();
-            return (
-                "pbkdf2$" +
-                PBKDF2_ITERATIONS +
-                "$" +
-                HexFormat.of().formatHex(salt) +
-                "$" +
-                HexFormat.of().formatHex(hash)
-            );
-        } catch (Exception e) {
-            throw new RuntimeException("hash error", e);
-        }
-    }
-
-    private static boolean verifyPassword(String password, String stored) {
-        if (stored == null) return false;
-        if (stored.startsWith("pbkdf2$")) {
-            try {
-                var parts = stored.split("\\$");
-                if (parts.length != 4) return false;
-                int iterations = Integer.parseInt(parts[1]);
-                byte[] salt = HexFormat.of().parseHex(parts[2]);
-                byte[] expected = HexFormat.of().parseHex(parts[3]);
-                var spec = new javax.crypto.spec.PBEKeySpec(
-                    password.toCharArray(),
-                    salt,
-                    iterations,
-                    expected.length * 8
-                );
-                var factory = javax.crypto.SecretKeyFactory.getInstance(
-                    "PBKDF2WithHmacSHA256"
-                );
-                byte[] actual = factory.generateSecret(spec).getEncoded();
-                return MessageDigest.isEqual(actual, expected);
-            } catch (Exception e) {
-                return false;
-            }
-        }
-        // Legacy single-round SHA-256 format (salt:hash)
-        if (!stored.contains(":")) return false;
-        try {
-            var parts = stored.split(":");
-            byte[] salt = HexFormat.of().parseHex(parts[0]);
-            var md = MessageDigest.getInstance("SHA-256");
-            md.update(salt);
-            byte[] hash = md.digest(password.getBytes("UTF-8"));
-            return HexFormat.of().formatHex(hash).equals(parts[1]);
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    /** True when the stored hash uses the current PBKDF2 format. */
-    private static boolean isPbkdf2(String stored) {
-        return stored != null && stored.startsWith("pbkdf2$");
-    }
 }
