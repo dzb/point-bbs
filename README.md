@@ -58,7 +58,7 @@ The backend is built on [Freeway](https://github.com/dzb/freeway), a modern Java
 - Embedded HTTP server with routing, filters, and static files
 - Lightweight ORM with schema auto-migration
 - Event bus for decoupled domain events
-- Config cascade via `@Symbol` / `@Value` annotations
+- Config cascade via the `@Symbol` annotation
 
 ---
 

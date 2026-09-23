@@ -1,7 +1,7 @@
 package com.jujin.point.service;
 
 import com.jujin.point.domain.dto.CurrentUser;
-import com.jujin.freeway.ioc.annotation.Value;
+import com.jujin.freeway.ioc.annotation.Symbol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,10 +24,10 @@ public class AuthService {
     private final int expireDays;
 
     public AuthService(
-        @Value("${bbs.jwt.secret:}") String secret,
-        @Value("${bbs.jwt.expire-days:7}") int expireDays,
-        @Value("${freeway.profile:}") String profile,
-        @Value("${bbs.jwt.cookie-domain:}") String cookieDomain
+        @Symbol("${bbs.jwt.secret:}") String secret,
+        @Symbol("${bbs.jwt.expire-days:7}") int expireDays,
+        @Symbol("${freeway.profile:}") String profile,
+        @Symbol("${bbs.jwt.cookie-domain:}") String cookieDomain
     ) {
         // A known/placeholder HMAC key lets anyone forge tokens for any userId.
         var effective = secret == null ? "" : secret.trim();

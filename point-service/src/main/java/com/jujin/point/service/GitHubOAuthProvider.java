@@ -1,6 +1,6 @@
 package com.jujin.point.service;
 
-import com.jujin.freeway.ioc.annotation.Value;
+import com.jujin.freeway.ioc.annotation.Symbol;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -20,9 +20,9 @@ public class GitHubOAuthProvider implements OAuthProvider {
     private final HttpClient http = HttpClient.newHttpClient();
 
     public GitHubOAuthProvider(
-        @Value("${bbs.oauth.github.client-id:}") String clientId,
-        @Value("${bbs.oauth.github.client-secret:}") String clientSecret,
-        @Value("${bbs.oauth.github.redirect-uri:http://localhost:8082/api/auth/github/callback}") String redirectUri
+        @Symbol("${bbs.oauth.github.client-id:}") String clientId,
+        @Symbol("${bbs.oauth.github.client-secret:}") String clientSecret,
+        @Symbol("${bbs.oauth.github.redirect-uri:http://localhost:8082/api/auth/github/callback}") String redirectUri
     ) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;

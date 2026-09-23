@@ -11,7 +11,7 @@ import com.jujin.freeway.cloud.discovery.ServiceInstance;
 import com.jujin.freeway.cloud.discovery.ServiceRegistry;
 import com.jujin.freeway.cloud.rpc.RemoteCaller;
 import com.jujin.freeway.http.HttpConfigKeys;
-import com.jujin.freeway.http.WebServer;
+import com.jujin.freeway.http.HttpServer;
 import com.jujin.freeway.ioc.ModuleNode;
 import com.jujin.point.boot.cloud.AuthRpcExportModule;
 import com.jujin.point.domain.dto.CurrentUser;
@@ -96,7 +96,7 @@ class AuthRpcExportTest {
         // The test stands in for a real discovery backend: point the registry
         // at this node's own endpoint (same move freeway-cloud's own wiring
         // tests make).
-        var web = app.get(WebServer.class);
+        var web = app.get(HttpServer.class);
         app.get(ServiceRegistry.class)
             .register(ServiceInstance.of(
                 SERVICE_ID, "i1", Endpoint.of("http", web.host(), web.port()), Map.of()));
@@ -117,7 +117,7 @@ class AuthRpcExportTest {
         setCommonConfig();
         app = startTree(tree()); // exactly the PointApp composition
 
-        var web = app.get(WebServer.class);
+        var web = app.get(HttpServer.class);
         var response = HttpClient.newHttpClient().send(
             HttpRequest.newBuilder(
                     URI.create("http://127.0.0.1:" + web.port() + "/rpc/auth/validateToken"))

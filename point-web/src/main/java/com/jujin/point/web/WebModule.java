@@ -52,8 +52,8 @@ public class WebModule implements ModuleEx {
             .contribute(StaticResourceMount.class)
             .add(
                 StaticResourceMount.classpath("/assets", "static/assets")
-                    .immutable(true)
-                    .cacheMaxAgeSeconds(31536000)
+                    .withImmutable(true)
+                    .withCacheMaxAgeSeconds(31536000)
             ); // 1 year
 
         // Serve root-level static files (favicon, etc.) — fallthrough for SPA routes
@@ -61,8 +61,8 @@ public class WebModule implements ModuleEx {
             .contribute(StaticResourceMount.class)
             .add(
                 StaticResourceMount.classpath("/", "static")
-                    .fallthrough(true)
-                    .cacheMaxAgeSeconds(86400)
+                    .withFallthrough(true)
+                    .withCacheMaxAgeSeconds(86400)
             ); // 1 day
 
         // SPA frontend fallthrough filter (skips /api paths)
@@ -111,6 +111,13 @@ public class WebModule implements ModuleEx {
                     .collect(java.util.stream.Collectors.joining("; "));
                 resp.sendJson(400, ApiResponse.error("参数校验失败: " + details));
                 return true;
+            }
+            // 框架内置映射回答 413/415/400 —— 1.5.4 起应用 mapper 排在内置之前，
+            // 吞掉这三类会把内置状态码改写成 500，交还给内置 mapper。
+            if (ex instanceof com.jujin.freeway.http.body.BodyTooLargeException
+                    || ex instanceof com.jujin.freeway.http.body.UnsupportedMediaTypeException
+                    || ex instanceof com.jujin.freeway.http.body.MultipartException) {
+                return false;
             }
             log.error(
                 "Unhandled exception {}: {}",

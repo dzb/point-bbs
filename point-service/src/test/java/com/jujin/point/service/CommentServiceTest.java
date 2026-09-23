@@ -3,7 +3,6 @@ package com.jujin.point.service;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.jujin.freeway.db.Database;
-import com.jujin.freeway.db.DatabaseBuilder;
 import com.jujin.freeway.db.Orm;
 import com.jujin.freeway.db.PoolConfig;
 import com.jujin.freeway.db.Row;
@@ -32,7 +31,7 @@ class CommentServiceTest {
     static void setUp() {
         var config = PoolConfig.defaults(
             "jdbc:h2:mem:point_comment_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "");
-        db = DatabaseBuilder.from(config).build();
+        db = Database.create(config);
         var orm = Orm.of(db);
         Schema.ensure(db, new Class<?>[] { Topic.class, Comment.class, User.class });
 

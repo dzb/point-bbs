@@ -4,7 +4,7 @@ import com.jujin.point.domain.entity.Attachment;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
 
-import com.jujin.freeway.ioc.annotation.Value;
+import com.jujin.freeway.ioc.annotation.Symbol;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -24,8 +24,8 @@ public class UploadService {
     public UploadService(
         Database db,
         Orm orm,
-        @Value("${bbs.upload.dir:./uploads}") String uploadDirPath,
-        @Value("${bbs.upload.max-size:10485760}") long maxSizeBytes
+        @Symbol("${bbs.upload.dir:./uploads}") String uploadDirPath,
+        @Symbol("${bbs.upload.max-size:10485760}") long maxSizeBytes
     ) {
         this.db = db;
         this.orm = orm;

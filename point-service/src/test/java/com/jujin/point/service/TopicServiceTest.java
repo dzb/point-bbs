@@ -31,7 +31,7 @@ class TopicServiceTest {
     static void setUp() {
         var config = PoolConfig.defaults(
             "jdbc:h2:mem:point_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "");
-        var db = DatabaseBuilder.from(config).build();
+        var db = Database.create(config);
         var orm = Orm.of(db);
         Schema.ensure(db, ALL_ENTITIES);
 

@@ -3,7 +3,6 @@ package com.jujin.point.service;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.jujin.freeway.db.Database;
-import com.jujin.freeway.db.DatabaseBuilder;
 import com.jujin.freeway.db.Orm;
 import com.jujin.freeway.db.PoolConfig;
 import com.jujin.freeway.db.schema.Schema;
@@ -26,7 +25,7 @@ class UserServiceTest {
     static void setUp() {
         var config = PoolConfig.defaults(
             "jdbc:h2:mem:point_user_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "");
-        var db = DatabaseBuilder.from(config).build();
+        var db = Database.create(config);
         var orm = Orm.of(db);
         Schema.ensure(db, new Class<?>[] { User.class });
 
