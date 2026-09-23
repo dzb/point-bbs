@@ -23,9 +23,5 @@
             <groupId>com.jujin8.freeway</groupId>
             <artifactId>freeway-db</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.jujin8.freeway</groupId>
-            <artifactId>freeway-ioc</artifactId>
-        </dependency>
     </dependencies>
 </project>

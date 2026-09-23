@@ -10,42 +10,10 @@ import java.util.stream.Collectors;
 /**
  * Enriches entities with related user info for frontend display.
  *
- * freeway 1.3.8: this is a proper injectable service. Database is injected
- * via constructor instead of resolved from AppContext at runtime.
+ * Bound as a singleton in {@link WebModule} with Database injected via
+ * constructor; route handlers receive the instance.
  */
 public class ResponseEnricher {
-
-    private static ResponseEnricher instance() {
-        return com.jujin.point.domain.AppContext.get(ResponseEnricher.class);
-    }
-
-    public static Map<String, Object> enrichTopic(Topic t) {
-        return instance().enrichTopic0(t);
-    }
-
-    public static Map<String, Object> enrichComment(Comment c) {
-        return instance().enrichComment0(c);
-    }
-
-    public static Map<String, Object> enrichArticle(Article a) {
-        return instance().enrichArticle0(a);
-    }
-
-    public static List<Map<String, Object>> enrichTopics(List<Topic> topics) {
-        return instance().enrichTopics0(topics);
-    }
-
-    public static List<Map<String, Object>> enrichComments(
-        List<Comment> comments
-    ) {
-        return instance().enrichComments0(comments);
-    }
-
-    public static List<Map<String, Object>> enrichArticles(
-        List<Article> articles
-    ) {
-        return instance().enrichArticles0(articles);
-    }
 
     private final Database db;
 
@@ -55,24 +23,24 @@ public class ResponseEnricher {
 
     // -- single-item (for detail endpoints) --
 
-    private Map<String, Object> enrichTopic0(Topic t) {
+    public Map<String, Object> enrichTopic(Topic t) {
         return buildTopic(t, queryUser(t.getUserId()));
     }
 
-    private Map<String, Object> enrichComment0(Comment c) {
+    public Map<String, Object> enrichComment(Comment c) {
         var quoted = c.getQuoteId() != null && c.getQuoteId() > 0
             ? queryQuotePreview(c.getQuoteId())
             : null;
         return buildComment(c, queryUser(c.getUserId()), quoted);
     }
 
-    private Map<String, Object> enrichArticle0(Article a) {
+    public Map<String, Object> enrichArticle(Article a) {
         return buildArticle(a, queryUser(a.getUserId()), queryTags(a.getId()));
     }
 
     // -- batch (for list endpoints) --
 
-    private List<Map<String, Object>> enrichTopics0(List<Topic> topics) {
+    public List<Map<String, Object>> enrichTopics(List<Topic> topics) {
         var users = batchQueryUsers(
             topics.stream().map(Topic::getUserId).collect(Collectors.toSet())
         );
@@ -82,7 +50,7 @@ public class ResponseEnricher {
             .toList();
     }
 
-    private List<Map<String, Object>> enrichComments0(List<Comment> comments) {
+    public List<Map<String, Object>> enrichComments(List<Comment> comments) {
         var users = batchQueryUsers(
             comments
                 .stream()
@@ -107,7 +75,7 @@ public class ResponseEnricher {
             .toList();
     }
 
-    private List<Map<String, Object>> enrichArticles0(List<Article> articles) {
+    public List<Map<String, Object>> enrichArticles(List<Article> articles) {
         var userIds = articles
             .stream()
             .map(Article::getUserId)

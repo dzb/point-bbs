@@ -29,6 +29,9 @@ public class AdminWebModule implements ModuleEx {
             .add(AdminFilter.class)
             .after("auth_filter@com.jujin.point.web.filter");
 
+        // Admin audit trail — AuthApi seam from the web layer, Orm from DbModule
+        binder.bind(AdminAudit.class).to(AdminAudit.class);
+
         // Admin route groups
         binder.contribute(RouteGroup.class).add(AdminTopicRoutes.routes());
         binder.contribute(RouteGroup.class).add(AdminUserRoutes.routes());

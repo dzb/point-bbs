@@ -48,7 +48,7 @@ public class WebModule implements ModuleEx {
                     "/ws",
                     com.jujin.freeway.http.websocket.WebSocketRoute.of(
                         "/notify",
-                        new NotificationWsEndpoint()
+                        NotificationWsEndpoint.class
                     )
                 )
             );
@@ -142,16 +142,13 @@ public class WebModule implements ModuleEx {
         // fallback).
         binder
             .contribute(com.jujin.freeway.ioc.EventSubscriber.class)
-            .add(
-                "ws-ping",
-                com.jujin.freeway.ioc.EventSubscriber.of(
+            .add("ws-ping", c -> {
+                NotificationHub hub = c.get(NotificationHub.class);
+                return com.jujin.freeway.ioc.EventSubscriber.of(
                     com.jujin.point.domain.event.NotificationSentEvent.class,
-                    e ->
-                        com.jujin.point.domain.AppContext
-                            .get(NotificationHub.class)
-                            .pingUnread(e.toUserId())
-                )
-            );
+                    e -> hub.pingUnread(e.toUserId())
+                );
+            });
 
         // API route groups
         binder.contribute(RouteGroup.class).add(TopicRoutes.routes());

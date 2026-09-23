@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Seeds default roles & permissions and the config-gated bootstrap admin
  * (idempotent). Contributed by {@link PointModule} as the
- * {@code data-seed} RuntimeHook, ordered before {@code app-context-init}.
+ * {@code data-seed} RuntimeHook.
  */
 final class DataSeedHook implements RuntimeHook {
     private static final Logger log = LoggerFactory.getLogger(DataSeedHook.class);

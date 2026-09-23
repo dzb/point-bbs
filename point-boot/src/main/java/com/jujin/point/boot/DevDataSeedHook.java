@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
  * Seeds dev demo data — users, categories, topics, comments, articles,
  * follows, likes and counters (idempotent, skipped on prod profiles).
  * Contributed by {@link PointModule} as the {@code dev-data-seed}
- * RuntimeHook, ordered before {@code app-context-init}.
+ * RuntimeHook.
  */
 final class DevDataSeedHook implements RuntimeHook {
     private static final Logger log = LoggerFactory.getLogger(DevDataSeedHook.class);

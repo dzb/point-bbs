@@ -6,18 +6,16 @@ import com.jujin.freeway.db.Row;
 import com.jujin.freeway.db.schema.SchemaEntity;
 import com.jujin.freeway.http.filter.HealthCheck;
 import com.jujin.freeway.ioc.Binder;
-import com.jujin.freeway.ioc.Container;
 import com.jujin.freeway.ioc.ModuleEx;
 import com.jujin.freeway.ioc.RuntimeHook;
-import com.jujin.point.domain.AppContext;
 import com.jujin.point.domain.entity.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 /**
- * Primary bbs module — contributes schema entities, health check, the seed
- * hooks ({@link DataSeedHook}, {@link DevDataSeedHook}) and AppContext init.
+ * Primary bbs module — contributes schema entities, health check and the seed
+ * hooks ({@link DataSeedHook}, {@link DevDataSeedHook}).
  * Module composition lives in the entry code
  * ({@link PointApp}) as a {@link com.jujin.freeway.ioc.ModuleNode} tree.
  *
@@ -54,31 +52,12 @@ public class PointModule implements ModuleEx {
         // ── 3. Seed default roles & permissions (idempotent) ──
         binder
             .contribute(RuntimeHook.class)
-            .add("data-seed", new DataSeedHook())
-            .before("app-context-init");
+            .add("data-seed", new DataSeedHook());
 
         // ── 4. Seed dev test data (idempotent, dev profiles only) ──
         binder
             .contribute(RuntimeHook.class)
-            .add("dev-data-seed", new DevDataSeedHook())
-            .before("app-context-init");
-
-        // ── 5. Initialize AppContext ──
-        binder
-            .contribute(RuntimeHook.class)
-            .add(
-                "app-context-init",
-                new RuntimeHook() {
-                    @Override
-                    public void start(Container container) {
-                        AppContext.init(container);
-                    }
-
-                    @Override
-                    public void stop(Container container) {}
-                }
-            )
-            .before("freeway.http.server");
+            .add("dev-data-seed", new DevDataSeedHook());
     }
 
     /** All entity classes for Schema.ensure auto-migration. */

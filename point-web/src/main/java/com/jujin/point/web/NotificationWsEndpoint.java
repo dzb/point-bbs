@@ -3,22 +3,28 @@ package com.jujin.point.web;
 import com.jujin.freeway.http.websocket.WebSocketEndpoint;
 import com.jujin.freeway.http.websocket.WebSocketListener;
 import com.jujin.freeway.http.websocket.WebSocketSession;
-import com.jujin.point.domain.AppContext;
 import com.jujin.point.service.AuthService;
 
 /**
  * WebSocket endpoint at /ws/notify?token=&lt;jwt&gt; — authenticates with the
  * same JWT the SPA uses for HTTP (query param, since browsers cannot set
  * headers on the WS handshake) and registers the session for push
- * notifications. Services resolve lazily via AppContext (same idiom as route
- * handlers), because the endpoint is constructed at module-bind time.
+ * notifications. Services arrive via constructor injection: the route is
+ * declared as {@code WebSocketRoute.of("/notify", NotificationWsEndpoint.class)}
+ * and the container builds this endpoint at startup.
  */
 public class NotificationWsEndpoint implements WebSocketEndpoint {
 
+    private final AuthService authService;
+    private final NotificationHub hub;
+
+    public NotificationWsEndpoint(AuthService authService, NotificationHub hub) {
+        this.authService = authService;
+        this.hub = hub;
+    }
+
     @Override
     public WebSocketListener open(WebSocketSession session) {
-        var authService = AppContext.get(AuthService.class);
-        var hub = AppContext.get(NotificationHub.class);
         var token = session.queryParam("token").orElse(null);
         if (token == null) {
             // Same-origin WS handshakes carry the HttpOnly session cookie
