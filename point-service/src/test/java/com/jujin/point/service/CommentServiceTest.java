@@ -8,7 +8,7 @@ import com.jujin.freeway.db.PoolConfig;
 import com.jujin.freeway.db.Row;
 import com.jujin.freeway.db.schema.Schema;
 import com.jujin.freeway.ioc.Container;
-import com.jujin.freeway.ioc.EventBus;
+import com.jujin.freeway.ioc.event.EventBus;
 import com.jujin.freeway.ioc.Freeway;
 import com.jujin.point.db.repository.CommentRepository;
 import com.jujin.point.db.repository.TopicRepository;

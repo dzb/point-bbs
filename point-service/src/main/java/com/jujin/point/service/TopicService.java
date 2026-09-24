@@ -9,7 +9,7 @@ import com.jujin.point.domain.entity.TopicTag;
 import com.jujin.point.domain.event.QaAnswerAcceptedEvent;
 import com.jujin.point.domain.event.TopicDeletedEvent;
 import com.jujin.freeway.db.Database;
-import com.jujin.freeway.ioc.EventBus;
+import com.jujin.freeway.ioc.event.EventBus;
 
 import java.util.List;
 import java.util.Optional;

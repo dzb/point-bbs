@@ -5,7 +5,7 @@ import com.jujin.point.domain.entity.UserLike;
 import com.jujin.point.domain.event.UserLikedEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
-import com.jujin.freeway.ioc.EventBus;
+import com.jujin.freeway.ioc.event.EventBus;
 
 import java.util.List;
 

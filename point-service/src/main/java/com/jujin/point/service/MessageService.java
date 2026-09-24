@@ -4,7 +4,7 @@ import com.jujin.point.domain.entity.Message;
 import com.jujin.point.domain.event.NotificationSentEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
-import com.jujin.freeway.ioc.EventBus;
+import com.jujin.freeway.ioc.event.EventBus;
 
 import java.util.List;
 

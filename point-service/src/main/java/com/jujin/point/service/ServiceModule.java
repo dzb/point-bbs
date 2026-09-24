@@ -1,7 +1,7 @@
 package com.jujin.point.service;
 
 import com.jujin.freeway.ioc.Binder;
-import com.jujin.freeway.ioc.EventSubscriber;
+import com.jujin.freeway.ioc.event.EventSubscriber;
 import com.jujin.freeway.ioc.ModuleEx;
 import com.jujin.point.db.repository.*;
 import com.jujin.point.domain.event.*;

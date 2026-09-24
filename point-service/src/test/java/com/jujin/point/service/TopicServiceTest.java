@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.jujin.freeway.db.*;
 import com.jujin.freeway.db.schema.Schema;import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.Container;
-import com.jujin.freeway.ioc.EventBus;
+import com.jujin.freeway.ioc.event.EventBus;
 import com.jujin.freeway.ioc.Freeway;
 import com.jujin.point.db.repository.TopicRepository;
 import com.jujin.point.db.repository.UserRepository;

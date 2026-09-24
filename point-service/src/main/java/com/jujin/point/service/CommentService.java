@@ -7,7 +7,7 @@ import com.jujin.point.domain.dto.PageResult;
 import com.jujin.point.domain.entity.Comment;
 import com.jujin.point.domain.event.CommentCreatedEvent;
 import com.jujin.freeway.db.Database;
-import com.jujin.freeway.ioc.EventBus;
+import com.jujin.freeway.ioc.event.EventBus;
 
 import java.util.List;
 

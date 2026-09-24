@@ -141,10 +141,10 @@ public class WebModule implements ModuleEx {
         // re-fetches the unread count on ping (15s polling remains as
         // fallback).
         binder
-            .contribute(com.jujin.freeway.ioc.EventSubscriber.class)
+            .contribute(com.jujin.freeway.ioc.event.EventSubscriber.class)
             .add("ws-ping", c -> {
                 NotificationHub hub = c.get(NotificationHub.class);
-                return com.jujin.freeway.ioc.EventSubscriber.of(
+                return com.jujin.freeway.ioc.event.EventSubscriber.of(
                     com.jujin.point.domain.event.NotificationSentEvent.class,
                     e -> hub.pingUnread(e.toUserId())
                 );

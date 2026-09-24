@@ -2,7 +2,7 @@ package com.jujin.point.service;
 
 import com.jujin.point.db.repository.UserRepository;
 import com.jujin.point.domain.event.UserMentionedEvent;
-import com.jujin.freeway.ioc.EventBus;
+import com.jujin.freeway.ioc.event.EventBus;
 
 import java.util.HashSet;
 
