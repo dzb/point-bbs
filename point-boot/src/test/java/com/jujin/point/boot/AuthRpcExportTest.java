@@ -10,9 +10,8 @@ import com.jujin.freeway.cloud.discovery.Endpoint;
 import com.jujin.freeway.cloud.discovery.ServiceInstance;
 import com.jujin.freeway.cloud.discovery.ServiceRegistry;
 import com.jujin.freeway.cloud.rpc.RemoteCaller;
-import com.jujin.freeway.http.HttpConfigKeys;
+import com.jujin.freeway.http.HttpModule;
 import com.jujin.freeway.http.HttpServer;
-import com.jujin.freeway.ioc.ModuleNode;
 import com.jujin.point.boot.cloud.AuthRpcExportModule;
 import com.jujin.point.domain.dto.CurrentUser;
 import com.jujin.point.service.AuthService;
@@ -20,7 +19,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,11 +29,11 @@ import org.junit.jupiter.api.Test;
  * Cloud-readiness contract for the auth export:
  *
  * <ul>
- *   <li>mesh shape (base tree + CloudModule + {@link AuthRpcExportModule}):
+ *   <li>mesh shape (base list + CloudModule + {@link AuthRpcExportModule}):
  *       a peer resolves a session token over {@code POST /rpc/auth/validateToken}
  *       — token in, identity out, including the wire-safe null for a bogus
  *       token;</li>
- *   <li>monolith shape (the exact {@link PointApp} tree, which is what local
+ *   <li>monolith shape (the exact {@link PointApp} list, which is what local
  *       single-machine deployment runs): the RPC surface does not exist —
  *       {@code /rpc/...} is 404 — proving the cloud classes on the classpath
  *       are inert until the composition installs them.</li>
@@ -53,21 +51,27 @@ class AuthRpcExportTest {
             app.close();
             app = null;
         }
-        System.clearProperty(HttpConfigKeys.SERVER_PORT);
-        System.clearProperty(HttpConfigKeys.SERVER_HOST);
+        System.clearProperty(HttpModule.ConfigKeys.SERVER_PORT);
+        System.clearProperty(HttpModule.ConfigKeys.SERVER_HOST);
         System.clearProperty("freeway.db.url");
         System.clearProperty("bbs.jwt.secret");
     }
 
-    private static ModuleNode tree(ModuleNode... extra) {
-        var children = new ArrayList<ModuleNode>(List.of(PointModules.base()));
-        children.addAll(List.of(extra));
-        return ModuleNode.app("point-test", children.toArray(ModuleNode[]::new));
+    private static AppRuntime startTree(boolean mesh) {
+        // Same explicit composition as PointApp/PointCloudApp: autoDiscovery
+        // is off, the declaration list is the whole story. Instances and
+        // class declarations mix on the chain directly (freeway 1.5.6).
+        var launcher = FreewayApp.create(PointModules.base()).name("point-test");
+        if (mesh) {
+            launcher.add(new AuthRpcExportModule());
+            launcher.add(com.jujin.freeway.cloud.CloudModule.class);
+        }
+        return launcher.autoDiscovery(false).start();
     }
 
     private static void setCommonConfig() {
-        System.setProperty(HttpConfigKeys.SERVER_PORT, "0");
-        System.setProperty(HttpConfigKeys.SERVER_HOST, "127.0.0.1");
+        System.setProperty(HttpModule.ConfigKeys.SERVER_PORT, "0");
+        System.setProperty(HttpModule.ConfigKeys.SERVER_HOST, "127.0.0.1");
         System.setProperty(
             "freeway.db.url",
             "jdbc:h2:mem:point_rpc_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
@@ -76,19 +80,10 @@ class AuthRpcExportTest {
         System.setProperty("bbs.jwt.secret", "test-secret-not-a-placeholder-1234567890");
     }
 
-    private static AppRuntime startTree(ModuleNode tree) {
-        // Same explicit composition as PointApp/PointCloudApp: autoDiscovery
-        // is off, the tree is the whole story.
-        return FreewayApp.create(tree).autoDiscovery(false).start();
-    }
-
     @Test
     void meshShapeValidatesTokensOverRpc() throws Exception {
         setCommonConfig();
-        app = startTree(tree(
-            ModuleNode.of(new AuthRpcExportModule()),
-            ModuleNode.of(com.jujin.freeway.cloud.CloudModule.class)
-        ));
+        app = startTree(true);
 
         var token = app.get(AuthService.class)
             .createToken(7L, "rpcuser", "avatar-url", Set.of("admin"));
@@ -115,7 +110,7 @@ class AuthRpcExportTest {
     @Test
     void monolithShapeHasNoRpcSurface() throws Exception {
         setCommonConfig();
-        app = startTree(tree()); // exactly the PointApp composition
+        app = startTree(false); // exactly the PointApp composition
 
         var web = app.get(HttpServer.class);
         var response = HttpClient.newHttpClient().send(

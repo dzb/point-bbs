@@ -148,6 +148,15 @@ Full design system documented in `point-frontend/DESIGN.md`.
 
 ## Recent changes (2026-06-14)
 
+### freeway 1.5.6-SNAPSHOT upgrade (2026-09-29)
+- `freeway.version` 1.5.5 → 1.5.6-SNAPSHOT in parent POM (freeway-framework HEAD installed to local `~/.m2`; not on Maven Central)
+- Module composition flattened: `ModuleNode` moved to `ioc.internal` (no longer public) → `PointModules.base()` returns `ModuleEx[]`, entry points use `FreewayApp.create(modules).name("point")` + `.add(...)` (`PointApp`, `PointCloudApp`, `AuthRpcExportTest`); `AppBuilder` deleted (was unused)
+- Config keys namespaced into module tables: `DbConfigKeys.URL` → `DbModule.ConfigKeys.URL` (`DataSeedHook`), `HttpConfigKeys.*` → `HttpModule.ConfigKeys.*` (`AuthRpcExportTest`); startup `UnknownKeysHook` reports no warnings on current configs
+- Seed hooks explicitly ordered: `dev-data-seed` `.after("data-seed")` (required reference — both hooks always installed; 1.5.6 splits required `before`/`after` from conditional `beforeIfPresent`/`afterIfPresent`, the latter used by DbModule itself for the optional HTTP-server anchor)
+- Schema posture unchanged: default `freeway.db.schema.mode=auto` (new `auto`/`validate`/`off` key replaces retired `schema.auto`, which point-bbs never set); prod stays on auto — DDL is entity-driven, no migration files, so `validate` would fail a fresh database
+- 21/21 tests + 17/17 API smoke pass
+- Banner: powered by freeway 1.5.6-SNAPSHOT
+
 ### freeway 1.5.1 upgrade (2026-09-06)
 - `freeway.version` 1.5.0 → 1.5.1 in parent POM (local `~/.m2` artifacts; not on Maven Central)
 - Zero code changes required: 1.5.1 is hardening-only (H2 reset-burst guard, event-driven TLS reload, migration-lock owner tokens, private-lock convergence) with no API renames; only the `PointApp` banner string 1.5.0 → 1.5.1

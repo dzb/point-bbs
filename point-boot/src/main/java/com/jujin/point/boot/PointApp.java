@@ -1,16 +1,15 @@
 package com.jujin.point.boot;
 
 import com.jujin.freeway.boot.FreewayApp;
-import com.jujin.freeway.ioc.ModuleNode;
 
 /**
  * point application entry point — the single-machine monolith.
  *
- * freeway 1.5.2: module composition is an explicit ModuleNode tree built at
- * the entry point — the app root holds every feature module in bind order —
+ * freeway 1.5.6: module composition is a flat declaration list built at
+ * the entry point — the app holds every feature module in bind order —
  * with autoDiscovery(false) so nothing is silently installed a second time.
  * {@link PointCloudApp} is the mesh deployment shape; it composes this same
- * base tree plus the cloud modules.
+ * base list plus the cloud modules.
  */
 public class PointApp {
 
@@ -34,14 +33,13 @@ public class PointApp {
             ||P ||||O ||||I ||||N ||||T ||
             ||__||||__||||__||||__||||__||
             |/__\\\\||/__\\\\||/__\\\\||/__\\\\||/__\\\\|
-            point v1.0.5 -- powered by freeway 1.5.5-SNAPSHOT + JDK %s
+            point v1.0.5 -- powered by freeway 1.5.6-SNAPSHOT + JDK %s
             """.formatted(Runtime.version().feature())
         );
 
-        var runtime = FreewayApp.create(
-            ModuleNode.app("point", PointModules.base())
-        )
-            .autoDiscovery(false) // All modules explicitly composed in the tree
+        var runtime = FreewayApp.create(PointModules.base())
+            .name("point")
+            .autoDiscovery(false) // All modules explicitly composed in the list
             .args(args)
             .start();
 

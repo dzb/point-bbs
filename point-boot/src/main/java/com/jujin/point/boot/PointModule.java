@@ -17,7 +17,7 @@ import java.util.Map;
  * Primary bbs module — contributes schema entities, health check and the seed
  * hooks ({@link DataSeedHook}, {@link DevDataSeedHook}).
  * Module composition lives in the entry code
- * ({@link PointApp}) as a {@link com.jujin.freeway.ioc.ModuleNode} tree.
+ * ({@link PointApp}) as a flat module declaration list.
  *
  * Schema is auto-migrated via SchemaEntity contribution (not manual Schema.ensure).
  * Database health check is registered as an example of freeway's HealthCheck extension.
@@ -55,9 +55,14 @@ public class PointModule implements ModuleEx {
             .add("data-seed", new DataSeedHook());
 
         // ── 4. Seed dev test data (idempotent, dev profiles only) ──
+        // Required ordering: roles/permissions must exist before the dev
+        // seed grants the admin role. Both hooks are always installed, so
+        // a plain after() is correct — a missing data-seed is an error,
+        // not an optional companion (freeway 1.5.6 required vs conditional).
         binder
             .contribute(RuntimeHook.class)
-            .add("dev-data-seed", new DevDataSeedHook());
+            .add("dev-data-seed", new DevDataSeedHook())
+            .after("data-seed");
     }
 
     /** All entity classes for Schema.ensure auto-migration. */

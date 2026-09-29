@@ -1,7 +1,7 @@
 package com.jujin.point.boot;
 
 import com.jujin.freeway.db.Database;
-import com.jujin.freeway.db.DbConfigKeys;
+import com.jujin.freeway.db.DbModule;
 import com.jujin.freeway.db.Row;
 import com.jujin.freeway.ioc.Container;
 import com.jujin.freeway.ioc.RuntimeHook;
@@ -33,7 +33,7 @@ final class DataSeedHook implements RuntimeHook {
         // idx_follow_other (@Index is not repeatable — other_id
         // already belongs to the unique uq_user_follow), so it is
         // created manually here on both H2 and MySQL.
-        var dbUrl = symbols.resolve(DbConfigKeys.URL, null);
+        var dbUrl = symbols.resolve(DbModule.ConfigKeys.URL, null);
         if (dbUrl != null && dbUrl.startsWith("jdbc:")) {
             boolean isH2 = dbUrl.startsWith("jdbc:h2");
             String ddl = isH2

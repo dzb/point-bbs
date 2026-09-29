@@ -2,13 +2,12 @@ package com.jujin.point.boot;
 
 import com.jujin.freeway.boot.FreewayApp;
 import com.jujin.freeway.cloud.CloudModule;
-import com.jujin.freeway.ioc.ModuleNode;
 import com.jujin.point.boot.cloud.AuthRpcExportModule;
 
 /**
  * point in the cloud — the mesh deployment shape of the same application.
  *
- * Composes the identical base module tree as {@link PointApp} plus the cloud
+ * Composes the identical base module list as {@link PointApp} plus the cloud
  * bundle and the auth export declaration: the node registers itself in
  * discovery and serves {@code POST /rpc/auth/validateToken} for peers.
  * Business code and the local {@code AuthApi} seam (in-process,
@@ -34,13 +33,10 @@ public class PointCloudApp {
             );
         }
 
-        var base = PointModules.base();
-        var children = new ModuleNode[base.length + 2];
-        System.arraycopy(base, 0, children, 0, base.length);
-        children[base.length] = ModuleNode.of(new AuthRpcExportModule());
-        children[base.length + 1] = ModuleNode.of(CloudModule.class);
-
-        var runtime = FreewayApp.create(ModuleNode.app("point", children))
+        var runtime = FreewayApp.create(PointModules.base())
+            .name("point")
+            .add(new AuthRpcExportModule())
+            .add(CloudModule.class)
             .autoDiscovery(false) // Same explicit composition as the monolith
             .args(args)
             .start();
