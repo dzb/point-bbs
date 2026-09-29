@@ -74,11 +74,19 @@
           </h3>
         </div>
         <div v-if="auth.isLoggedIn" class="mb-4">
+          <div
+            v-if="replyTarget"
+            class="mb-2"
+            style="font-size: 12px; color: var(--paper-text2); cursor: pointer"
+            @click="replyTarget = null"
+          >
+            回复 {{ replyTarget.nickname }} ×
+          </div>
           <MentionTextarea
             v-model="commentText"
             placeholder="写下你的想法... @用户名 可提及用户"
             rows="2"
-            class="mb-2"
+            class="mb-2 reply-composer"
           />
           <div class="d-flex justify-end">
             <v-btn variant="text" :loading="submitting" style="color: var(--paper-text2)" @click="postComment">
@@ -86,7 +94,7 @@
             </v-btn>
           </div>
         </div>
-        <div v-for="c in comments" :key="c.id" class="py-3" style="border-top: 1px solid var(--paper-border)">
+        <div v-for="c in comments" :key="c.id" :data-comment-id="c.id" class="py-3" style="border-top: 1px solid var(--paper-border)">
           <div class="d-flex">
             <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" class="mr-3 flex-shrink-0 mt-1" />
             <div class="flex-grow-1">
@@ -97,8 +105,19 @@
                 <span style="font-size: 12px; color: var(--paper-text2); margin-left: 8px">{{
                   formatTime(c.createTime)
                 }}</span>
+                <span v-if="replyToName(c)" style="font-size: 12px; color: var(--paper-text2); margin-left: 8px">
+                  回复
+                  <a
+                    style="color: var(--paper-accent); cursor: pointer; text-decoration: none"
+                    @click="scrollToComment(c.quoteId)"
+                    >@{{ replyToName(c) }}</a
+                  >
+                </span>
               </div>
               <div class="comment-body" v-html="renderMarkdown(c.content)" />
+              <div v-if="auth.isLoggedIn" class="d-flex mt-1" style="font-size: 12px; color: var(--paper-text2)">
+                <v-icon size="15" title="回复" style="cursor: pointer" @click="replyTo(c)">mdi-reply</v-icon>
+              </div>
             </div>
           </div>
         </div>
@@ -142,6 +161,8 @@ const commentPage = ref(1)
 const commentPageSize = 30
 const hasMoreComments = ref(false)
 const loadingMoreComments = ref(false)
+// Conversation reply target: auto-@nickname + quoteId on submit
+const replyTarget = ref<{ id: number; nickname: string } | null>(null)
 const viewerIndex = ref(0)
 const liked = ref(false)
 const favorited = ref(false)
@@ -167,6 +188,7 @@ async function loadArticle() {
     const ar = await client.get(`/articles/${id}`)
     if (ar.data.code === 0) article.value = ar.data.data
     await loadComments()
+    scrollToQueryComment()
     if (article.value) await loadStatus()
   } catch (e) {
     console.error('article load error', e)
@@ -177,6 +199,18 @@ async function loadArticle() {
 
 onMounted(loadArticle)
 watch(() => route.params.id, loadArticle)
+watch(() => route.query.comment, scrollToQueryComment)
+
+// ?comment= deep-link from message notifications — scrolls to the exact
+// comment when it is in the loaded list, otherwise stays at the article.
+function scrollToQueryComment() {
+  const q = route.query.comment
+  const id = Number(Array.isArray(q) ? q[0] : q)
+  if (!id) return
+  requestAnimationFrame(() => {
+    document.querySelector(`[data-comment-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
 
 async function loadStatus() {
   const id = route.params.id as string
@@ -262,10 +296,37 @@ async function loadMoreComments() {
 async function postComment() {
   if (!commentText.value.trim()) return
   submitting.value = true
-  await client.post(`/articles/${route.params.id}/comments`, { content: commentText.value, contentType: 'markdown' })
+  const { data } = await client.post(`/articles/${route.params.id}/comments`, {
+    content: commentText.value,
+    contentType: 'markdown',
+    quoteId: replyTarget.value?.id || 0,
+  })
   commentText.value = ''
+  replyTarget.value = null
   await loadComments(true)
+  if (data.code === 0 && data.data) {
+    requestAnimationFrame(() => {
+      document.querySelector(`[data-comment-id="${data.data.id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }
   submitting.value = false
+}
+
+function replyTo(c: any) {
+  commentText.value = `@${c.user?.username || c.user?.id} `
+  replyTarget.value = { id: c.id, nickname: c.user?.nickname || '用户' }
+  const el = document.querySelector('.reply-composer textarea') as HTMLTextAreaElement | null
+  el?.focus()
+}
+
+// X-style conversation: parent nickname for the 回复 @x label.
+const commentById = computed(() => new Map(comments.value.map((c: any) => [c.id, c])))
+function replyToName(c: any): string | null {
+  if (!c.quoteId) return null
+  return commentById.value.get(c.quoteId)?.user?.nickname || null
+}
+function scrollToComment(id: number) {
+  document.querySelector(`[data-comment-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 function formatDate(ts: number) {

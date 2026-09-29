@@ -16,7 +16,7 @@
     <div v-if="filtered.length > 0" class="d-flex justify-end mb-3">
       <v-btn variant="text" size="small" @click="markAllRead">全部已读</v-btn>
     </div>
-    <div v-for="m in filtered" :key="m.id" class="msg-card" :class="{ unread: m.status === 0 }">
+    <div v-for="m in filtered" :key="m.id" class="msg-card" :class="{ unread: m.status === 0 }" @click="openEntity(m)">
       <div class="d-flex align-center mb-2">
         <v-icon :color="m.status === 0 ? 'var(--paper-accent)' : ''" size="16" class="mr-2 flex-shrink-0">
           {{
@@ -67,7 +67,7 @@
         </div>
       </div>
       <!-- Inline reply box -->
-      <div v-if="replyId === m.id" class="mt-2">
+      <div v-if="replyId === m.id" class="mt-2" @click.stop>
         <MentionTextarea
           v-model="replyText"
           placeholder="输入回复..."
@@ -191,7 +191,7 @@ async function markAllRead() {
   }
 }
 
-function parseExtra(m: Message): { type: string; id: string; parentType?: string; parentId?: string } | null {
+function parseExtra(m: Message): { type: string; id: string; parentType?: string; parentId?: string; commentId?: string } | null {
   if (!m.extraData) return null
   // New format: JSON {"type":"topic","id":142}; legacy: "topic:142" / "comment:108:topic:142"
   if (m.extraData.startsWith('{')) {
@@ -202,6 +202,7 @@ function parseExtra(m: Message): { type: string; id: string; parentType?: string
         id: String(o.id ?? ''),
         parentType: o.parentType ? String(o.parentType) : undefined,
         parentId: o.parentId != null ? String(o.parentId) : undefined,
+        commentId: o.commentId != null ? String(o.commentId) : undefined,
       }
     } catch { return null }
   }
@@ -226,8 +227,12 @@ function openEntity(m: Message) {
   m.status = 1
   const t = e.parentType || e.type
   const id = e.parentId || e.id
-  if (t === 'topic') router.push(`/topics/${id}`)
-  else if (t === 'article') router.push(`/articles/${id}`)
+  // Deep-link to the exact comment when known: reply extras carry the new
+  // comment id in `id`; direct comment extras carry it in `commentId`.
+  const commentId = e.type === 'comment' ? e.id : e.commentId
+  const query = commentId ? { comment: commentId } : {}
+  if (t === 'topic') router.push({ path: `/topics/${id}`, query })
+  else if (t === 'article') router.push({ path: `/articles/${id}`, query })
   else if (t === 'user') router.push(`/users/${id}`)
 }
 

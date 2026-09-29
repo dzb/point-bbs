@@ -71,6 +71,14 @@
         <div v-if="auth.isLoggedIn" class="d-flex mb-4">
           <UserAvatar :src="auth.user?.avatar" :name="auth.user?.nickname" :size="32" class="mr-3 flex-shrink-0" />
           <div class="flex-grow-1">
+            <div
+              v-if="replyTarget"
+              class="mb-2"
+              style="font-size: 12px; color: var(--paper-text2); cursor: pointer"
+              @click="replyTarget = null"
+            >
+              回复 {{ replyTarget.nickname }} ×
+            </div>
             <MentionTextarea
               v-model="commentText"
               placeholder="写下你的评论... @用户名 可提及用户"
@@ -101,11 +109,11 @@
           </div>
         </div>
 
-        <div v-for="(c, i) in comments" :key="c.id" :data-comment-id="c.id">
-          <div v-if="i > 0 && isThreaded(i, c)" class="op-connector" />
+        <div v-for="c in comments" :key="c.id" :data-comment-id="c.id">
+          <div v-if="isThreaded(c)" class="op-connector" />
           <div
-            :class="isThreaded(i, c) ? 'threaded-comment' : 'py-3'"
-            :style="isThreaded(i, c) ? '' : 'border-top:1px solid var(--paper-border)'"
+            :class="isThreaded(c) ? 'threaded-comment' : 'py-3'"
+            :style="isThreaded(c) ? '' : 'border-top:1px solid var(--paper-border)'"
           >
             <div class="d-flex">
               <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
@@ -126,9 +134,14 @@
                   <span style="font-size: 12px; color: var(--paper-text2); margin-left: 8px">{{
                     formatTime(c.createTime)
                   }}</span>
-                </div>
-                <div v-if="c.quoteContent" class="td-quote-preview" @click="scrollToComment(c.quoteId)">
-                  {{ c.quoteContent }}
+                  <span v-if="replyToName(c)" style="font-size: 12px; color: var(--paper-text2); margin-left: 8px">
+                    回复
+                    <a
+                      style="color: var(--paper-accent); cursor: pointer; text-decoration: none"
+                      @click="scrollToComment(c.quoteId)"
+                      >@{{ replyToName(c) }}</a
+                    >
+                  </span>
                 </div>
                 <div class="comment-body" v-html="renderMarkdown(c.content)" />
                 <div class="d-flex mt-1" style="gap: 16px; font-size: 12px; color: var(--paper-text2)">
@@ -215,6 +228,7 @@ const contentImages = computed(() => {
 
 onMounted(loadAll)
 watch(() => route.params.id, loadAll)
+watch(() => route.query.comment, scrollToQueryComment)
 
 async function loadAll() {
   loading.value = true
@@ -227,6 +241,7 @@ async function loadAll() {
       if (auth.isLoggedIn) await Promise.all([checkLike(), checkFav(), checkFollow()])
     }
     await loadComments()
+    scrollToQueryComment()
   } catch {
     console.error('api error')
   } finally {
@@ -337,6 +352,14 @@ function scrollToComment(id: number) {
   const el = document.querySelector(`[data-comment-id="${id}"]`)
   el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
+// ?comment= deep-link from message notifications — scrolls to the exact
+// comment when it is in the loaded list, otherwise stays at the post.
+function scrollToQueryComment() {
+  const q = route.query.comment
+  const id = Number(Array.isArray(q) ? q[0] : q)
+  if (!id) return
+  requestAnimationFrame(() => scrollToComment(id))
+}
 async function deleteComment(c: any) {
   if (!confirm('确定删除这条评论？')) return
   await client.post(`/topics/${route.params.id}/comments/${c.id}/delete`)
@@ -399,11 +422,15 @@ async function postComment() {
 function formatTime(ts: number) {
   return ts ? new Date(ts).toLocaleString('zh-CN') : ''
 }
-function isThreaded(i: number, c: any) {
-  if (i === 0 || !topic.value) return false
-  const prev = comments.value[i - 1]
-  if (prev.user?.id === c.user?.id) return false
-  return c.user?.id === topic.value.userId || prev.user?.id === topic.value.userId
+// X-style conversation line: a reply hangs off the quoted comment when the
+// parent is visible in the loaded list — no quote block needed.
+const commentById = computed(() => new Map(comments.value.map((c) => [c.id, c])))
+function isThreaded(c: any) {
+  return c.quoteId > 0 && commentById.value.has(c.quoteId)
+}
+function replyToName(c: any): string | null {
+  if (c.quoteId <= 0) return null
+  return commentById.value.get(c.quoteId)?.user?.nickname || null
 }
 
 function onContentClick(e: MouseEvent) {
@@ -473,22 +500,5 @@ function onContentClick(e: MouseEvent) {
 }
 .comment-body :deep(li) {
   margin: 0.1em 0;
-}
-.td-quote-preview {
-  font-size: 12px;
-  color: var(--paper-text2);
-  background: var(--paper-nav);
-  border-left: 2px solid var(--paper-border);
-  border-radius: 4px;
-  padding: 4px 8px;
-  margin: 4px 0 6px;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 420px;
-}
-.td-quote-preview:hover {
-  border-left-color: var(--paper-accent);
 }
 </style>

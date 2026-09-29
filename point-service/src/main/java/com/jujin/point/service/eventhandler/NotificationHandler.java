@@ -40,7 +40,7 @@ public class NotificationHandler {
                         nickname + " 评论了你的帖子",
                         Strings.truncate(topic.getTitle(), 200),
                         0,
-                        "{\"type\":\"topic\",\"id\":" + e.entityId() + "}"
+                        "{\"type\":\"topic\",\"id\":" + e.entityId() + ",\"commentId\":" + e.commentId() + "}"
                     )
                 );
         } else if ("comment".equals(e.entityType())) {
@@ -57,7 +57,7 @@ public class NotificationHandler {
                 long parentEntityId = parentRow.longValue("entity_id");
                 String extra =
                     "{\"type\":\"comment\",\"id\":" +
-                    e.entityId() +
+                    e.commentId() +
                     ",\"parentType\":\"" +
                     parentEntityType +
                     "\",\"parentId\":" +
@@ -83,7 +83,7 @@ public class NotificationHandler {
                     nickname + " 评论了你的文章",
                     null,
                     0,
-                    "{\"type\":\"article\",\"id\":" + e.entityId() + "}"
+                    "{\"type\":\"article\",\"id\":" + e.entityId() + ",\"commentId\":" + e.commentId() + "}"
                 );
             }
         }

@@ -166,8 +166,8 @@
                   </v-btn>
                 </div>
               </div>
-              <div v-for="(c, i) in comments" :key="c.id" class="mb-2" :data-comment-id="c.id">
-                <div v-if="i > 0 && isThreaded(i, c)" class="op-connector" />
+              <div v-for="c in comments" :key="c.id" class="mb-2" :data-comment-id="c.id">
+                <div v-if="isThreaded(c)" class="op-connector" />
                 <div class="d-flex">
                   <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0" />
                   <div style="min-width: 0">
@@ -177,10 +177,14 @@
                         @{{ c.user?.username || c.user?.id }}</span
                       ></span
                     >
-                    <!-- Twitter-style quote preview of the replied-to comment -->
-                    <div v-if="c.quoteContent" class="quote-preview" @click.stop="scrollToComment(c.quoteId)">
-                      {{ c.quoteContent }}
-                    </div>
+                    <span v-if="replyToName(c)" style="font-size: 11px; color: var(--paper-text2)">
+                      回复
+                      <a
+                        style="color: var(--paper-accent); cursor: pointer; text-decoration: none"
+                        @click.stop="scrollToComment(c.quoteId)"
+                        >@{{ replyToName(c) }}</a
+                      >
+                    </span>
                     <span style="font-size: 13px; color: var(--paper-text2)">{{ c.content }}</span>
                     <div v-if="auth.isLoggedIn" class="mc-comment-reply" @click.stop="startReply(c)">回复</div>
                   </div>
@@ -220,11 +224,19 @@ const auth = useAuthStore()
 const props = defineProps<{ moment: Topic }>()
 const emit = defineEmits<{ 'toggle-like': [moment: Topic]; 'delete-moment': [id: number] }>()
 const isOwner = computed(() => auth.user?.id === props.moment.userId)
-function isThreaded(i: number, c: Comment) {
-  if (i === 0 || !props.moment.userId) return false
-  const prev = comments.value[i - 1]
-  if (prev.user?.id === c.user?.id) return false
-  return c.user?.id === props.moment.userId || prev.user?.id === props.moment.userId
+// X-style conversation line: a reply hangs off the quoted comment when the
+// parent is visible in the loaded list — no quote block needed.
+const commentById = computed(() => new Map(comments.value.map((c) => [c.id, c])))
+function isThreaded(c: Comment) {
+  return c.quoteId > 0 && commentById.value.has(c.quoteId)
+}
+function replyToName(c: Comment): string | null {
+  if (c.quoteId <= 0) return null
+  return commentById.value.get(c.quoteId)?.user?.nickname || null
+}
+function scrollToComment(id: number) {
+  const el = document.querySelector(`[data-comment-id="${id}"]`)
+  el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 const confirming = ref(false)
 const deleting = ref(false)
@@ -381,8 +393,13 @@ async function postComment() {
   if (!newComment.value.trim()) return
   posting.value = true
   try {
-    await client.post(`/topics/${props.moment.id}/comments`, { content: newComment.value, contentType: 'markdown' })
+    await client.post(`/topics/${props.moment.id}/comments`, {
+      content: newComment.value,
+      contentType: 'markdown',
+      quoteId: replyTarget.value?.id || 0,
+    })
     newComment.value = ''
+    replyTarget.value = null
     commentCount.value++
     await loadComments(true)
   } catch {
@@ -393,12 +410,6 @@ async function postComment() {
 
 function fmt(ts: number) {
   return ts ? new Date(ts).toLocaleDateString('zh-CN') : ''
-}
-
-/** Scroll the comment list to a quoted comment (from a quote preview). */
-function scrollToComment(id: number) {
-  const el = document.querySelector(`[data-comment-id="${id}"]`)
-  el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 async function confirmDelete() {
@@ -616,22 +627,11 @@ async function confirmDelete() {
   font-size: 13px;
   color: var(--paper-text2);
 }
-.quote-preview {
+.reply-target {
   font-size: 12px;
-  color: var(--paper-text2);
-  background: var(--paper-nav);
-  border-left: 2px solid var(--paper-border);
-  border-radius: 4px;
-  padding: 4px 8px;
-  margin: 2px 0 4px;
+  color: var(--paper-accent);
   cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 320px;
-}
-.quote-preview:hover {
-  border-left-color: var(--paper-accent);
+  margin-bottom: 4px;
 }
 .mc-comment-reply {
   display: inline-block;
@@ -642,12 +642,6 @@ async function confirmDelete() {
 }
 .mc-comment-reply:hover {
   color: var(--paper-accent);
-}
-.reply-target {
-  font-size: 12px;
-  color: var(--paper-accent);
-  cursor: pointer;
-  margin-bottom: 4px;
 }
 .op-connector {
   width: 2px;
