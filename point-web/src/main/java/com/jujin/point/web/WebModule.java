@@ -61,14 +61,17 @@ public class WebModule implements ModuleEx {
                     .withCacheMaxAgeSeconds(31536000)
             ); // 1 year
 
-        // Serve root-level static files (favicon, etc.) — fallthrough for SPA routes
+        // Serve root-level static files (favicon, etc.) — fallthrough for SPA routes.
+        // Entry files must revalidate every time (max-age=0 + ETag → cheap
+        // 304): index.html references hashed bundles by name, so a cached
+        // index.html would pin the browser to a stale frontend for a day.
         binder
             .contribute(StaticResourceMount.class)
             .add(
                 StaticResourceMount.classpath("/", "static")
                     .withFallthrough(true)
-                    .withCacheMaxAgeSeconds(86400)
-            ); // 1 day
+                    .withCacheMaxAgeSeconds(0)
+            ); // revalidate (hashed /assets/* keep their own immutable 1y mount above)
 
         // SPA frontend fallthrough filter (skips /api paths)
         binder.contribute(HttpFilter.class).add("spa-filter", new SpaFilter());
