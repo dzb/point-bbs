@@ -98,11 +98,12 @@
           v-for="c in comments"
           :key="c.id"
           :data-comment-id="c.id"
-          :class="{ 'ct-rail-start': threadMarks.starts.has(c.id), 'ct-rail': threadMarks.mids.has(c.id) }"
+          :class="railClass(rails, c.id)"
+          :style="railStyle(rails, c.id, RAIL_GEOM)"
           class="py-3"
           style="border-top: 1px solid var(--paper-border)"
         >
-          <div v-if="c.quoteId > 0 && commentById.has(c.quoteId)" class="op-connector" />
+          <div v-if="c.quoteId > 0 && commentById.has(c.quoteId)" class="op-connector" :style="{ marginLeft: stubX(rails, c.id, RAIL_GEOM) }" />
           <div class="d-flex">
             <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" class="mr-3 flex-shrink-0 mt-1 ct-avatar" />
             <div class="flex-grow-1">
@@ -156,7 +157,7 @@ import ImageViewer from '@/components/ImageViewer.vue'
 import MentionTextarea from '@/components/MentionTextarea.vue'
 import LoadMore from '@/components/LoadMore.vue'
 import { renderMarkdown } from '@/utils/markdown'
-import { markThreads } from '@/utils/thread'
+import { markRails, railClass, railStyle, stubX, type RailGeom } from '@/utils/thread'
 
 const route = useRoute()
 const router = useRouter()
@@ -331,7 +332,9 @@ function replyTo(c: any) {
 // X-style conversation: parent nickname for the 回复 @x label,
 // plus rail marks so a reply links to its real parent.
 const commentById = computed(() => new Map(comments.value.map((c: any) => [c.id, c])))
-const threadMarks = computed(() => markThreads(comments.value))
+const rails = computed(() => markRails(comments.value))
+// Lane 0 at the avatar center; extra conversations step right git-graph style.
+const RAIL_GEOM: RailGeom = { base: 16, step: 12, startTop: 16 }
 function replyToName(c: any): string | null {
   if (!c.quoteId) return null
   return commentById.value.get(c.quoteId)?.user?.nickname || null
@@ -448,30 +451,29 @@ function onContentClick(e: MouseEvent) {
   margin-top: -44px;
   margin-bottom: 4px;
 }
-/* Parent→reply rail: starts under the parent avatar, runs full height
-   through bridged rows, joins the child's stub. Avatars stay above the line. */
-.ct-rail,
-.ct-rail-start {
+/* Conversation rails: one lane per top-level thread, so overlapping
+   pairs draw as distinct parallel lines instead of one merged line.
+   Avatars stay above the rails. */
+.ct-rails {
   position: relative;
 }
-.ct-rail-start::before,
-.ct-rail::before {
+.ct-rails::before,
+.ct-rails-2::after {
   content: '';
   position: absolute;
-  left: 16px;
   width: 2px;
   background: var(--paper-border);
-}
-.ct-rail-start::before {
-  top: 16px;
   bottom: 0;
 }
-.ct-rail::before {
-  top: 0;
-  bottom: 0;
+.ct-rails::before {
+  left: var(--rx1);
+  top: var(--rt1, 0);
 }
-.ct-rail .ct-avatar,
-.ct-rail-start .ct-avatar {
+.ct-rails-2::after {
+  left: var(--rx2);
+  top: var(--rt2, 0);
+}
+.ct-rails .ct-avatar {
   position: relative;
   z-index: 1;
 }
