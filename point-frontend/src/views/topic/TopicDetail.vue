@@ -116,7 +116,6 @@
           :class="railClass(rails, c.id)"
           :style="railStyle(rails, c.id, RAIL_GEOM)"
         >
-          <div v-if="isThreaded(c)" class="op-connector" :style="{ marginLeft: stubX(rails, c.id, RAIL_GEOM) }" />
           <div
             :class="isThreaded(c) ? 'threaded-comment' : 'py-3'"
             :style="isThreaded(c) ? '' : 'border-top:1px solid var(--paper-border)'"
@@ -203,7 +202,7 @@ import ImageViewer from '@/components/ImageViewer.vue'
 import MentionTextarea from '@/components/MentionTextarea.vue'
 import LoadMore from '@/components/LoadMore.vue'
 import { renderMarkdown } from '@/utils/markdown'
-import { markRails, railClass, railStyle, stubX, type RailGeom } from '@/utils/thread'
+import { markRails, railClass, railStyle, type RailGeom } from '@/utils/thread'
 import type { Comment, Topic } from '@/types'
 import { topicAsideState } from '@/composables/useTopicAside'
 
@@ -489,14 +488,6 @@ function onContentClick(e: MouseEvent) {
   padding-top: 0;
   padding-bottom: 0;
 }
-.op-connector {
-  width: 2px;
-  height: 60px;
-  background: var(--paper-border);
-  margin-left: 16px;
-  margin-top: -44px;
-  margin-bottom: 4px;
-}
 /* Conversation rails: one lane per top-level thread, so overlapping
    pairs draw as distinct parallel lines instead of one merged line.
    Avatars stay above the rails. */
@@ -522,6 +513,7 @@ function onContentClick(e: MouseEvent) {
 .ct-rails .ct-avatar {
   position: relative;
   z-index: 1;
+  align-self: flex-start;
 }
 .comment-body {
   font-size: 14px;

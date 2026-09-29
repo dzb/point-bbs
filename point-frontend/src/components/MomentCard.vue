@@ -174,7 +174,6 @@
                 :class="railClass(rails, c.id)"
                 :style="railStyle(rails, c.id, RAIL_GEOM)"
               >
-                <div v-if="isThreaded(c)" class="op-connector" :style="{ marginLeft: stubX(rails, c.id, RAIL_GEOM) }" />
                 <div class="d-flex">
                   <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0 ct-avatar" />
                   <div style="min-width: 0">
@@ -223,7 +222,7 @@ import { useAuthStore } from '@/stores/auth'
 import UserAvatar from './UserAvatar.vue'
 import client from '@/api/client'
 import { renderMarkdown, md } from '@/utils/markdown'
-import { markRails, railClass, railStyle, stubX, type RailGeom } from '@/utils/thread'
+import { markRails, railClass, railStyle, type RailGeom } from '@/utils/thread'
 import MentionTextarea from './MentionTextarea.vue'
 import type { Topic, Comment } from '@/types'
 
@@ -654,14 +653,6 @@ async function confirmDelete() {
 .mc-comment-reply:hover {
   color: var(--paper-accent);
 }
-.op-connector {
-  width: 2px;
-  height: 24px;
-  background: var(--paper-border);
-  margin-left: 12px;
-  margin-top: -14px;
-  margin-bottom: 2px;
-}
 /* Conversation rails (compact gauge): one lane per top-level thread.
    Avatars stay above the rails. */
 .ct-rails {
@@ -686,6 +677,7 @@ async function confirmDelete() {
 .ct-rails .ct-avatar {
   position: relative;
   z-index: 1;
+  align-self: flex-start;
 }
 .viewer-composer {
   margin-bottom: 12px;

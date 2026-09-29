@@ -4,8 +4,6 @@ import type { Comment } from '@/types'
 export interface RailRows {
   /** Rows crossed by at least one segment: id → lanes + which lane starts here. */
   rows: Map<number, { lanes: number[]; startLane: number | null }>
-  /** Reply id → lane of its segment (for the stub above the child). */
-  stubLane: Map<number, number>
 }
 
 /**
@@ -48,7 +46,6 @@ export function markRails(list: Comment[]): RailRows {
   };
 
   const rows = new Map<number, { lanes: number[]; startLane: number | null }>()
-  const stubLane = new Map<number, number>()
   // Lanes follow root first-appearance order so the earliest conversation
   // owns the outer (avatar-center) lane.
   for (const c of list) laneFor(rootOf(c.id))
@@ -69,14 +66,24 @@ export function markRails(list: Comment[]): RailRows {
     const start = ensure(c.quoteId)
     if (start.startLane === null) start.startLane = lane
     if (!start.lanes.includes(lane) && start.lanes.length < 2) start.lanes.push(lane)
-    for (let i = p + 1; i < ci; i++) {
+    // The lane runs through every row from the parent down to AND INCLUDING
+    // the child (full height, diving behind the child avatar) — no fixed-size
+    // stub, so no gap can open between segment end and avatar.
+    for (let i = p + 1; i <= ci; i++) {
       const mid = ensure(list[i].id)
       if (!mid.lanes.includes(lane) && mid.lanes.length < 2) mid.lanes.push(lane)
     }
-    stubLane.set(c.id, lane)
   }
-  for (const r of rows.values()) r.lanes.sort((a, b) => a - b)
-  return { rows, stubLane }
+  // Sorting puts the start lane first so it renders as ::before; a row with
+  // two lanes must never draw the incoming (full-height) lane as a stub.
+  for (const r of rows.values()) {
+    if (r.startLane !== null) {
+      r.lanes = [r.startLane, ...r.lanes.filter((l) => l !== r.startLane)]
+    } else {
+      r.lanes.sort((a, b) => a - b)
+    }
+  }
+  return { rows }
 }
 
 /** Lane geometry per host (avatar size differs). */
@@ -108,9 +115,4 @@ export function railStyle(rails: RailRows, id: number, g: RailGeom): Record<stri
     s['--rt2'] = top(r.lanes[1])
   }
   return s
-}
-
-/** margin-left for the child's stub so it meets its own lane. */
-export function stubX(rails: RailRows, id: number, g: RailGeom): string {
-  return `${g.base + g.step * (rails.stubLane.get(id) ?? 0)}px`
 }

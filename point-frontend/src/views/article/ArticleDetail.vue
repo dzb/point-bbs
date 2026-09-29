@@ -103,7 +103,6 @@
           class="py-3"
           style="border-top: 1px solid var(--paper-border)"
         >
-          <div v-if="c.quoteId > 0 && commentById.has(c.quoteId)" class="op-connector" :style="{ marginLeft: stubX(rails, c.id, RAIL_GEOM) }" />
           <div class="d-flex">
             <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" class="mr-3 flex-shrink-0 mt-1 ct-avatar" />
             <div class="flex-grow-1">
@@ -157,7 +156,7 @@ import ImageViewer from '@/components/ImageViewer.vue'
 import MentionTextarea from '@/components/MentionTextarea.vue'
 import LoadMore from '@/components/LoadMore.vue'
 import { renderMarkdown } from '@/utils/markdown'
-import { markRails, railClass, railStyle, stubX, type RailGeom } from '@/utils/thread'
+import { markRails, railClass, railStyle, type RailGeom } from '@/utils/thread'
 
 const route = useRoute()
 const router = useRouter()
@@ -443,14 +442,6 @@ function onContentClick(e: MouseEvent) {
 .comment-body :deep(img) {
   max-width: 100%;
 }
-.op-connector {
-  width: 2px;
-  height: 60px;
-  background: var(--paper-border);
-  margin-left: 16px;
-  margin-top: -44px;
-  margin-bottom: 4px;
-}
 /* Conversation rails: one lane per top-level thread, so overlapping
    pairs draw as distinct parallel lines instead of one merged line.
    Avatars stay above the rails. */
@@ -476,5 +467,6 @@ function onContentClick(e: MouseEvent) {
 .ct-rails .ct-avatar {
   position: relative;
   z-index: 1;
+  align-self: flex-start;
 }
 </style>
