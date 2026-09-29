@@ -166,10 +166,16 @@
                   </v-btn>
                 </div>
               </div>
-              <div v-for="c in comments" :key="c.id" class="mb-2" :data-comment-id="c.id">
+              <div
+                v-for="c in comments"
+                :key="c.id"
+                class="mb-2"
+                :data-comment-id="c.id"
+                :class="{ 'ct-rail-start': threadMarks.starts.has(c.id), 'ct-rail': threadMarks.mids.has(c.id) }"
+              >
                 <div v-if="isThreaded(c)" class="op-connector" />
                 <div class="d-flex">
-                  <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0" />
+                  <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0 ct-avatar" />
                   <div style="min-width: 0">
                     <span style="font-size: 13px; font-weight: 500; color: var(--paper-text); margin-right: 6px"
                       >{{ c.user?.nickname
@@ -216,6 +222,7 @@ import { useAuthStore } from '@/stores/auth'
 import UserAvatar from './UserAvatar.vue'
 import client from '@/api/client'
 import { renderMarkdown, md } from '@/utils/markdown'
+import { markThreads } from '@/utils/thread'
 import MentionTextarea from './MentionTextarea.vue'
 import type { Topic, Comment } from '@/types'
 
@@ -227,6 +234,7 @@ const isOwner = computed(() => auth.user?.id === props.moment.userId)
 // X-style conversation line: a reply hangs off the quoted comment when the
 // parent is visible in the loaded list — no quote block needed.
 const commentById = computed(() => new Map(comments.value.map((c) => [c.id, c])))
+const threadMarks = computed(() => markThreads(comments.value))
 function isThreaded(c: Comment) {
   return c.quoteId > 0 && commentById.value.has(c.quoteId)
 }
@@ -650,6 +658,33 @@ async function confirmDelete() {
   margin-left: 12px;
   margin-top: -14px;
   margin-bottom: 2px;
+}
+/* Parent→reply rail (compact gauge): starts under the parent avatar, runs
+   full height through bridged rows, joins the child's stub. */
+.ct-rail,
+.ct-rail-start {
+  position: relative;
+}
+.ct-rail-start::before,
+.ct-rail::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  width: 2px;
+  background: var(--paper-border);
+}
+.ct-rail-start::before {
+  top: 12px;
+  bottom: 0;
+}
+.ct-rail::before {
+  top: 0;
+  bottom: 0;
+}
+.ct-rail .ct-avatar,
+.ct-rail-start .ct-avatar {
+  position: relative;
+  z-index: 1;
 }
 .viewer-composer {
   margin-bottom: 12px;

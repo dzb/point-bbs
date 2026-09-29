@@ -94,9 +94,17 @@
             </v-btn>
           </div>
         </div>
-        <div v-for="c in comments" :key="c.id" :data-comment-id="c.id" class="py-3" style="border-top: 1px solid var(--paper-border)">
+        <div
+          v-for="c in comments"
+          :key="c.id"
+          :data-comment-id="c.id"
+          :class="{ 'ct-rail-start': threadMarks.starts.has(c.id), 'ct-rail': threadMarks.mids.has(c.id) }"
+          class="py-3"
+          style="border-top: 1px solid var(--paper-border)"
+        >
+          <div v-if="c.quoteId > 0 && commentById.has(c.quoteId)" class="op-connector" />
           <div class="d-flex">
-            <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" class="mr-3 flex-shrink-0 mt-1" />
+            <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" class="mr-3 flex-shrink-0 mt-1 ct-avatar" />
             <div class="flex-grow-1">
               <div class="d-flex align-center mb-1">
                 <span style="font-size: 14px; color: var(--paper-text); font-weight: 500">{{ c.user?.nickname
@@ -148,6 +156,7 @@ import ImageViewer from '@/components/ImageViewer.vue'
 import MentionTextarea from '@/components/MentionTextarea.vue'
 import LoadMore from '@/components/LoadMore.vue'
 import { renderMarkdown } from '@/utils/markdown'
+import { markThreads } from '@/utils/thread'
 
 const route = useRoute()
 const router = useRouter()
@@ -319,8 +328,10 @@ function replyTo(c: any) {
   el?.focus()
 }
 
-// X-style conversation: parent nickname for the 回复 @x label.
+// X-style conversation: parent nickname for the 回复 @x label,
+// plus rail marks so a reply links to its real parent.
 const commentById = computed(() => new Map(comments.value.map((c: any) => [c.id, c])))
+const threadMarks = computed(() => markThreads(comments.value))
 function replyToName(c: any): string | null {
   if (!c.quoteId) return null
   return commentById.value.get(c.quoteId)?.user?.nickname || null
@@ -428,5 +439,40 @@ function onContentClick(e: MouseEvent) {
 }
 .comment-body :deep(img) {
   max-width: 100%;
+}
+.op-connector {
+  width: 2px;
+  height: 60px;
+  background: var(--paper-border);
+  margin-left: 16px;
+  margin-top: -44px;
+  margin-bottom: 4px;
+}
+/* Parent→reply rail: starts under the parent avatar, runs full height
+   through bridged rows, joins the child's stub. Avatars stay above the line. */
+.ct-rail,
+.ct-rail-start {
+  position: relative;
+}
+.ct-rail-start::before,
+.ct-rail::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  width: 2px;
+  background: var(--paper-border);
+}
+.ct-rail-start::before {
+  top: 16px;
+  bottom: 0;
+}
+.ct-rail::before {
+  top: 0;
+  bottom: 0;
+}
+.ct-rail .ct-avatar,
+.ct-rail-start .ct-avatar {
+  position: relative;
+  z-index: 1;
 }
 </style>

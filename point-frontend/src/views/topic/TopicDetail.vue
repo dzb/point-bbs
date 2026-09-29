@@ -109,14 +109,19 @@
           </div>
         </div>
 
-        <div v-for="c in comments" :key="c.id" :data-comment-id="c.id">
+        <div
+          v-for="c in comments"
+          :key="c.id"
+          :data-comment-id="c.id"
+          :class="{ 'ct-rail-start': threadMarks.starts.has(c.id), 'ct-rail': threadMarks.mids.has(c.id) }"
+        >
           <div v-if="isThreaded(c)" class="op-connector" />
           <div
             :class="isThreaded(c) ? 'threaded-comment' : 'py-3'"
             :style="isThreaded(c) ? '' : 'border-top:1px solid var(--paper-border)'"
           >
             <div class="d-flex">
-              <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
+              <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3 ct-avatar">
                 <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" />
               </router-link>
               <div>
@@ -197,6 +202,7 @@ import ImageViewer from '@/components/ImageViewer.vue'
 import MentionTextarea from '@/components/MentionTextarea.vue'
 import LoadMore from '@/components/LoadMore.vue'
 import { renderMarkdown } from '@/utils/markdown'
+import { markThreads } from '@/utils/thread'
 import type { Comment, Topic } from '@/types'
 import { topicAsideState } from '@/composables/useTopicAside'
 
@@ -425,6 +431,7 @@ function formatTime(ts: number) {
 // X-style conversation line: a reply hangs off the quoted comment when the
 // parent is visible in the loaded list — no quote block needed.
 const commentById = computed(() => new Map(comments.value.map((c) => [c.id, c])))
+const threadMarks = computed(() => markThreads(comments.value))
 function isThreaded(c: any) {
   return c.quoteId > 0 && commentById.value.has(c.quoteId)
 }
@@ -486,6 +493,33 @@ function onContentClick(e: MouseEvent) {
   margin-left: 16px;
   margin-top: -44px;
   margin-bottom: 4px;
+}
+/* Parent→reply rail: starts under the parent avatar, runs full height
+   through bridged rows, joins the child's stub. Avatars stay above the line. */
+.ct-rail,
+.ct-rail-start {
+  position: relative;
+}
+.ct-rail-start::before,
+.ct-rail::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  width: 2px;
+  background: var(--paper-border);
+}
+.ct-rail-start::before {
+  top: 16px;
+  bottom: 0;
+}
+.ct-rail::before {
+  top: 0;
+  bottom: 0;
+}
+.ct-rail .ct-avatar,
+.ct-rail-start .ct-avatar {
+  position: relative;
+  z-index: 1;
 }
 .comment-body {
   font-size: 14px;

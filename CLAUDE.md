@@ -121,6 +121,7 @@ Full design system documented in `point-frontend/DESIGN.md`.
 
 ### Conversation threading (2026-09-29)
 - X-style flat timeline kept: replies stay inline ordered by time, but the connecting line (`op-connector`) is now driven by the real `quoteId` chain (parent visible in the loaded list) instead of the old topic-author heuristic; quote-preview blocks removed, nested context shown as a `回复 @nickname` link that scrolls to the parent; replying auto-fills `@username ` + `quoteId` (ArticleDetail gained a reply affordance; MomentCard viewer posts now send `quoteId`)
+- Parent→reply rails (`markThreads()` in `utils/thread.ts`): a visible parent gets a rail-start under its avatar, rows bridged between parent and reply get full-height rails (avatars punched above via `ct-avatar`), joining the child's stub — so a reply links to its real parent across distance instead of merging into one misleading line
 
 ### X-style comments (2026-08-15, threading refined 2026-09-29)
 - Comment replies follow the Twitter/X flat-timeline model — **not** 楼中楼 (threaded nesting): all comments are flat rows ordered by time; a reply carries `quoteId` and is rendered with a quote-preview block of the replied-to content, an auto-`@nickname ` composer prefix, and a "回复" affordance on each comment. Posting appends the new comment and scrolls to it (visible even beyond page 1). The backend enriches comments with `quoteContent` (batch-queried, no N+1) and counts replies against the quoted comment + notifies its author.
