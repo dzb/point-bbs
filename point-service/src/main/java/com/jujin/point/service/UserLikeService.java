@@ -32,6 +32,7 @@ public class UserLikeService {
     /** Like — idempotent, returns true if newly liked. */
     public boolean like(long userId, String entityType, long entityId) {
         if (hasLiked(userId, entityType, entityId)) return false;
+        ensureEntity(db, entityType, entityId);
         try {
             db.transaction(() -> {
                 orm.insert(new UserLike(userId, entityId, entityType, System.currentTimeMillis()));
@@ -73,6 +74,20 @@ public class UserLikeService {
         return db.query(
             "SELECT * FROM bbs_user_like WHERE user_id = ? ORDER BY create_time DESC LIMIT ? OFFSET ?",
             userId, pageSize, offset).list(UserLike.class);
+    }
+
+    /** Rejects likes/favorites on entities that do not exist (or were
+     *  soft-deleted): the row insert must not outlive its target. */
+    static void ensureEntity(Database db, String entityType, long entityId) {
+        String table = EntityTables.tableOf(entityType);
+        if (table == null) {
+            throw new ServiceException("未知实体类型: " + entityType);
+        }
+        long exists = DbQuery.count(db,
+            "SELECT COUNT(*) AS cnt FROM " + table + " WHERE id = ? AND status = 1", entityId);
+        if (exists == 0) {
+            throw new ServiceException("目标不存在");
+        }
     }
 
     private void incrLikeCount(String entityType, long entityId, int delta) {

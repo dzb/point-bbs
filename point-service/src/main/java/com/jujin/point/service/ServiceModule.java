@@ -1,26 +1,32 @@
 package com.jujin.point.service;
 
 import com.jujin.freeway.ioc.Binder;
-import com.jujin.freeway.ioc.event.EventSubscriber;
+import com.jujin.freeway.ioc.Container;
 import com.jujin.freeway.ioc.ModuleEx;
+import com.jujin.freeway.ioc.RuntimeHook;
+import com.jujin.freeway.ioc.event.EventBus;
 import com.jujin.point.db.repository.*;
 import com.jujin.point.domain.event.*;
 import com.jujin.point.service.eventhandler.NotificationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.Consumer;
-
 /**
  * Service module — binds all business services and event subscribers.
  *
  * SINGLETON is the default scope, so explicit .scope() is omitted.
- * Subscribers are built through the contribution factory
- * ({@code add(id, Function<Container, T>)}), which receives the container
- * and resolves NotificationHandler once at startup — a missing binding
- * fails there, not at event time. They are best-effort: a failure in a
- * notification must never roll back the business operation that published
- * the event.
+ *
+ * <p>Subscribers are registered as runtime subscriptions from a
+ * {@link RuntimeHook} (start phase), not as composition-time
+ * {@code EventSubscriber} contributions. Reason: the bus freezes its
+ * subscription table when the container first resolves it, and the
+ * contribution factories here resolve {@link NotificationHandler} →
+ * {@code MessageService} → {@link EventBus} — a construction cycle that
+ * left the bus built with an empty table, so no notification ever fired.
+ * Registering after the container is composed breaks the cycle: the bus is
+ * already built, {@code subscribe(...)} attaches to the runtime index, and
+ * an event-time failure is still isolated by the bus (thrown subscriber
+ * failures are logged and do not propagate to the publisher).</p>
  */
 public class ServiceModule implements ModuleEx {
     private static final Logger log = LoggerFactory.getLogger(ServiceModule.class);
@@ -62,58 +68,27 @@ public class ServiceModule implements ModuleEx {
 
         binder.bind(NotificationHandler.class).to(NotificationHandler.class);
 
-        var handlers = binder.contribute(EventSubscriber.class);
-        handlers.add("notify-comment", c -> {
-            var handler = c.get(NotificationHandler.class);
-            return bestEffort(CommentCreatedEvent.class,
-                "comment notification", handler::onCommentCreated);
-        });
-        handlers.add("notify-like", c -> {
-            var handler = c.get(NotificationHandler.class);
-            return bestEffort(UserLikedEvent.class,
-                "like notification", handler::onUserLiked);
-        });
-        handlers.add("notify-favorite", c -> {
-            var handler = c.get(NotificationHandler.class);
-            return bestEffort(UserFavoritedEvent.class,
-                "favorite notification", handler::onUserFavorited);
-        });
-        handlers.add("notify-follow", c -> {
-            var handler = c.get(NotificationHandler.class);
-            return bestEffort(UserFollowedEvent.class,
-                "follow notification", handler::onUserFollowed);
-        });
-        handlers.add("notify-mention", c -> {
-            var handler = c.get(NotificationHandler.class);
-            return bestEffort(UserMentionedEvent.class,
-                "mention notification", handler::onUserMentioned);
-        });
-        handlers.add("notify-qa-accepted", c -> {
-            var handler = c.get(NotificationHandler.class);
-            return bestEffort(QaAnswerAcceptedEvent.class,
-                "qa-accepted notification", handler::onQaAnswerAccepted);
-        });
-        handlers.add("notify-topic-deleted", c -> {
-            var handler = c.get(NotificationHandler.class);
-            return bestEffort(TopicDeletedEvent.class,
-                "topic-deleted notification", handler::onTopicDeleted);
-        });
-        handlers.add("notify-forbidden", c -> {
-            var handler = c.get(NotificationHandler.class);
-            return bestEffort(UserForbiddenEvent.class,
-                "forbidden notification", handler::onUserForbidden);
-        });
-    }
+        binder.contribute(RuntimeHook.class).add("point-notification-subscribers",
+            new RuntimeHook() {
+                @Override
+                public void start(Container container) {
+                    var bus = container.get(EventBus.class);
+                    var handler = container.get(NotificationHandler.class);
+                    bus.subscribe(CommentCreatedEvent.class, handler::onCommentCreated);
+                    bus.subscribe(UserLikedEvent.class, handler::onUserLiked);
+                    bus.subscribe(UserFavoritedEvent.class, handler::onUserFavorited);
+                    bus.subscribe(UserFollowedEvent.class, handler::onUserFollowed);
+                    bus.subscribe(UserMentionedEvent.class, handler::onUserMentioned);
+                    bus.subscribe(QaAnswerAcceptedEvent.class, handler::onQaAnswerAccepted);
+                    bus.subscribe(TopicDeletedEvent.class, handler::onTopicDeleted);
+                    bus.subscribe(UserForbiddenEvent.class, handler::onUserForbidden);
+                    log.info("notification subscribers registered on the event bus");
+                }
 
-    /** Wraps a handler call as an isolated subscriber: failures log, never propagate. */
-    private static <E extends PointDomainEvent> EventSubscriber<E> bestEffort(
-        Class<E> type, String what, Consumer<E> call) {
-        return EventSubscriber.of(type, e -> {
-            try {
-                call.accept(e);
-            } catch (Exception ex) {
-                log.warn("{} failed", what, ex);
-            }
-        });
+                @Override
+                public void stop(Container container) {
+                    // Runtime subscriptions are cleared by EventBus.close().
+                }
+            });
     }
 }

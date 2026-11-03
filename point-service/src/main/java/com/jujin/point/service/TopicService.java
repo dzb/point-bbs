@@ -1,5 +1,6 @@
 package com.jujin.point.service;
 
+import com.jujin.point.cache.SimpleCache;
 import com.jujin.point.db.repository.TopicRepository;
 import com.jujin.point.domain.dto.PageRequest;
 import com.jujin.point.domain.dto.PageResult;
@@ -19,10 +20,11 @@ import java.util.Optional;
  */
 public class TopicService {
     private static final long VIEW_WINDOW_MS = 60_000;
-    // Throttle view-count writes: at most one UPDATE per topic per 60s. A
-    // stale timestamp is harmless (the counter drifts low, never high).
-    private final java.util.concurrent.ConcurrentHashMap<Long, Long> lastViewWrite =
-        new java.util.concurrent.ConcurrentHashMap<>();
+    // Throttle view-count writes: at most one UPDATE per topic per 60s.
+    // A bounded, expiring cache (not a plain map): the map used to grow one
+    // entry per visited topic forever, leaking memory on a long-lived node.
+    private final SimpleCache<Long, Long> lastViewWrite =
+        new SimpleCache<>(VIEW_WINDOW_MS, 10_000);
 
     private final Database db;
     private final TopicRepository topicRepo;
@@ -43,6 +45,17 @@ public class TopicService {
     public Topic create(long userId, CreateTopicRequest req) {
         if (req.type() < 0 || req.type() > 2) {
             throw new ServiceException("未知帖子类型: " + req.type());
+        }
+        // A categoryId that names a missing/disabled category produced a
+        // topic that only the global lists could ever show (its category page
+        // filters by an id no row carries). Reject it at the boundary.
+        if (req.categoryId() != null && req.categoryId() > 0) {
+            long exists = DbQuery.count(db,
+                "SELECT COUNT(*) AS cnt FROM bbs_category WHERE id = ? AND status = 1",
+                req.categoryId());
+            if (exists == 0) {
+                throw new ServiceException("分类不存在或已停用: " + req.categoryId());
+            }
         }
         var now = System.currentTimeMillis();
         var topic = new Topic();
@@ -117,10 +130,10 @@ public class TopicService {
 
     public void incrViewCount(long topicId) {
         long now = System.currentTimeMillis();
-        Long last = lastViewWrite.get(topicId);
-        if (last != null && now - last < VIEW_WINDOW_MS) return;
-        lastViewWrite.put(topicId, now);
-        topicRepo.incrViewCount(topicId);
+        lastViewWrite.getOrCompute(topicId, () -> {
+            topicRepo.incrViewCount(topicId);
+            return now;
+        });
     }
 
     public PageResult<Topic> getRecentTopics(PageRequest page) {

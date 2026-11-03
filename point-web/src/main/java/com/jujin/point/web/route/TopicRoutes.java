@@ -313,10 +313,13 @@ public class TopicRoutes {
 
     public static final class TopicCommentsHandler implements RouteHandler {
         private final CommentService commentSvc;
+        private final TopicService topicSvc;
         private final ResponseEnricher enricher;
 
-        public TopicCommentsHandler(CommentService commentSvc, ResponseEnricher enricher) {
+        public TopicCommentsHandler(CommentService commentSvc, TopicService topicSvc,
+                                    ResponseEnricher enricher) {
             this.commentSvc = commentSvc;
+            this.topicSvc = topicSvc;
             this.enricher = enricher;
         }
 
@@ -325,6 +328,13 @@ public class TopicRoutes {
             long topicId = ctx.pathVar("id", Long.class).orElse(0L);
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
+            // The topic detail endpoint 404s a soft-deleted topic; its
+            // comments must not stay readable through this endpoint.
+            var topic = topicSvc.findById(topicId).orElse(null);
+            if (topic == null || topic.getStatus() != 1) {
+                ctx.sendJson(404, ApiResponse.error("帖子不存在"));
+                return;
+            }
             var comments = commentSvc.getComments(
                 "topic",
                 topicId,

@@ -74,8 +74,10 @@ public class ArticleRoutes {
 
         @Override
         public void handle(HttpContext ctx) throws Exception {
-            var a = svc.findById(ctx.pathVar("id", Long.class).orElse(0L)).orElse(null);
+            long id = ctx.pathVar("id", Long.class).orElse(0L);
+            var a = svc.findById(id).orElse(null);
             if (a == null) { ctx.sendJson(404, ApiResponse.error("文章不存在")); return; }
+            svc.incrViewCount(id);
             ctx.sendJson(200, ApiResponse.ok(enricher.enrichArticle(a)));
         }
     }
@@ -229,10 +231,13 @@ public class ArticleRoutes {
 
     public static final class ArticleCommentsHandler implements RouteHandler {
         private final CommentService commentSvc;
+        private final ArticleService svc;
         private final ResponseEnricher enricher;
 
-        public ArticleCommentsHandler(CommentService commentSvc, ResponseEnricher enricher) {
+        public ArticleCommentsHandler(CommentService commentSvc, ArticleService svc,
+                                      ResponseEnricher enricher) {
             this.commentSvc = commentSvc;
+            this.svc = svc;
             this.enricher = enricher;
         }
 
@@ -241,6 +246,13 @@ public class ArticleRoutes {
             long articleId = ctx.pathVar("id", Long.class).orElse(0L);
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
+            // A comment must not outlive a visible article: the detail
+            // endpoint answers 404 for soft-deleted articles, and reading
+            // their comments there exposed deleted content.
+            if (svc.findById(articleId).isEmpty()) {
+                ctx.sendJson(404, ApiResponse.error("文章不存在"));
+                return;
+            }
             var comments = commentSvc
                 .getComments("article", articleId, com.jujin.point.domain.dto.PageRequest.of(page, pageSize));
             long total = commentSvc.countComments("article", articleId);

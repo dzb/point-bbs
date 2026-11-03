@@ -28,6 +28,7 @@ public class FavoriteService {
     /** Favorite — idempotent. Unlike/unfavorite is intentionally silent. */
     public void add(long userId, String entityType, long entityId) {
         if (isFavorited(userId, entityType, entityId)) return;
+        UserLikeService.ensureEntity(db, entityType, entityId);
         try {
             db.transaction(() -> {
                 orm.insert(new Favorite(userId, entityType, entityId, System.currentTimeMillis()));

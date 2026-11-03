@@ -1,5 +1,6 @@
 package com.jujin.point.service;
 
+import com.jujin.point.cache.SimpleCache;
 import com.jujin.point.domain.dto.ArticleDtos.UpdateArticleRequest;
 import com.jujin.point.domain.entity.Article;
 import com.jujin.freeway.db.Database;
@@ -12,6 +13,11 @@ import java.util.Optional;
  * Article service.
  */
 public class ArticleService {
+    private static final long VIEW_WINDOW_MS = 60_000;
+    // Same bounded throttle as TopicService: at most one view UPDATE per
+    // article per minute, and the throttle table cannot grow without bound.
+    private final SimpleCache<Long, Long> lastViewWrite = new SimpleCache<>(VIEW_WINDOW_MS, 10_000);
+
     private final Database db;
     private final TagService tagSvc;
     private final MentionNotifier mentionSvc;
@@ -52,6 +58,17 @@ public class ArticleService {
         });
 
         return article;
+    }
+
+    /** Increments the article view counter (throttled to one write per
+     *  article per minute). The handler never surfaced this before, so every
+     *  article reported viewCount 0 forever. */
+    public void incrViewCount(long articleId) {
+        long now = System.currentTimeMillis();
+        lastViewWrite.getOrCompute(articleId, () -> {
+            db.execute("UPDATE bbs_article SET view_count = view_count + 1 WHERE id = ?", articleId);
+            return now;
+        });
     }
 
     public List<Article> getRecent(int page, int pageSize) {

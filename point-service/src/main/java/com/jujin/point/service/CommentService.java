@@ -32,6 +32,27 @@ public class CommentService {
         if (!"topic".equals(entityType) && !"article".equals(entityType)) {
             throw new ServiceException("未知评论类型: " + entityType);
         }
+        // The parent must exist and be alive. Without this, commenting on a
+        // deleted (or never-existing) topic/article created orphan comments
+        // that could still be read back through the comments endpoint and
+        // notified the (soft-deleted) author.
+        long parentAlive = DbQuery.count(db,
+            "SELECT COUNT(*) AS cnt FROM " + EntityTables.tableOf(entityType) +
+                " WHERE id = ? AND status = 1", entityId);
+        if (parentAlive == 0) {
+            throw new ServiceException("内容不存在或已删除");
+        }
+        // A quote must point at a live comment on the same entity. Crossing
+        // entities let any reply attach a well-formed quote — and its
+        // notification — to an arbitrary other thread.
+        if (quoteId > 0) {
+            var quote = commentRepo.findById(quoteId).orElse(null);
+            if (quote == null || quote.getStatus() != 1
+                || !entityType.equals(quote.getEntityType())
+                || quote.getEntityId() != entityId) {
+                throw new ServiceException("引用的评论不存在或不属于当前内容");
+            }
+        }
         var now = System.currentTimeMillis();
         var comment = new Comment();
         comment.setUserId(userId);
@@ -70,7 +91,10 @@ public class CommentService {
     /** Touch the parent entity's last_comment_time / last_comment_user_id.
      *  Only topics/articles carry these columns; comments are leaves. */
     private void touchLastComment(String entityType, long entityId, long userId, long now) {
-        if ("comment".equals(entityType)) return;
+        // Only topics carry last_comment_time/last_comment_user_id — the
+        // article table has no such columns, so updating them for articles
+        // failed the whole comment transaction (HTTP 500, no comment stored).
+        if (!"topic".equals(entityType)) return;
         String table = EntityTables.tableOf(entityType);
         if (table != null) {
             db.execute(
@@ -106,9 +130,15 @@ public class CommentService {
                 "UPDATE bbs_user SET comment_count = GREATEST(0, comment_count - 1) WHERE id = ?",
                 comment.getUserId()
             );
+            // A reply also counted against the comment it quoted at create
+            // time; deleting it must give that count back, or the quoted
+            // comment's reply counter only ever grows.
+            if (comment.getQuoteId() != null && comment.getQuoteId() > 0) {
+                incrCommentCount("comment", comment.getQuoteId(), -1);
+            }
             // Re-anchor the parent's sort time on the newest surviving comment.
-            // Only topics/articles carry last_comment_*; comments are leaves.
-            if ("comment".equals(comment.getEntityType())) return;
+            // Only topics carry last_comment_*; articles have no such column.
+            if (!"topic".equals(comment.getEntityType())) return;
             String table = EntityTables.tableOf(comment.getEntityType());
             if (table != null) {
                 db.execute(
