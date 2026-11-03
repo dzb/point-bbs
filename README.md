@@ -125,7 +125,7 @@ point-bbs/
 │           └── user/     # Profile / Messages / Favorites
 ├── TODO.md               # Remaining unconnected features
 ├── DESIGN.md             # Full design system documentation
-└── CLAUDE.md             # AI workspace instructions
+└── AGENTS.md             # AI workspace instructions
 ```
 
 ---
