@@ -127,4 +127,35 @@ class UserServiceTest {
         assertEquals("新昵称", reloaded.getNickname());
         assertEquals("partialuser@test.com", reloaded.getEmail(), "unset fields must survive");
     }
+
+    @Test
+    void setPasswordRequiresTheCurrentPassword() {
+        var user = userService.signUp(req("pwduser1", "pwduser1@test.com", "oldpass1"));
+        assertThrows(ServiceException.class, () ->
+            userService.setPassword(user.getId(), "wrong-password", "newpass2"),
+            "a wrong old password must not change the credential");
+        // unchanged credential still works
+        assertDoesNotThrow(() -> userService.signIn("pwduser1", "oldpass1"));
+    }
+
+    @Test
+    void setPasswordRejectsTooShortAndUnchangedPasswords() {
+        var user = userService.signUp(req("pwduser2", "pwduser2@test.com", "oldpass1"));
+        assertThrows(ServiceException.class, () ->
+            userService.setPassword(user.getId(), "oldpass1", "12345"));
+        assertThrows(ServiceException.class, () ->
+            userService.setPassword(user.getId(), "oldpass1", "oldpass1"));
+    }
+
+    @Test
+    void setPasswordReplacesTheCredential() {
+        var user = userService.signUp(req("pwduser3", "pwduser3@test.com", "oldpass1"));
+        userService.setPassword(user.getId(), "oldpass1", "newpass2");
+
+        // old password fails, new password signs in, hash is fresh PBKDF2
+        assertThrows(ServiceException.class, () -> userService.signIn("pwduser3", "oldpass1"));
+        var signedIn = userService.signIn("pwduser3", "newpass2");
+        assertEquals(user.getId(), signedIn.getId());
+        assertTrue(userRepo.findById(user.getId()).orElseThrow().getPassword().startsWith("pbkdf2$"));
+    }
 }

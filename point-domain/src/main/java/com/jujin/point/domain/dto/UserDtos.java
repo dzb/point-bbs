@@ -30,7 +30,7 @@ public interface UserDtos {
 
     record SignInRequest(@NotBlank String loginName, @NotBlank String password, String captchaToken, String captchaCode) {}
 
-    record SetPasswordRequest(@NotBlank String oldPassword, @Size(min = 6) String newPassword) {}
+    record SetPasswordRequest(@NotBlank String oldPassword, @NotBlank @Size(min = 6) String newPassword) {}
 
     record ResetPasswordRequest(String email, String token, String newPassword) {}
 

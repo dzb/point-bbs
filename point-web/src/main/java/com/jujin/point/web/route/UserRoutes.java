@@ -27,6 +27,9 @@ public class UserRoutes {
                 if (user == null) { ctx.sendJson(200, ApiResponse.ok(List.of())); return; }
                 ctx.sendJson(200, ApiResponse.ok(user.roles()));
             }),
+            // Change own password (current user from the session; the body
+            // never names a user id, so another account cannot be targeted)
+            Route.post("/password", ChangePasswordHandler.class),
             // User search for @mention autocomplete
             Route.get("/search", SearchUsersHandler.class),
             Route.get("/{id}", UserProfileHandler.class),
@@ -96,6 +99,28 @@ public class UserRoutes {
             // Public profile — never expose credentials or contact info
             u.ifPresent(UserRoutes::sanitizePublic);
             ctx.sendJson(200, ApiResponse.ok(u.orElse(null)));
+        }
+    }
+
+    public static final class ChangePasswordHandler implements RouteHandler {
+        private final UserService userSvc;
+        private final AuthService authSvc;
+
+        public ChangePasswordHandler(UserService userSvc, AuthService authSvc) {
+            this.userSvc = userSvc;
+            this.authSvc = authSvc;
+        }
+
+        @Override
+        public void handle(HttpContext ctx) throws Exception {
+            var user = AuthFilter.requireUser();
+            var req = WebUtils.validatedBody(ctx, SetPasswordRequest.class);
+            userSvc.setPassword(user.userId(), req.oldPassword(), req.newPassword());
+            // A password change revokes the current session: clear the
+            // HttpOnly cookie so the client must sign in with the new
+            // password (old JWT-based tokens stay valid otherwise).
+            ctx.setHeader("Set-Cookie", authSvc.clearSessionCookie());
+            ctx.sendJson(200, ApiResponse.ok());
         }
     }
 

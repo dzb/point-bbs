@@ -148,6 +148,14 @@ public class UserService {
         if (!Passwords.verify(oldPassword, user.getPassword())) {
             throw new ServiceException("原密码错误");
         }
+        // Defense in depth: the route validates the DTO too, but the service
+        // is the single password-mutation owner and must not rely on callers.
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new ServiceException("新密码长度至少 6 位");
+        }
+        if (Passwords.verify(newPassword, user.getPassword())) {
+            throw new ServiceException("新密码不能与原密码相同");
+        }
         user.setPassword(Passwords.hash(newPassword));
         user.setUpdateTime(System.currentTimeMillis());
         userRepo.update(user);
