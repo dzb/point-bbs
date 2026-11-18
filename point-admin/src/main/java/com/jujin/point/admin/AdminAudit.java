@@ -1,7 +1,7 @@
 package com.jujin.point.admin;
 
 import com.jujin.freeway.db.Orm;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.point.domain.auth.AuthApi;
 import com.jujin.point.domain.entity.OperateLog;
 
@@ -28,7 +28,7 @@ public final class AdminAudit {
     }
 
     public void log(
-        HttpContext ctx,
+        HttpExchange ctx,
         String opType,
         String dataType,
         long dataId,

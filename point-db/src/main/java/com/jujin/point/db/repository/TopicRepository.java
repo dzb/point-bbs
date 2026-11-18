@@ -20,7 +20,7 @@ public class TopicRepository extends BaseRepository<Topic> {
         long offset = (long) (page - 1) * pageSize;
         return query(
             "SELECT * FROM bbs_topic WHERE user_id = $userId AND status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
-            .param("userId", userId).param("limit", pageSize).param("offset", offset)
+            .bind("userId", userId).bind("limit", pageSize).bind("offset", offset)
             .list(Topic.class);
     }
 
@@ -28,7 +28,7 @@ public class TopicRepository extends BaseRepository<Topic> {
         long offset = (long) (page - 1) * pageSize;
         return query(
             "SELECT * FROM bbs_topic WHERE category_id = $catId AND status = 1 ORDER BY last_comment_time DESC LIMIT $limit OFFSET $offset")
-            .param("catId", categoryId).param("limit", pageSize).param("offset", offset)
+            .bind("catId", categoryId).bind("limit", pageSize).bind("offset", offset)
             .list(Topic.class);
     }
 
@@ -36,7 +36,7 @@ public class TopicRepository extends BaseRepository<Topic> {
         long offset = (long) (page - 1) * pageSize;
         return query(
             "SELECT * FROM bbs_topic WHERE status = 1 AND type = 0 ORDER BY last_comment_time DESC LIMIT $limit OFFSET $offset")
-            .param("limit", pageSize).param("offset", offset)
+            .bind("limit", pageSize).bind("offset", offset)
             .list(Topic.class);
     }
 
@@ -44,7 +44,7 @@ public class TopicRepository extends BaseRepository<Topic> {
     public List<Topic> findRecommended(int limit) {
         return query(
             "SELECT * FROM bbs_topic WHERE recommend = TRUE AND status = 1 ORDER BY recommend_time DESC LIMIT $limit")
-            .param("limit", limit)
+            .bind("limit", limit)
             .list(Topic.class);
     }
 
@@ -54,7 +54,7 @@ public class TopicRepository extends BaseRepository<Topic> {
         return query(
             "SELECT t.* FROM bbs_topic t INNER JOIN bbs_topic_tag tt ON t.id = tt.topic_id " +
             "WHERE tt.tag_id = $tagId AND t.status = 1 ORDER BY t.last_comment_time DESC LIMIT $limit OFFSET $offset")
-            .param("tagId", tagId).param("limit", pageSize).param("offset", offset)
+            .bind("tagId", tagId).bind("limit", pageSize).bind("offset", offset)
             .list(Topic.class);
     }
 
@@ -65,35 +65,35 @@ public class TopicRepository extends BaseRepository<Topic> {
         var escaped = keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_");
         return query(
             "SELECT * FROM bbs_topic WHERE status = 1 AND title LIKE $keyword ESCAPE '!' ORDER BY last_comment_time DESC LIMIT $limit OFFSET $offset")
-            .param("keyword", "%" + escaped + "%").param("limit", pageSize).param("offset", offset)
+            .bind("keyword", "%" + escaped + "%").bind("limit", pageSize).bind("offset", offset)
             .list(Topic.class);
     }
 
     public long countByUserId(long userId) {
         var row = query("SELECT COUNT(*) AS cnt FROM bbs_topic WHERE user_id = $userId AND status = 1")
-            .param("userId", userId).one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+            .bind("userId", userId).one(Row.class).orElse(null);
+        return row != null ? row.asLong("cnt") : 0;
     }
 
     public long countByCategoryId(long categoryId) {
         var row = query("SELECT COUNT(*) AS cnt FROM bbs_topic WHERE category_id = $catId AND status = 1")
-            .param("catId", categoryId).one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+            .bind("catId", categoryId).one(Row.class).orElse(null);
+        return row != null ? row.asLong("cnt") : 0;
     }
 
     public long countByType(int type) {
         var row = query("SELECT COUNT(*) AS cnt FROM bbs_topic WHERE type = $type AND status = 1")
-            .param("type", type).one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+            .bind("type", type).one(Row.class).orElse(null);
+        return row != null ? row.asLong("cnt") : 0;
     }
 
     public long countByTitleSearch(String keyword) {
         var escaped = keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_");
         var row = query(
             "SELECT COUNT(*) AS cnt FROM bbs_topic WHERE status = 1 AND title LIKE $keyword ESCAPE '!'")
-            .param("keyword", "%" + escaped + "%")
+            .bind("keyword", "%" + escaped + "%")
             .one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+        return row != null ? row.asLong("cnt") : 0;
     }
 
     public int incrViewCount(long topicId) {

@@ -35,7 +35,7 @@ public class UserFollowService {
                 orm.insert(new UserFollow(userId, otherId, 1, System.currentTimeMillis()));
                 db.execute("UPDATE bbs_user SET follow_count = follow_count + 1 WHERE id = ?", userId);
                 db.execute("UPDATE bbs_user SET fans_count = fans_count + 1 WHERE id = ?", otherId);
-                bus.publish(new UserFollowedEvent(userId, otherId, System.currentTimeMillis()));
+                bus.publishEvent(new UserFollowedEvent(userId, otherId, System.currentTimeMillis()));
             });
         } catch (com.jujin.freeway.db.SqlException e) {
             // Unique (user_id, other_id) index — concurrent follow; ignore.
@@ -73,13 +73,13 @@ public class UserFollowService {
         var row = db.query(
             "SELECT COUNT(*) AS cnt FROM bbs_user_follow f WHERE f.other_id = ? AND f.status = 1",
             userId).one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+        return row != null ? row.asLong("cnt") : 0;
     }
 
     public long countFollowing(long userId) {
         var row = db.query(
             "SELECT COUNT(*) AS cnt FROM bbs_user_follow f WHERE f.user_id = ? AND f.status = 1",
             userId).one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+        return row != null ? row.asLong("cnt") : 0;
     }
 }

@@ -9,7 +9,7 @@ import com.jujin.point.service.UserLikeService;
 import com.jujin.point.web.ResponseEnricher;
 import com.jujin.point.web.WebUtils;
 import com.jujin.point.web.filter.AuthFilter;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.route.RouteHandler;
@@ -51,7 +51,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var pr = com.jujin.point.domain.dto.PageRequest.of(
                 intParam(ctx, "page", 1),
                 intParam(ctx, "pageSize", 30)
@@ -73,7 +73,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
             var a = svc.findById(id).orElse(null);
             if (a == null) { ctx.sendJson(404, ApiResponse.error("文章不存在")); return; }
@@ -92,7 +92,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var req = WebUtils.validatedBody(ctx, CreateArticleRequest.class);
             var user = AuthFilter.requireUser();
             var a = svc.create(user.userId(), req.title(), req.summary(), req.content(), req.contentType());
@@ -113,7 +113,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var req = WebUtils.validatedBody(ctx, UpdateArticleRequest.class);
             var user = AuthFilter.requireUser();
             long id = ctx.pathVar("id", Long.class).orElse(0L);
@@ -132,7 +132,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             svc.delete(user.userId(), ctx.pathVar("id", Long.class).orElse(0L));
             ctx.sendJson(200, ApiResponse.ok());
@@ -147,7 +147,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             boolean liked = likeSvc.like(user.userId(), "article", ctx.pathVar("id", Long.class).orElse(0L));
             ctx.sendJson(200, ApiResponse.ok(Map.of("liked", liked)));
@@ -162,7 +162,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             likeSvc.unlike(user.userId(), "article", ctx.pathVar("id", Long.class).orElse(0L));
             ctx.sendJson(200, ApiResponse.ok());
@@ -177,7 +177,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             favSvc.add(user.userId(), "article", ctx.pathVar("id", Long.class).orElse(0L));
             ctx.sendJson(200, ApiResponse.ok());
@@ -192,7 +192,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             favSvc.remove(user.userId(), "article", ctx.pathVar("id", Long.class).orElse(0L));
             ctx.sendJson(200, ApiResponse.ok());
@@ -207,7 +207,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.currentUser();
             boolean liked = user != null && likeSvc.hasLiked(user.userId(), "article", ctx.pathVar("id", Long.class).orElse(0L));
             ctx.sendJson(200, ApiResponse.ok(Map.of("liked", liked)));
@@ -222,7 +222,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.currentUser();
             boolean f = user != null && favSvc.isFavorited(user.userId(), "article", ctx.pathVar("id", Long.class).orElse(0L));
             ctx.sendJson(200, ApiResponse.ok(Map.of("favorited", f)));
@@ -242,7 +242,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long articleId = ctx.pathVar("id", Long.class).orElse(0L);
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
@@ -271,7 +271,7 @@ public class ArticleRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var req = WebUtils.validatedBody(ctx, com.jujin.point.domain.dto.CommentDtos.CreateCommentRequest.class);
             var user = AuthFilter.requireUser();
             long articleId = ctx.pathVar("id", Long.class).orElse(0L);

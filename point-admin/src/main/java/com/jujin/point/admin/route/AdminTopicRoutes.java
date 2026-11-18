@@ -5,7 +5,7 @@ import com.jujin.point.domain.auth.AuthApi;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.domain.dto.PageRequest;
 import com.jujin.point.service.TopicService;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.route.RouteHandler;
@@ -39,7 +39,7 @@ public class AdminTopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var pr = PageRequest.of(
                 ctx.queryParam("page", Integer.class).orElse(1),
                 ctx.queryParam("pageSize", Integer.class).orElse(20)
@@ -61,7 +61,7 @@ public class AdminTopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
             var topic = svc.findById(id).orElse(null);
             if (topic == null) {
@@ -85,7 +85,7 @@ public class AdminTopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
             boolean recommend = "true".equals(ctx.queryParam("recommend").orElse(null));
             svc.recommend(id, recommend);
@@ -105,7 +105,7 @@ public class AdminTopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
             boolean sticky = "true".equals(ctx.queryParam("sticky").orElse(null));
             svc.sticky(id, sticky);
@@ -123,7 +123,7 @@ public class AdminTopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             String q = ctx.queryParam("q").orElse(null);
             var pr = PageRequest.of(
                 ctx.queryParam("page", Integer.class).orElse(1),
@@ -144,7 +144,7 @@ public class AdminTopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long topicId = ctx.pathVar("id", Long.class).orElse(0L);
             long commentId;
             try {

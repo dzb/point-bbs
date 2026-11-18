@@ -37,7 +37,7 @@ public class UserLikeService {
             db.transaction(() -> {
                 orm.insert(new UserLike(userId, entityId, entityType, System.currentTimeMillis()));
                 incrLikeCount(entityType, entityId, 1);
-                bus.publish(new UserLikedEvent(userId, entityId, entityType, System.currentTimeMillis()));
+                bus.publishEvent(new UserLikedEvent(userId, entityId, entityType, System.currentTimeMillis()));
             });
         } catch (com.jujin.freeway.db.SqlException e) {
             // Unique (user_id, entity_id, entity_type) index — a concurrent

@@ -38,7 +38,7 @@ public class MessageService {
         // re-resolving recipients per business event. Buffered until the
         // surrounding transaction commits (EventBus Defer), so a rollback
         // never produces a phantom ping.
-        eventBus.publish(new NotificationSentEvent(fromId, toUserId, now));
+        eventBus.publishEvent(new NotificationSentEvent(fromId, toUserId, now));
         return msg;
     }
 

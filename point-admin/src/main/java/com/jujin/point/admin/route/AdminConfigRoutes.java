@@ -3,7 +3,7 @@ package com.jujin.point.admin.route;
 import com.jujin.point.admin.AdminAudit;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.service.SysConfigService;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.route.RouteHandler;
@@ -33,7 +33,7 @@ public class AdminConfigRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var configs = configSvc.getAll();
             ctx.sendJson(200, ApiResponse.ok(configs));
         }
@@ -49,7 +49,7 @@ public class AdminConfigRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var req = ctx.bodyAsJson(Map.class);
             if (req == null) {
                 ctx.sendJson(400, ApiResponse.error("请求体不能为空"));
@@ -76,7 +76,7 @@ public class AdminConfigRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             String key = ctx.pathVar("key").orElse(null);
             var value = configSvc.get(key);
             ctx.sendJson(200, ApiResponse.ok(Map.of("key", key, "value", value)));
@@ -93,7 +93,7 @@ public class AdminConfigRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             String key = ctx.pathVar("key").orElse(null);
             var req = ctx.bodyAsJson(Map.class);
             if (req == null || req.get("value") == null) {

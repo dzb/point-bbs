@@ -7,7 +7,7 @@ import com.jujin.point.service.*;
 import com.jujin.point.web.ResponseEnricher;
 import com.jujin.point.web.WebUtils;
 import com.jujin.point.web.filter.AuthFilter;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.route.RouteHandler;
@@ -57,7 +57,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.currentUser();
             if (user == null) { ctx.sendJson(200, ApiResponse.ok(null)); return; }
             var full = userSvc.findById(user.userId());
@@ -74,7 +74,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             String q = ctx.queryParam("q").orElse(null);
             if (q == null || q.isBlank()) {
                 ctx.sendJson(200, ApiResponse.ok(List.of()));
@@ -94,7 +94,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var u = userSvc.findById(resolveUserId(userSvc, ctx));
             // Public profile — never expose credentials or contact info
             u.ifPresent(UserRoutes::sanitizePublic);
@@ -112,7 +112,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             var req = WebUtils.validatedBody(ctx, SetPasswordRequest.class);
             userSvc.setPassword(user.userId(), req.oldPassword(), req.newPassword());
@@ -132,7 +132,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             long targetId = ctx.pathVar("id", Long.class).orElse(0L);
             if (user.userId() != targetId) {
@@ -161,7 +161,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long uid = resolveUserId(userSvc, ctx);
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
@@ -184,7 +184,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long uid = resolveUserId(userSvc, ctx);
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
@@ -203,7 +203,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             long uid = ctx.pathVar("id", Long.class).orElse(0L);
             if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能查看自己的消息")); return; }
@@ -223,7 +223,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             long uid = ctx.pathVar("id", Long.class).orElse(0L);
             if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能查看自己的消息")); return; }
@@ -239,7 +239,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             long uid = ctx.pathVar("id", Long.class).orElse(0L);
             if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能操作自己的消息")); return; }
@@ -263,7 +263,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             long uid = ctx.pathVar("id", Long.class).orElse(0L);
             if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能操作自己的消息")); return; }
@@ -280,7 +280,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             followSvc.follow(user.userId(), ctx.pathVar("id", Long.class).orElse(0L));
             ctx.sendJson(200, ApiResponse.ok());
@@ -295,7 +295,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             followSvc.unfollow(user.userId(), ctx.pathVar("id", Long.class).orElse(0L));
             ctx.sendJson(200, ApiResponse.ok());
@@ -312,7 +312,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.currentUser();
             boolean f = user != null && followSvc.isFollowing(user.userId(), resolveUserId(userSvc, ctx));
             ctx.sendJson(200, ApiResponse.ok(Map.of("following", f)));
@@ -329,7 +329,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long uid = resolveUserId(userSvc, ctx);
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
@@ -350,7 +350,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long uid = resolveUserId(userSvc, ctx);
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
@@ -369,7 +369,7 @@ public class UserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             long uid = ctx.pathVar("id", Long.class).orElse(0L);
             if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能查看自己的收藏")); return; }
@@ -382,7 +382,7 @@ public class UserRoutes {
     }
 
     /** Resolve a path variable to a user ID, accepting both numeric IDs and usernames. */
-    private static long resolveUserId(UserService userSvc, HttpContext ctx) {
+    private static long resolveUserId(UserService userSvc, HttpExchange ctx) {
         var idStr = ctx.pathVar("id", String.class).orElse(null);
         try { return Long.parseLong(idStr); }
         catch (NumberFormatException e) {

@@ -29,7 +29,7 @@ public class MentionNotifier {
         for (String username : MentionParser.extractMentions(content)) {
             userRepo.findByUsername(username).ifPresent(u -> {
                 if (u.getId() != actorId && notified.add(u.getId())) {
-                    eventBus.publish(new UserMentionedEvent(
+                    eventBus.publishEvent(new UserMentionedEvent(
                         actorId, u.getId(), entityType, entityId,
                         Strings.truncate(content, 100), timestamp));
                 }

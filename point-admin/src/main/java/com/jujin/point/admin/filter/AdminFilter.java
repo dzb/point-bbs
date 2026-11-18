@@ -1,6 +1,6 @@
 package com.jujin.point.admin.filter;
 
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.filter.HttpFilter;
 import com.jujin.freeway.http.route.RouteHandler;
 import com.jujin.point.domain.auth.AuthApi;
@@ -22,7 +22,7 @@ public class AdminFilter implements HttpFilter {
     }
 
     @Override
-    public void doFilter(HttpContext ctx, RouteHandler next) throws Exception {
+    public void doFilter(HttpExchange ctx, RouteHandler next) throws Exception {
         // Only enforce for admin paths
         if (!ctx.path().startsWith("/api/admin")) {
             next.handle(ctx);

@@ -187,11 +187,11 @@ public class ResponseEnricher {
         Map<Long, Map<String, Object>> result = new HashMap<>();
         for (var r : rows) {
             var m = new LinkedHashMap<String, Object>();
-            m.put("id", r.longValue("id"));
-            m.put("nickname", r.string("nickname"));
-            m.put("username", r.string("username"));
-            m.put("avatar", r.string("avatar"));
-            result.put(r.longValue("id"), m);
+            m.put("id", r.asLong("id"));
+            m.put("nickname", r.asString("nickname"));
+            m.put("username", r.asString("username"));
+            m.put("avatar", r.asString("avatar"));
+            result.put(r.asLong("id"), m);
         }
         return result;
     }
@@ -213,10 +213,10 @@ public class ResponseEnricher {
             .list(Row.class);
         Map<Long, List<String>> result = new HashMap<>();
         for (var r : rows) {
-            long aid = r.longValue("article_id");
+            long aid = r.asLong("article_id");
             result
                 .computeIfAbsent(aid, k -> new ArrayList<>())
-                .add(r.string("name"));
+                .add(r.asString("name"));
         }
         return result;
     }
@@ -231,10 +231,10 @@ public class ResponseEnricher {
         if (rows.isEmpty()) return new LinkedHashMap<>();
         var r = rows.getFirst();
         var m = new LinkedHashMap<String, Object>();
-        m.put("id", r.longValue("id"));
-        m.put("nickname", r.string("nickname"));
-        m.put("username", r.string("username"));
-        m.put("avatar", r.string("avatar"));
+        m.put("id", r.asLong("id"));
+        m.put("nickname", r.asString("nickname"));
+        m.put("username", r.asString("username"));
+        m.put("avatar", r.asString("avatar"));
         return m;
     }
 
@@ -246,7 +246,7 @@ public class ResponseEnricher {
                 quoteId
             )
             .one(Row.class)
-            .map(r -> Strings.truncate(r.string("content"), 120))
+            .map(r -> Strings.truncate(r.asString("content"), 120))
             .orElse(null);
     }
 
@@ -268,8 +268,8 @@ public class ResponseEnricher {
         Map<Long, String> result = new HashMap<>();
         for (var r : rows) {
             result.put(
-                r.longValue("id"),
-                Strings.truncate(r.string("content"), 120)
+                r.asLong("id"),
+                Strings.truncate(r.asString("content"), 120)
             );
         }
         return result;
@@ -283,7 +283,7 @@ public class ResponseEnricher {
             )
             .list(Row.class)
             .stream()
-            .map(r -> r.string("name"))
+            .map(r -> r.asString("name"))
             .toList();
     }
 }

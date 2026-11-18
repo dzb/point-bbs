@@ -10,7 +10,7 @@ import com.jujin.point.web.WebModule;
 /**
  * The base modules shared by every point deployment.
  *
- * <p>freeway 1.5.6: module composition is a flat declaration list at the
+ * <p>freeway 2.0: module composition is a flat declaration list at the
  * entry point — instances and class declarations mix directly, no tree
  * assembly. Kept in one place so the monolith launcher ({@link PointApp})
  * and the cloud launcher cannot drift on which modules are composed — the

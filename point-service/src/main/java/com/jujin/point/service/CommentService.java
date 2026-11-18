@@ -75,12 +75,12 @@ public class CommentService {
             // Bump the parent's sort time so the topic/article resurfaces on
             // lists ordered by last_comment_time.
             touchLastComment(entityType, entityId, userId, now);
-            eventBus.publish(new CommentCreatedEvent(userId, comment.getId(), entityId, entityType, now));
+            eventBus.publishEvent(new CommentCreatedEvent(userId, comment.getId(), entityId, entityType, now));
             // Reply semantics: a comment with quoteId > 0 also counts against
             // the quoted comment and notifies its author.
             if (quoteId > 0) {
                 incrCommentCount("comment", quoteId, 1);
-                eventBus.publish(new CommentCreatedEvent(userId, comment.getId(), quoteId, "comment", now));
+                eventBus.publishEvent(new CommentCreatedEvent(userId, comment.getId(), quoteId, "comment", now));
             }
             mentionSvc.notifyMentions(userId, content, entityType, entityId, now);
         });

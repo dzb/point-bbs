@@ -32,7 +32,7 @@ public class FavoriteService {
         try {
             db.transaction(() -> {
                 orm.insert(new Favorite(userId, entityType, entityId, System.currentTimeMillis()));
-                bus.publish(new UserFavoritedEvent(userId, entityId, entityType, System.currentTimeMillis()));
+                bus.publishEvent(new UserFavoritedEvent(userId, entityId, entityType, System.currentTimeMillis()));
             });
         } catch (com.jujin.freeway.db.SqlException e) {
             // Unique (user_id, entity_type, entity_id) index — concurrent add; ignore.

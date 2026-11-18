@@ -30,7 +30,7 @@ public class NotificationHandler {
         var nickname = getNickname(e.userId());
         if ("topic".equals(e.entityType())) {
             db.query("SELECT user_id, title FROM bbs_topic WHERE id = $id")
-                .param("id", e.entityId())
+                .bind("id", e.entityId())
                 .one(Topic.class)
                 .ifPresent(topic ->
                     msgSvc.send(
@@ -52,9 +52,9 @@ public class NotificationHandler {
                 .one(Row.class)
                 .orElse(null);
             if (parentRow != null) {
-                long parentAuthorId = parentRow.longValue("user_id");
-                String parentEntityType = parentRow.string("entity_type");
-                long parentEntityId = parentRow.longValue("entity_id");
+                long parentAuthorId = parentRow.asLong("user_id");
+                String parentEntityType = parentRow.asString("entity_type");
+                long parentEntityId = parentRow.asLong("entity_id");
                 String extra =
                     "{\"type\":\"comment\",\"id\":" +
                     e.commentId() +
@@ -129,7 +129,7 @@ public class NotificationHandler {
         var nickname = getNickname(e.userId());
         var title = db.query("SELECT title FROM bbs_topic WHERE id = ?", e.topicId())
             .one(Row.class)
-            .map(r -> r.string("title"))
+            .map(r -> r.asString("title"))
             .orElse(null);
         msgSvc.send(
             e.userId(),
@@ -174,7 +174,7 @@ public class NotificationHandler {
         var operator = getNickname(e.operatorId());
         var title = db.query("SELECT title FROM bbs_topic WHERE id = ?", e.topicId())
             .one(Row.class)
-            .map(r -> r.string("title"))
+            .map(r -> r.asString("title"))
             .orElse(null);
         msgSvc.send(
             e.operatorId(),
@@ -223,9 +223,9 @@ public class NotificationHandler {
     private String getNickname(long userId) {
         return db
             .query("SELECT nickname FROM bbs_user WHERE id = $id")
-            .param("id", userId)
+            .bind("id", userId)
             .one(Row.class)
-            .map(r -> r.string("nickname"))
+            .map(r -> r.asString("nickname"))
             .orElse("有人");
     }
 }

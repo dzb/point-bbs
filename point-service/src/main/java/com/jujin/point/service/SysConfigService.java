@@ -65,7 +65,7 @@ public class SysConfigService {
         // identifier valid on both MODE=MySQL and MODE=PostgreSQL (no quoting,
         // because quoted identifiers are case-sensitive while the legacy
         // MODE=MySQL database stored them upper-cased).
-            var existing = db.query("SELECT * FROM bbs_sys_config WHERE key = $key").param("key", key)
+            var existing = db.query("SELECT * FROM bbs_sys_config WHERE key = $key").bind("key", key)
                 .one(SysConfig.class);
             if (existing.isPresent()) {
                 var c = existing.get();

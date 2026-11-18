@@ -1,32 +1,26 @@
 package com.jujin.point.web;
 
-import com.jujin.freeway.http.filter.ErrorHandler;
+import com.jujin.freeway.http.filter.ErrorMapper;
 import com.jujin.freeway.http.filter.HttpFilter;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.staticfile.StaticResourceMount;
 import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.ModuleEx;
 import com.jujin.point.domain.auth.AuthApi;
-import com.jujin.point.domain.dto.ApiResponse;
-import com.jujin.point.service.ServiceException;
-import com.jujin.point.web.filter.AuthException;
 import com.jujin.point.web.filter.AuthFilter;
+import com.jujin.point.web.filter.PointErrorMapper;
 import com.jujin.point.web.filter.SecurityHeadersFilter;
 import com.jujin.point.web.filter.SpaFilter;
 import com.jujin.point.web.route.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Web module — serves the SPA and REST API routes.
  *
- * freeway 1.3.8: filters use canonical auto-IDs via add(Class) instead of
- * manual id strings. AuthFilter receives AuthService + PermissionService via DI.
+ * Filters carry canonical contribution ids; AuthFilter resolves its service
+ * graph per request (freeway 2.0 seals extensions after construction).
  * ResponseEnricher is bound as a singleton with Database injection.
  */
 public class WebModule implements ModuleEx {
-    private static final Logger log = LoggerFactory.getLogger(WebModule.class);
-
     /** Sliding-window policy for signin/signup: at most 10 attempts per 10 minutes. */
     private static final int LOGIN_MAX_ATTEMPTS = 10;
     private static final long LOGIN_WINDOW_MS = 10 * 60 * 1000;
@@ -58,7 +52,7 @@ public class WebModule implements ModuleEx {
             .add(
                 StaticResourceMount.classpath("/assets", "static/assets")
                     .withImmutable(true)
-                    .withCacheMaxAgeSeconds(31536000)
+                    .withCacheMaxAge(java.time.Duration.ofSeconds(31536000))
             ); // 1 year
 
         // Serve root-level static files (favicon, etc.) — fallthrough for SPA routes.
@@ -69,8 +63,8 @@ public class WebModule implements ModuleEx {
             .contribute(StaticResourceMount.class)
             .add(
                 StaticResourceMount.classpath("/", "static")
-                    .withFallthrough(true)
-                    .withCacheMaxAgeSeconds(0)
+                    .withRouteFallback(true)
+                    .withCacheMaxAge(java.time.Duration.ofSeconds(0))
             ); // revalidate (hashed /assets/* keep their own immutable 1y mount above)
 
         // SPA frontend fallthrough filter (skips /api paths)
@@ -84,11 +78,11 @@ public class WebModule implements ModuleEx {
             .add("security-headers", new SecurityHeadersFilter())
             .before("spa-filter");
 
-        // Auth filter — bound as a singleton then contributed (so container can resolve its DI)
-        binder.bind(AuthFilter.class).to(AuthFilter.class);
+        // Auth filter — built with the container, resolving its service graph
+        // per request (freeway 2.0 seals extension stores after construction).
         binder
             .contribute(HttpFilter.class)
-            .add(AuthFilter.class)
+            .addDeferred("auth_filter@com.jujin.point.web.filter", c -> new AuthFilter(c))
             .after("security-headers");
 
         // Serve session identity as the AuthApi service so other modules
@@ -97,45 +91,10 @@ public class WebModule implements ModuleEx {
         // on the requesting thread.
         binder.bind(AuthApi.class).to(AuthRpc.class);
 
-        // Exception mappers
-        binder.contribute(ErrorHandler.class).add((resp, ex) -> {
-            if (ex instanceof AuthException ae) {
-                resp.sendJson(
-                    ae.statusCode(),
-                    ApiResponse.error(ae.statusCode(), ae.getMessage())
-                );
-                return true;
-            }
-            if (ex instanceof ServiceException se) {
-                resp.sendJson(400, ApiResponse.error(se.getMessage()));
-                return true;
-            }
-            if (ex instanceof com.jujin.freeway.http.ValidationException ve) {
-                var details = ve
-                    .result()
-                    .errors()
-                    .stream()
-                    .map(e -> e.field() + ": " + e.message())
-                    .collect(java.util.stream.Collectors.joining("; "));
-                resp.sendJson(400, ApiResponse.error("参数校验失败: " + details));
-                return true;
-            }
-            // 框架内置映射回答 413/415/400 —— 1.5.4 起应用 mapper 排在内置之前，
-            // 吞掉这三类会把内置状态码改写成 500，交还给内置 mapper。
-            if (ex instanceof com.jujin.freeway.http.body.BodyTooLargeException
-                    || ex instanceof com.jujin.freeway.http.body.UnsupportedMediaTypeException
-                    || ex instanceof com.jujin.freeway.http.body.MultipartException) {
-                return false;
-            }
-            log.error(
-                "Unhandled exception {}: {}",
-                ex.getClass().getSimpleName(),
-                ex.getMessage(),
-                ex
-            );
-            resp.sendJson(500, ApiResponse.error(500, "服务器内部错误"));
-            return true;
-        });
+        // Application error mapping. freeway 2.0's ErrorMapper returns the
+        // response and the server writes it; framework request rejections
+        // fall through to the built-in mapper.
+        binder.contribute(ErrorMapper.class).add("point-errors", new PointErrorMapper());
 
         // Push "refresh" pings over WebSocket when a notification row is
         // actually written. MessageService publishes NotificationSentEvent
@@ -145,9 +104,9 @@ public class WebModule implements ModuleEx {
         // fallback).
         binder
             .contribute(com.jujin.freeway.ioc.event.EventSubscriber.class)
-            .add("ws-ping", c -> {
+            .addDeferred("ws-ping", c -> {
                 NotificationHub hub = c.get(NotificationHub.class);
-                return com.jujin.freeway.ioc.event.EventSubscriber.of(
+                return com.jujin.freeway.ioc.event.EventSubscriber.ofEvent(
                     com.jujin.point.domain.event.NotificationSentEvent.class,
                     e -> hub.pingUnread(e.toUserId())
                 );

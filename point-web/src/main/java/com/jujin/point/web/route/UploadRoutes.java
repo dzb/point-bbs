@@ -2,7 +2,7 @@ package com.jujin.point.web.route;
 
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.route.RouteHandler;
@@ -31,7 +31,7 @@ public class UploadRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             long topicId = ctx.queryParam("topicId").map(s -> {
                 try {
@@ -90,7 +90,7 @@ public class UploadRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             String id = ctx.pathVar("id").orElse(null);
             var att = svc.getAttachment(id);
             if (att == null || !Files.exists(svc.getFilePath(att))) {
@@ -121,7 +121,7 @@ public class UploadRoutes {
             // Stream instead of buffering the whole file in memory
             var path = svc.getFilePath(att);
             try (var in = Files.newInputStream(path)) {
-                ctx.output(in, Files.size(path));
+                ctx.body(in, Files.size(path));
             }
         }
     }

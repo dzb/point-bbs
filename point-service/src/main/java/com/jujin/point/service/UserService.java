@@ -40,9 +40,9 @@ public class UserService {
     public void ensureUsable(long userId) {
         long[] gate = gateCache.getOrCompute(userId, () -> db
             .query("SELECT status, forbidden_end_time FROM bbs_user WHERE id = $id")
-            .param("id", userId)
+            .bind("id", userId)
             .one(Row.class)
-            .map(r -> new long[] { r.longValue("status"), r.longValue("forbidden_end_time") })
+            .map(r -> new long[] { r.asLong("status"), r.asLong("forbidden_end_time") })
             .orElse(new long[] { 0, 0 }));
         if (gate[0] == 0) throw new ServiceException("账号已被禁用");
         if (gate[1] > System.currentTimeMillis()) {
@@ -169,7 +169,7 @@ public class UserService {
         );
         // Mute/unmute must bite immediately and notify the user
         gateCache.invalidate(userId);
-        eventBus.publish(new UserForbiddenEvent(userId, endTime, System.currentTimeMillis()));
+        eventBus.publishEvent(new UserForbiddenEvent(userId, endTime, System.currentTimeMillis()));
     }
 
     private static String formatTime(long epochMillis) {

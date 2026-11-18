@@ -78,7 +78,7 @@ class CommentServiceTest {
         assertEquals(1, topic.getCommentCount());
 
         var cnt = db.query("SELECT comment_count FROM bbs_user WHERE id = 1")
-            .one(Row.class).map(r -> r.longValue("comment_count")).orElse(-1L);
+            .one(Row.class).map(r -> r.asLong("comment_count")).orElse(-1L);
         assertEquals(1L, cnt);
     }
 
@@ -88,7 +88,7 @@ class CommentServiceTest {
         // user 1 replies to user 2's comment
         commentService.create(1L, "topic", 1L, "回复内容", "markdown", null, c.getId());
         var replied = db.query("SELECT comment_count FROM bbs_comment WHERE id = ?", c.getId())
-            .one(Row.class).map(r -> r.longValue("comment_count")).orElse(-1L);
+            .one(Row.class).map(r -> r.asLong("comment_count")).orElse(-1L);
         assertEquals(1L, replied);
     }
 
@@ -101,7 +101,7 @@ class CommentServiceTest {
         var topic = topicService.findById(1L).orElseThrow();
         assertEquals(0, topic.getCommentCount());
         var userCnt = db.query("SELECT comment_count FROM bbs_user WHERE id = 1")
-            .one(Row.class).map(r -> r.longValue("comment_count")).orElse(-1L);
+            .one(Row.class).map(r -> r.asLong("comment_count")).orElse(-1L);
         assertEquals(0L, userCnt);
     }
 }

@@ -114,7 +114,7 @@ public class TopicService {
         var topic = topicRepo.findById(topicId)
             .orElseThrow(() -> new ServiceException("帖子不存在"));
         deleteInternal(topic);
-        eventBus.publish(new TopicDeletedEvent(operatorId, topic.getUserId(), topic.getId(), System.currentTimeMillis()));
+        eventBus.publishEvent(new TopicDeletedEvent(operatorId, topic.getUserId(), topic.getId(), System.currentTimeMillis()));
     }
 
     private void deleteInternal(Topic topic) {
@@ -192,6 +192,6 @@ public class TopicService {
         topic.setAcceptedCommentId(commentId);
         topic.setSolvedAt(System.currentTimeMillis());
         topicRepo.update(topic);
-        eventBus.publish(new QaAnswerAcceptedEvent(topic.getUserId(), topicId, commentId, System.currentTimeMillis()));
+        eventBus.publishEvent(new QaAnswerAcceptedEvent(topic.getUserId(), topicId, commentId, System.currentTimeMillis()));
     }
 }

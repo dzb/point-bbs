@@ -87,7 +87,7 @@ final class DataSeedHook implements RuntimeHook {
             inserted.ifPresent(row ->
                 db.execute(
                     "INSERT INTO bbs_user_role (user_id, role_id, create_time) VALUES (?,1,?)",
-                    row.longValue("id"),
+                    row.asLong("id"),
                     t
                 )
             );
@@ -133,7 +133,7 @@ final class DataSeedHook implements RuntimeHook {
         for (var r : rows) {
             db.execute(
                 "INSERT INTO bbs_role_permission (role_id, permission_id, create_time) VALUES (1,?,?)",
-                r.longValue("id"),
+                r.asLong("id"),
                 now
             );
         }

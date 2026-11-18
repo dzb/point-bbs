@@ -21,8 +21,8 @@ public class CommentRepository extends BaseRepository<Comment> {
         return query(
             "SELECT * FROM bbs_comment WHERE entity_type = $entityType AND entity_id = $entityId AND status = 1 " +
             "ORDER BY create_time ASC LIMIT $limit OFFSET $offset")
-            .param("entityType", entityType).param("entityId", entityId)
-            .param("limit", pageSize).param("offset", offset)
+            .bind("entityType", entityType).bind("entityId", entityId)
+            .bind("limit", pageSize).bind("offset", offset)
             .list(Comment.class);
     }
 
@@ -31,23 +31,23 @@ public class CommentRepository extends BaseRepository<Comment> {
         long offset = (long) (page - 1) * pageSize;
         return query(
             "SELECT * FROM bbs_comment WHERE user_id = $userId AND status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
-            .param("userId", userId).param("limit", pageSize).param("offset", offset)
+            .bind("userId", userId).bind("limit", pageSize).bind("offset", offset)
             .list(Comment.class);
     }
 
     public long countByEntity(String entityType, long entityId) {
         var row = query(
             "SELECT COUNT(*) AS cnt FROM bbs_comment WHERE entity_type = $entityType AND entity_id = $entityId AND status = 1")
-            .param("entityType", entityType).param("entityId", entityId)
+            .bind("entityType", entityType).bind("entityId", entityId)
             .one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+        return row != null ? row.asLong("cnt") : 0;
     }
 
     public long countByUserId(long userId) {
         var row = query(
             "SELECT COUNT(*) AS cnt FROM bbs_comment WHERE user_id = $userId AND status = 1")
-            .param("userId", userId)
+            .bind("userId", userId)
             .one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+        return row != null ? row.asLong("cnt") : 0;
     }
 }

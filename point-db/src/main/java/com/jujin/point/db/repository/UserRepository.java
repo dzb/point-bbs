@@ -19,17 +19,17 @@ public class UserRepository extends BaseRepository<User> {
 
     public Optional<User> findByEmail(String email) {
         return query("SELECT * FROM bbs_user WHERE email = $email AND status <> 0")
-            .param("email", email).one(User.class);
+            .bind("email", email).one(User.class);
     }
 
     public Optional<User> findByUsername(String username) {
         return query("SELECT * FROM bbs_user WHERE username = $username AND status <> 0")
-            .param("username", username).one(User.class);
+            .bind("username", username).one(User.class);
     }
 
     public Optional<User> findByPhone(String phone) {
         return query("SELECT * FROM bbs_user WHERE phone = $phone AND status <> 0")
-            .param("phone", phone).one(User.class);
+            .bind("phone", phone).one(User.class);
     }
 
 
@@ -39,13 +39,13 @@ public class UserRepository extends BaseRepository<User> {
     public List<User> findPage(int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
         return query("SELECT * FROM bbs_user WHERE status <> 0 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
-            .param("limit", pageSize).param("offset", offset).list(User.class);
+            .bind("limit", pageSize).bind("offset", offset).list(User.class);
     }
 
     public long countAll() {
         var row = query("SELECT COUNT(*) AS cnt FROM bbs_user WHERE status <> 0")
             .one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+        return row != null ? row.asLong("cnt") : 0;
     }
 
 

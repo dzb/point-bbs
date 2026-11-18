@@ -4,6 +4,7 @@ import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.DbModule;
 import com.jujin.freeway.db.Row;
 import com.jujin.freeway.db.schema.SchemaEntity;
+import com.jujin.freeway.http.HealthResult;
 import com.jujin.freeway.http.filter.HealthCheck;
 import com.jujin.freeway.ioc.Binder;
 import com.jujin.freeway.ioc.ModuleEx;
@@ -11,7 +12,6 @@ import com.jujin.freeway.ioc.RuntimeHook;
 import com.jujin.point.domain.entity.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Map;
 
 /**
  * Primary bbs module — contributes schema entities, health check and the seed
@@ -42,11 +42,12 @@ public class PointModule implements ModuleEx {
                 try {
                     var db = container.get(Database.class);
                     db.query("SELECT 1").list(Row.class);
-                    return Map.of("status", "ok", "db", "connected");
+                    return HealthResult.ok();
                 } catch (Exception e) {
-                    return Map.of("status", "degraded", "db", "unreachable");
+                    return HealthResult.unhealthy("db: unreachable");
                 }
             })
+            .id("point-db-health")
             .primary();
 
         // ── 3. Seed default roles & permissions (idempotent) ──

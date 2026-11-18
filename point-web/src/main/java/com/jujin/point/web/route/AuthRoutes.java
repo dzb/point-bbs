@@ -10,7 +10,7 @@ import com.jujin.point.web.filter.AuthFilter;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
 import com.jujin.freeway.db.Row;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.route.RouteHandler;
@@ -48,7 +48,7 @@ public class AuthRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var req = WebUtils.validatedBody(ctx, CreateUserRequest.class);
             if (!rateLimit(limiter, ctx, "signup")) return;
             var user = userSvc.signUp(req);
@@ -72,7 +72,7 @@ public class AuthRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var req = WebUtils.validatedBody(ctx, SignInRequest.class);
             if (!rateLimit(limiter, ctx, "signin")) return;
             var user = userSvc.signIn(req.loginName(), req.password());
@@ -92,7 +92,7 @@ public class AuthRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             ctx.setHeader("Set-Cookie", authSvc.clearSessionCookie());
             ctx.sendJson(200, ApiResponse.ok());
         }
@@ -108,7 +108,7 @@ public class AuthRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             // Login-CSRF protection: the state is stored in an HttpOnly,
             // SameSite=Lax cookie (sent back on the top-level callback
             // navigation) and verified in the callback.
@@ -134,7 +134,7 @@ public class AuthRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             String code = ctx.queryParam("code").orElse(null);
             if (code == null) { ctx.sendJson(400, ApiResponse.error("缺少code")); return; }
             String state = ctx.queryParam("state").orElse(null);
@@ -159,7 +159,7 @@ public class AuthRoutes {
             var spaOrigin = provider.spaOrigin();
             ctx.setHeader("Set-Cookie", authSvc.sessionCookie(token, 7 * 86400));
             ctx.setHeader("Location", spaOrigin + "/#/");
-            ctx.setStatus(302).output("Redirecting...".getBytes(StandardCharsets.UTF_8));
+            ctx.setStatus(302).body("Redirecting...".getBytes(StandardCharsets.UTF_8));
         }
 
         /** Find or create the third-party binding and issue a session token. */
@@ -212,7 +212,7 @@ public class AuthRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             String code = ctx.queryParam("code").orElse(null);
             if (code == null) { ctx.sendJson(400, ApiResponse.error("缺少code")); return; }
@@ -241,7 +241,7 @@ public class AuthRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             db.execute("DELETE FROM bbs_third_user WHERE user_id=? AND third_type=?", user.userId(), "github");
             ctx.sendJson(200, ApiResponse.ok());
@@ -251,7 +251,7 @@ public class AuthRoutes {
     // ──── shared helpers ────
 
     /** Extract the OAuth state cookie value from the request, or null. */
-    private static String oauthStateCookie(HttpContext ctx) {
+    private static String oauthStateCookie(HttpExchange ctx) {
         var cookie = ctx.header("Cookie").orElse(null);
         if (cookie == null) return null;
         for (String part : cookie.split(";")) {
@@ -264,7 +264,7 @@ public class AuthRoutes {
     }
 
     /** Apply auth rate limiting per client IP; responds 429 when exceeded. */
-    private static boolean rateLimit(LoginRateLimiter limiter, HttpContext ctx, String action)
+    private static boolean rateLimit(LoginRateLimiter limiter, HttpExchange ctx, String action)
         throws java.io.IOException {
         var ip = ctx.remoteAddress() != null ? ctx.remoteAddress() : "unknown";
         if (!limiter.allow(ip + ":" + action)) {

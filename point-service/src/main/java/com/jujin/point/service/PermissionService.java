@@ -49,7 +49,7 @@ public class PermissionService {
             """, userId).list(Row.class);
         Set<String> codes = new HashSet<>();
         for (var r : rows) {
-            String code = r.string("code");
+            String code = r.asString("code");
             if (code != null) codes.add(code);
         }
         return codes;

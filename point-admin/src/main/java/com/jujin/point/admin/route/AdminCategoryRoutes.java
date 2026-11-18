@@ -4,7 +4,7 @@ import com.jujin.point.admin.AdminAudit;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.domain.entity.Category;
 import com.jujin.point.service.CategoryService;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.route.RouteHandler;
@@ -34,7 +34,7 @@ public class AdminCategoryRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var tree = catSvc.getTree();
             ctx.sendJson(200, ApiResponse.ok(tree));
         }
@@ -50,7 +50,7 @@ public class AdminCategoryRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var req = ctx.bodyAsJson(Map.class);
             if (req == null || req.get("name") == null) {
                 ctx.sendJson(400, ApiResponse.error("缺少 name 参数"));
@@ -81,7 +81,7 @@ public class AdminCategoryRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
             var existing = catSvc.findById(id);
             if (existing.isEmpty()) { ctx.sendJson(404, ApiResponse.error("分类不存在")); return; }
@@ -114,7 +114,7 @@ public class AdminCategoryRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
             var existing = catSvc.findById(id);
             if (existing.isEmpty()) { ctx.sendJson(404, ApiResponse.error("分类不存在")); return; }

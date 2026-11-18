@@ -6,21 +6,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.jujin.freeway.boot.AppRuntime;
 import com.jujin.freeway.boot.FreewayApp;
-import com.jujin.freeway.cloud.discovery.Endpoint;
-import com.jujin.freeway.cloud.discovery.ServiceInstance;
-import com.jujin.freeway.cloud.discovery.ServiceRegistry;
+import com.jujin.freeway.cloud.discovery.StaticModule;
 import com.jujin.freeway.cloud.rpc.RemoteCaller;
 import com.jujin.freeway.http.HttpModule;
 import com.jujin.freeway.http.HttpServer;
 import com.jujin.point.boot.cloud.AuthRpcExportModule;
 import com.jujin.point.domain.dto.CurrentUser;
 import com.jujin.point.service.AuthService;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -29,10 +28,10 @@ import org.junit.jupiter.api.Test;
  * Cloud-readiness contract for the auth export:
  *
  * <ul>
- *   <li>mesh shape (base list + CloudModule + {@link AuthRpcExportModule}):
- *       a peer resolves a session token over {@code POST /rpc/auth/validateToken}
- *       — token in, identity out, including the wire-safe null for a bogus
- *       token;</li>
+ *   <li>cloud shape (base list + CloudModule + {@link StaticModule} +
+ *       {@link AuthRpcExportModule}): a peer resolves a session token over
+ *       {@code POST /rpc/auth/validateToken} — token in, identity out,
+ *       including the wire-safe null for a bogus token;</li>
  *   <li>monolith shape (the exact {@link PointApp} list, which is what local
  *       single-machine deployment runs): the RPC surface does not exist —
  *       {@code /rpc/...} is 404 — proving the cloud classes on the classpath
@@ -42,6 +41,8 @@ import org.junit.jupiter.api.Test;
 class AuthRpcExportTest {
 
     private static final String SERVICE_ID = "point-test";
+    private static final String STATIC_SERVICES =
+        "F2.cloud.discovery.static.services";
 
     private AppRuntime app;
 
@@ -53,24 +54,31 @@ class AuthRpcExportTest {
         }
         System.clearProperty(HttpModule.ConfigKeys.SERVER_PORT);
         System.clearProperty(HttpModule.ConfigKeys.SERVER_HOST);
+        System.clearProperty(STATIC_SERVICES);
         System.clearProperty("freeway.db.url");
         System.clearProperty("bbs.jwt.secret");
     }
 
-    private static AppRuntime startTree(boolean mesh) {
+    private static AppRuntime startTree(boolean cloud) {
         // Same explicit composition as PointApp/PointCloudApp: autoDiscovery
-        // is off, the declaration list is the whole story. Instances and
-        // class declarations mix on the chain directly (freeway 1.5.6).
+        // is off, the declaration list is the whole story.
         var launcher = FreewayApp.create(PointModules.base()).name("point-test");
-        if (mesh) {
+        if (cloud) {
             launcher.add(new AuthRpcExportModule());
             launcher.add(com.jujin.freeway.cloud.CloudModule.class);
+            // freeway 2.0.1: config-driven static discovery, no app module.
+            launcher.add(StaticModule.class);
         }
         return launcher.autoDiscovery(false).start();
     }
 
-    private static void setCommonConfig() {
-        System.setProperty(HttpModule.ConfigKeys.SERVER_PORT, "0");
+    /**
+     * Static config must name an explicit port before the HTTP server starts,
+     * so the cloud shape picks a free port up front instead of binding :0.
+     */
+    private static int setCommonConfig(boolean cloud) throws IOException {
+        int port = cloud ? freePort() : 0;
+        System.setProperty(HttpModule.ConfigKeys.SERVER_PORT, String.valueOf(port));
         System.setProperty(HttpModule.ConfigKeys.SERVER_HOST, "127.0.0.1");
         System.setProperty(
             "freeway.db.url",
@@ -78,23 +86,29 @@ class AuthRpcExportTest {
                 + ";NON_KEYWORDS=VALUE,KEY,LABEL,TYPE,LEVEL,INDEX"
         );
         System.setProperty("bbs.jwt.secret", "test-secret-not-a-placeholder-1234567890");
+        if (cloud) {
+            System.setProperty(
+                STATIC_SERVICES,
+                SERVICE_ID + "=http://127.0.0.1:" + port);
+        }
+        return port;
+    }
+
+    private static int freePort() throws IOException {
+        try (var socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        }
     }
 
     @Test
-    void meshShapeValidatesTokensOverRpc() throws Exception {
-        setCommonConfig();
+    void cloudShapeValidatesTokensOverRpc() throws Exception {
+        int port = setCommonConfig(true);
         app = startTree(true);
+        assertEquals(port, app.get(HttpServer.class).port(),
+            "the cloud shape binds the endpoint named in static discovery");
 
         var token = app.get(AuthService.class)
             .createToken(7L, "rpcuser", "avatar-url", Set.of("admin"));
-
-        // The test stands in for a real discovery backend: point the registry
-        // at this node's own endpoint (same move freeway-cloud's own wiring
-        // tests make).
-        var web = app.get(HttpServer.class);
-        app.get(ServiceRegistry.class)
-            .register(ServiceInstance.of(
-                SERVICE_ID, "i1", Endpoint.of("http", web.host(), web.port()), Map.of()));
 
         var current = app.get(RemoteCaller.class)
             .invoke(SERVICE_ID, "auth", "validateToken", List.of(token), CurrentUser.class);
@@ -109,7 +123,7 @@ class AuthRpcExportTest {
 
     @Test
     void monolithShapeHasNoRpcSurface() throws Exception {
-        setCommonConfig();
+        setCommonConfig(false);
         app = startTree(false); // exactly the PointApp composition
 
         var web = app.get(HttpServer.class);

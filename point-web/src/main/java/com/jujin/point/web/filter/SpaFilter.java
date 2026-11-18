@@ -1,6 +1,6 @@
 package com.jujin.point.web.filter;
 
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.filter.HttpFilter;
 import com.jujin.freeway.http.route.RouteHandler;
 
@@ -21,7 +21,7 @@ public class SpaFilter implements HttpFilter {
     private volatile boolean loaded;
 
     @Override
-    public void doFilter(HttpContext ctx, RouteHandler next) throws Exception {
+    public void doFilter(HttpExchange ctx, RouteHandler next) throws Exception {
         if (!"GET".equalsIgnoreCase(ctx.method()) || ctx.path().startsWith("/api")) {
             next.handle(ctx);
             return;
@@ -43,7 +43,7 @@ public class SpaFilter implements HttpFilter {
         }
         ctx.setHeader("Content-Type", "text/html; charset=utf-8");
         ctx.setHeader("Cache-Control", "no-cache");
-        ctx.setStatus(200).output(bytes);
+        ctx.setStatus(200).body(bytes);
     }
 
     private byte[] getIndexHtml() {

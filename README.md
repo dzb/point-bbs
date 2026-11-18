@@ -6,7 +6,7 @@
   <!-- badges -->
   <p>
     <img src="https://img.shields.io/badge/Java-25-%23ED8B00?logo=openjdk&logoColor=white" alt="Java 25"/>
-    <img src="https://img.shields.io/badge/Freeway-1.4.0-%238B5CF6?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij48cGF0aCBkPSJNOCAwbDggNC04IDQtOC00eiIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0wIDRsOCA0LTggNHoiIGZpbGw9IiNjNDNkM2QiLz48L3N2Zz4=&amp;label=Freeway&amp;labelColor=%23374151" alt="Freeway 1.4.0"/>
+    <img src="https://img.shields.io/badge/Freeway-2.0.1--SNAPSHOT-%238B5CF6?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij48cGF0aCBkPSJNOCAwbDggNC04IDQtOC00eiIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0wIDRsOCA0LTggNHoiIGZpbGw9IiNjNDNkM2QiLz48L3N2Zz4=&amp;label=Freeway&amp;labelColor=%23374151" alt="Freeway 2.0.1-SNAPSHOT"/>
     <img src="https://img.shields.io/badge/Vue_3-3.5-%234FC08D?logo=vue.js&logoColor=white" alt="Vue 3"/>
     <img src="https://img.shields.io/badge/JDK_25_+_Vue_3_+_H2-SPA_%2B_REST-%23c43d3d" alt="SPA+REST"/>
   </p>
@@ -69,20 +69,28 @@ The backend is built on [Freeway](https://github.com/dzb/freeway), a modern Java
 ### One-Command Deploy
 
 ```bash
-# Requires JDK 25
-mvn clean package -pl point-boot -am
+# Requires JDK 25; Node 22 only for --frontend
+./point.sh build --frontend
+./point.sh start          # http://localhost:8082
+./point.sh status
+```
 
-# Everything in one JAR — starts on http://localhost:8082
+`point.sh` handles the JAR lookup, PID file, logs and startup health check. See [DEPLOYMENT.md](DEPLOYMENT.md) for profiles, PostgreSQL, Nginx, cloud shape and upgrades.
+
+Prefer the manual route:
+
+```bash
+mvn clean package -pl point-boot -am
 java -jar point-boot/target/point-boot-*.jar
 ```
 
-That's it. The JAR contains:
+The JAR contains:
 - The REST API server (Freeway embedded HTTP engine)
 - The compiled frontend SPA (served as static resources)
 - The **H2 file-based database** engine (auto-creates `./data/bbs` on first run — data persists across restarts)
 - Schema migration and seed data (auto-run at startup)
 
-No Docker, no PostgreSQL, no nginx, no Node.js.
+The runtime needs no Docker, PostgreSQL, nginx or Node.js.
 
 ### Frontend Dev Mode (optional)
 
@@ -157,7 +165,7 @@ Each module builds on the one before it. `point-boot` is the entry point that wi
 Vue SPA ──HTTP/JSON──> REST API (point-web) ──> Service Layer ──> Repository ──> Database
 ```
 
-API responses follow `{ code: number, message: string, data: T }`. Paginated list endpoints return `{ items: [], page, pageSize, total }`.
+API success responses follow `{ code: number, message: string, data: T }`. A thrown failure is mapped by freeway as `{ error: string, code: string }` with the HTTP status as the numeric code; explicit handler rejections still use the app envelope, and the SPA normalizes `error` to `message`. Paginated list endpoints return `{ items: [], page, pageSize, total }`.
 
 ---
 
@@ -239,8 +247,8 @@ Configuration lives in `point-boot/src/main/resources/application.json` (overrid
 
 ```json
 {
-  "web.server.port": 8082,
-  "freeway.db.url": "jdbc:h2:file:./data/bbs",
+  "F2.http.server.port": 8082,
+  "F2.db.url": "jdbc:h2:file:./data/bbs",
   "bbs.jwt.secret": "change-me-in-production",
   "bbs.upload.dir": "./uploads",
   "bbs.oauth.github.client-id": "",

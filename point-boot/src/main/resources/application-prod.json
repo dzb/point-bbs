@@ -1,5 +1,5 @@
 {
-  "freeway": {
+  "F2": {
     "http": {
       "server": {
         "host": "0.0.0.0",
@@ -17,6 +17,13 @@
       "pool": {
         "max-size": 30,
         "min-idle": 5
+      }
+    },
+    "cloud": {
+      "discovery": {
+        "static": {
+          "services": "point=http://point.default.svc.cluster.local:8080"
+        }
       }
     }
   },

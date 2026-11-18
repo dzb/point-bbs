@@ -74,14 +74,14 @@ public class ServiceModule implements ModuleEx {
                 public void start(Container container) {
                     var bus = container.get(EventBus.class);
                     var handler = container.get(NotificationHandler.class);
-                    bus.subscribe(CommentCreatedEvent.class, handler::onCommentCreated);
-                    bus.subscribe(UserLikedEvent.class, handler::onUserLiked);
-                    bus.subscribe(UserFavoritedEvent.class, handler::onUserFavorited);
-                    bus.subscribe(UserFollowedEvent.class, handler::onUserFollowed);
-                    bus.subscribe(UserMentionedEvent.class, handler::onUserMentioned);
-                    bus.subscribe(QaAnswerAcceptedEvent.class, handler::onQaAnswerAccepted);
-                    bus.subscribe(TopicDeletedEvent.class, handler::onTopicDeleted);
-                    bus.subscribe(UserForbiddenEvent.class, handler::onUserForbidden);
+                    bus.subscribeEvent(CommentCreatedEvent.class, handler::onCommentCreated);
+                    bus.subscribeEvent(UserLikedEvent.class, handler::onUserLiked);
+                    bus.subscribeEvent(UserFavoritedEvent.class, handler::onUserFavorited);
+                    bus.subscribeEvent(UserFollowedEvent.class, handler::onUserFollowed);
+                    bus.subscribeEvent(UserMentionedEvent.class, handler::onUserMentioned);
+                    bus.subscribeEvent(QaAnswerAcceptedEvent.class, handler::onQaAnswerAccepted);
+                    bus.subscribeEvent(TopicDeletedEvent.class, handler::onTopicDeleted);
+                    bus.subscribeEvent(UserForbiddenEvent.class, handler::onUserForbidden);
                     log.info("notification subscribers registered on the event bus");
                 }
 

@@ -29,7 +29,7 @@ public class ArticleService {
     }
 
     public Optional<Article> findById(long id) {
-        return db.query("SELECT * FROM bbs_article WHERE id = $id AND status = 1").param("id", id).one(Article.class);
+        return db.query("SELECT * FROM bbs_article WHERE id = $id AND status = 1").bind("id", id).one(Article.class);
     }
 
     public Article create(long userId, String title, String summary, String content, String contentType) {
@@ -74,7 +74,7 @@ public class ArticleService {
     public List<Article> getRecent(int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
         return db.query("SELECT * FROM bbs_article WHERE status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
-            .param("limit", pageSize).param("offset", offset).list(Article.class);
+            .bind("limit", pageSize).bind("offset", offset).list(Article.class);
     }
 
     public void update(long id, UpdateArticleRequest req) {
@@ -122,19 +122,19 @@ public class ArticleService {
         long offset = (long) (page - 1) * pageSize;
         return db.query(
             "SELECT * FROM bbs_article WHERE user_id = $userId AND status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
-            .param("userId", userId).param("limit", pageSize).param("offset", offset).list(Article.class);
+            .bind("userId", userId).bind("limit", pageSize).bind("offset", offset).list(Article.class);
     }
 
     public long countRecent() {
         var row = db.query("SELECT COUNT(*) AS cnt FROM bbs_article WHERE status = 1")
             .one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+        return row != null ? row.asLong("cnt") : 0;
     }
 
     public long countByUser(long userId) {
         var row = db.query("SELECT COUNT(*) AS cnt FROM bbs_article WHERE user_id = $userId AND status = 1")
-            .param("userId", userId).one(Row.class).orElse(null);
-        return row != null ? row.longValue("cnt") : 0;
+            .bind("userId", userId).one(Row.class).orElse(null);
+        return row != null ? row.asLong("cnt") : 0;
     }
 
     public void delete(long userId, long articleId) {

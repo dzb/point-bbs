@@ -14,6 +14,12 @@ const client = axios.create({
 client.interceptors.response.use(
   (res) => res,
   (err) => {
+    // freeway 2.0 error bodies are { error, code }; expose the message under
+    // the same `message` field the SPA already reads.
+    const body = err.response?.data
+    if (body && body.error && !body.message) {
+      body.message = body.error
+    }
     if (err.response?.status === 401) {
       router.push('/login')
     }

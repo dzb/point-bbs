@@ -6,7 +6,7 @@ import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.domain.dto.PageRequest;
 import com.jujin.point.domain.dto.UserDtos.*;
 import com.jujin.point.service.UserService;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.route.RouteHandler;
@@ -38,7 +38,7 @@ public class AdminUserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var pr = PageRequest.of(
                 ctx.queryParam("page", Integer.class).orElse(1),
                 ctx.queryParam("pageSize", Integer.class).orElse(20)
@@ -59,7 +59,7 @@ public class AdminUserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
             var user = userSvc.findById(id);
             user.ifPresent(u -> u.setPassword(null));
@@ -75,7 +75,7 @@ public class AdminUserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
             var req = ctx.bodyAsJson(UpdateUserRequest.class);
             userSvc.updateUser(id, req);
@@ -93,7 +93,7 @@ public class AdminUserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
             if (userSvc.findById(id).isEmpty()) {
                 ctx.sendJson(404, ApiResponse.error("用户不存在"));
@@ -115,7 +115,7 @@ public class AdminUserRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
             if (userSvc.findById(id).isEmpty()) {
                 ctx.sendJson(404, ApiResponse.error("用户不存在"));

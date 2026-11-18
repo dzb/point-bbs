@@ -10,8 +10,8 @@ import com.jujin.point.admin.route.*;
 /**
  * Admin web module — contributes admin API routes with auth + admin filtering.
  *
- * freeway 1.3.8: add(Class) generates a canonical auto-ID (snake_name@package),
- * and before/after ordering uses these stable IDs instead of fragile string literals.
+ * Deferred contributions use canonical ids (snake_name@package) so ordering
+ * references stay stable instead of relying on string literals.
  *
  * Filter order:
  * 1. AuthFilter (from WebModule) — resolves CurrentUser
@@ -22,11 +22,11 @@ public class AdminWebModule implements ModuleEx {
     @Override
     public void bind(Binder binder) {
         // Admin authorization filter positioned after AuthFilter
-        // add(Class) generates stable canonical ID: "admin_filter@com.jujin.point.admin.filter"
-        // after(AuthFilter.class) references AuthFilter's canonical ID directly
+        // addDeferred(Class) generates the canonical id "admin_filter@com.jujin.point.admin.filter";
+        // after(...) points at AuthFilter's contribution id directly
         binder
             .contribute(HttpFilter.class)
-            .add(AdminFilter.class)
+            .addDeferred(AdminFilter.class)
             .after("auth_filter@com.jujin.point.web.filter");
 
         // Admin audit trail — AuthApi seam from the web layer, Orm from DbModule

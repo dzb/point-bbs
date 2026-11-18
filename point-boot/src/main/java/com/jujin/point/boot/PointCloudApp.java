@@ -2,23 +2,33 @@ package com.jujin.point.boot;
 
 import com.jujin.freeway.boot.FreewayApp;
 import com.jujin.freeway.cloud.CloudModule;
+import com.jujin.freeway.cloud.discovery.StaticModule;
 import com.jujin.point.boot.cloud.AuthRpcExportModule;
 
 /**
  * point in the cloud — the mesh deployment shape of the same application.
  *
  * Composes the identical base module list as {@link PointApp} plus the cloud
- * bundle and the auth export declaration: the node registers itself in
- * discovery and serves {@code POST /rpc/auth/validateToken} for peers.
- * Business code and the local {@code AuthApi} seam (in-process,
+ * bundle and the auth export declaration, serving
+ * {@code POST /rpc/auth/validateToken} for peers.
+ *
+ * <p>The cloud bundle does not install discovery. freeway 2.0.1's config-driven
+ * {@link StaticModule} supplies it: {@code F2.cloud.discovery.static.services}
+ * maps the service id to the platform's stable endpoint (a Kubernetes Service
+ * DNS name or another VIP). There is no registration or heartbeat — the
+ * platform Service owns membership. A deployment that needs dynamic membership
+ * installs {@code MemberModule} plus freeway-ext's Fleet or Consul adapter.</p>
+ *
+ * <p>Business code and the local {@code AuthApi} seam (in-process,
  * ScopedValue-based identity) are unchanged — cross-process peers ride RPC,
  * this process keeps answering "who is the current request" from its own
  * request thread.
  *
- * <p>Run with the point-boot fat jar:
- * {@code java -cp point-boot.jar com.jujin.point.boot.PointCloudApp}.
- * Discovery backend, service id and TLS are configured through
- * {@code freeway.cloud.*} keys — see freeway's docs/freeway-config.md.</p>
+ * <p>Run with the point-boot fat jar and a profile that defines static
+ * discovery: {@code java -cp point-boot.jar com.jujin.point.boot.PointCloudApp
+ * --F2.profile=prod}.
+ * Discovery and cloud runtime keys live under {@code F2.cloud.*} (canonical
+ * {@code freeway.cloud.*}).</p>
  */
 public class PointCloudApp {
 
@@ -37,6 +47,7 @@ public class PointCloudApp {
             .name("point")
             .add(new AuthRpcExportModule())
             .add(CloudModule.class)
+            .add(new StaticModule())
             .autoDiscovery(false) // Same explicit composition as the monolith
             .args(args)
             .start();

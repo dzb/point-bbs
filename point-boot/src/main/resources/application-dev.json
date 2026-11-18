@@ -1,5 +1,5 @@
 {
-  "freeway": {
+  "F2": {
     "http": {
       "server": {
         "port": 8082
@@ -9,6 +9,13 @@
       "url": "jdbc:h2:file:./data/bbs;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE,KEY,LABEL,TYPE,LEVEL,INDEX",
       "username": "sa",
       "password": ""
+    },
+    "cloud": {
+      "discovery": {
+        "static": {
+          "services": "point=http://localhost:8082"
+        }
+      }
     }
   },
   "bbs": {

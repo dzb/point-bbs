@@ -5,9 +5,10 @@ import com.jujin.point.service.AuthService;
 import com.jujin.point.service.PermissionService;
 import com.jujin.point.service.ServiceException;
 import com.jujin.point.service.UserService;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.filter.HttpFilter;
 import com.jujin.freeway.http.route.RouteHandler;
+import com.jujin.freeway.ioc.Container;
 
 /**
  * Authentication filter — extracts JWT token and resolves CurrentUser via ScopedValue.
@@ -17,14 +18,17 @@ import com.jujin.freeway.http.route.RouteHandler;
 public class AuthFilter implements HttpFilter {
     private static final ScopedValue<CurrentUser> CURRENT_USER = ScopedValue.newInstance();
 
-    private final AuthService authService;
-    private final PermissionService permissionService;
-    private final UserService userService;
+    private final Container container;
 
-    public AuthFilter(AuthService authService, PermissionService permissionService, UserService userService) {
-        this.authService = authService;
-        this.permissionService = permissionService;
-        this.userService = userService;
+    /**
+     * freeway 2.0 constructs deferred contributions before the extension
+     * stores are sealed; resolving the service graph here would realize
+     * EventBus while its subscriber store is still publishing. The filter
+     * therefore holds the container and resolves services on the request
+     * thread, after startup.
+     */
+    public AuthFilter(Container container) {
+        this.container = container;
     }
 
     public static CurrentUser currentUser() {
@@ -38,7 +42,10 @@ public class AuthFilter implements HttpFilter {
     }
 
     @Override
-    public void doFilter(HttpContext ctx, RouteHandler next) throws Exception {
+    public void doFilter(HttpExchange ctx, RouteHandler next) throws Exception {
+        var authService = container.get(AuthService.class);
+        var permissionService = container.get(PermissionService.class);
+        var userService = container.get(UserService.class);
         var token = extractToken(ctx);
         CurrentUser user = null;
         if (token != null) {
@@ -64,7 +71,7 @@ public class AuthFilter implements HttpFilter {
         });
     }
 
-    private String extractToken(HttpContext ctx) {
+    private String extractToken(HttpExchange ctx) {
         var auth = ctx.header("Authorization").orElse(null);
         if (auth != null) {
             if (auth.startsWith("Bearer ")) return auth.substring(7);

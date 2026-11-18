@@ -1,7 +1,7 @@
 package com.jujin.point.web;
 
 import com.jujin.freeway.commons.validation.BeanValidator;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.ValidationException;
 
 /** Shared helpers for route handlers. */
@@ -9,7 +9,7 @@ public final class WebUtils {
     private WebUtils() {}
 
     /** Read an integer query parameter, falling back to {@code defaultVal} when absent/invalid. */
-    public static int intParam(HttpContext ctx, String name, int defaultVal) {
+    public static int intParam(HttpExchange ctx, String name, int defaultVal) {
         return ctx.queryParam(name, Integer.class).orElse(defaultVal);
     }
 
@@ -20,7 +20,7 @@ public final class WebUtils {
      * handler body (validation failures surface as {@link ValidationException}
      * → the app's 400 error mapping).
      */
-    public static <T> T validatedBody(HttpContext ctx, Class<T> bodyType)
+    public static <T> T validatedBody(HttpExchange ctx, Class<T> bodyType)
         throws java.io.IOException {
         T body = ctx.bodyAsJson(bodyType);
         var result = BeanValidator.validate(body);

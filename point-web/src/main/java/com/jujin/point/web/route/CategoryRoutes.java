@@ -1,6 +1,6 @@
 package com.jujin.point.web.route;
 
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.route.RouteHandler;
@@ -23,7 +23,7 @@ public class CategoryRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var cats = svc.findAllActive();
             ctx.sendJson(200, ApiResponse.ok(cats));
         }

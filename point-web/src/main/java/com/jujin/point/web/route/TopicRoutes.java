@@ -4,7 +4,7 @@ import static com.jujin.point.web.WebUtils.intParam;
 
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Row;
-import com.jujin.freeway.http.HttpContext;
+import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
 import com.jujin.freeway.http.route.RouteHandler;
@@ -68,7 +68,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
             var result = topicSvc.getRecentTopics(
@@ -90,7 +90,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
@@ -104,7 +104,7 @@ public class TopicRoutes {
                 )
                 .list(Row.class)
                 .stream()
-                .map(r -> r.longValue("other_id"))
+                .map(r -> r.asLong("other_id"))
                 .toList();
             if (followedIds.isEmpty()) {
                 ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(List.of(), page, pageSize, 0)));
@@ -138,7 +138,7 @@ public class TopicRoutes {
                     countParams
                 )
                 .one(Row.class)
-                .map(r -> r.longValue("cnt"))
+                .map(r -> r.asLong("cnt"))
                 .orElse(0L);
             var enriched = enricher.enrichTopics(tweets);
             ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(enriched, page, pageSize, total)));
@@ -157,7 +157,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
             var pr = PageRequest.of(page, pageSize);
@@ -185,7 +185,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             int limit = Math.min(Math.max(intParam(ctx, "limit", 10), 1), 50);
             var topics = topicSvc.getRecommended(limit);
             ctx.sendJson(
@@ -205,7 +205,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             String q = ctx.queryParam("q").orElse(null);
             if (q == null || q.isBlank()) {
                 ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(List.of(), 1, 30, 0)));
@@ -232,7 +232,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var t = topicSvc
                 .findById(ctx.pathVar("id", Long.class).orElse(0L))
                 .orElse(null);
@@ -258,7 +258,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var req = WebUtils.validatedBody(ctx, CreateTopicRequest.class);
             var user = AuthFilter.requireUser();
             var t = topicSvc.create(user.userId(), req);
@@ -279,7 +279,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var req = WebUtils.validatedBody(ctx, UpdateTopicRequest.class);
             var user = AuthFilter.requireUser();
             long id = ctx.pathVar("id", Long.class).orElse(0L);
@@ -299,7 +299,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             topicSvc.delete(
                 user.userId(),
@@ -324,7 +324,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             long topicId = ctx.pathVar("id", Long.class).orElse(0L);
             int page = intParam(ctx, "page", 1);
             int pageSize = intParam(ctx, "pageSize", 30);
@@ -356,7 +356,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var req = WebUtils.validatedBody(ctx, CreateCommentRequest.class);
             var user = AuthFilter.requireUser();
             long topicId = ctx.pathVar("id", Long.class).orElse(0L);
@@ -384,7 +384,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             commentSvc.delete(
                 user.userId(),
@@ -402,7 +402,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             long commentId = ctx
                 .pathVar("commentId", Long.class)
@@ -424,7 +424,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             likeSvc.unlike(
                 user.userId(),
@@ -445,7 +445,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             long topicId = ctx.pathVar("id", Long.class).orElse(0L);
             boolean liked = likeSvc.like(user.userId(), "topic", topicId);
@@ -461,7 +461,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             likeSvc.unlike(
                 user.userId(),
@@ -480,7 +480,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.currentUser();
             boolean liked =
                 user != null &&
@@ -503,7 +503,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             favSvc.add(
                 user.userId(),
@@ -522,7 +522,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
             favSvc.remove(
                 user.userId(),
@@ -541,7 +541,7 @@ public class TopicRoutes {
         }
 
         @Override
-        public void handle(HttpContext ctx) throws Exception {
+        public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.currentUser();
             boolean f =
                 user != null &&
