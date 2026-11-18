@@ -167,15 +167,14 @@
                 </div>
               </div>
               <div
-                v-for="c in comments"
+                v-for="c in thread.items"
                 :key="c.id"
-                class="mb-2"
                 :data-comment-id="c.id"
-                :class="railClass(rails, c.id)"
-                :style="railStyle(rails, c.id, RAIL_GEOM)"
+                :class="['ct-row', 'mb-2', railClass(thread, c.id), { 'ct-sep': hasSeparator(thread, c.id) }]"
+                :style="railStyle(thread, c.id, RAIL_GEOM)"
               >
                 <div class="d-flex">
-                  <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0 ct-avatar" />
+                  <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="24" class="mr-2 flex-shrink-0" />
                   <div style="min-width: 0">
                     <span style="font-size: 13px; font-weight: 500; color: var(--paper-text); margin-right: 6px"
                       >{{ c.user?.nickname
@@ -222,7 +221,7 @@ import { useAuthStore } from '@/stores/auth'
 import UserAvatar from './UserAvatar.vue'
 import client from '@/api/client'
 import { renderMarkdown, md } from '@/utils/markdown'
-import { markRails, railClass, railStyle, type RailGeom } from '@/utils/thread'
+import { hasSeparator, layoutThread, railClass, railStyle, type RailGeom } from '@/utils/thread'
 import MentionTextarea from './MentionTextarea.vue'
 import type { Topic, Comment } from '@/types'
 
@@ -231,15 +230,12 @@ const auth = useAuthStore()
 const props = defineProps<{ moment: Topic }>()
 const emit = defineEmits<{ 'toggle-like': [moment: Topic]; 'delete-moment': [id: number] }>()
 const isOwner = computed(() => auth.user?.id === props.moment.userId)
-// X-style conversation line: a reply hangs off the quoted comment when the
-// parent is visible in the loaded list — no quote block needed.
+// X-style conversation lines: comments ordered depth-first so each
+// conversation is contiguous, one line from the root's avatar down.
+const thread = computed(() => layoutThread(comments.value))
 const commentById = computed(() => new Map(comments.value.map((c) => [c.id, c])))
-const rails = computed(() => markRails(comments.value))
-// Compact gauge: lane 0 at the avatar center, extra lanes step right.
-const RAIL_GEOM: RailGeom = { base: 12, step: 10, startTop: 12 }
-function isThreaded(c: Comment) {
-  return c.quoteId > 0 && commentById.value.has(c.quoteId)
-}
+// Compact gauge: 10px gutter left of the 24px avatar holds the line.
+const RAIL_GEOM: RailGeom = { gutter: 10, width: 2, headTop: 12 }
 function replyToName(c: Comment): string | null {
   if (c.quoteId <= 0) return null
   return commentById.value.get(c.quoteId)?.user?.nickname || null
@@ -653,31 +649,23 @@ async function confirmDelete() {
 .mc-comment-reply:hover {
   color: var(--paper-accent);
 }
-/* Conversation rails (compact gauge): one lane per top-level thread.
-   Avatars stay above the rails. */
-.ct-rails {
+/* Conversation line (compact gauge): one per conversation, from the root's
+   avatar centre down through the whole (contiguous) subtree. */
+/* The line lives in the gutter left of the avatar (X style). */
+.ct-row {
+  padding-left: var(--gutter, 10px);
+}
+.ct-rail {
   position: relative;
 }
-.ct-rails::before,
-.ct-rails-2::after {
+.ct-rail::before {
   content: '';
   position: absolute;
+  left: var(--rx);
+  top: var(--rt, 0);
+  bottom: 0;
   width: 2px;
   background: var(--paper-border);
-  bottom: 0;
-}
-.ct-rails::before {
-  left: var(--rx1);
-  top: var(--rt1, 0);
-}
-.ct-rails-2::after {
-  left: var(--rx2);
-  top: var(--rt2, 0);
-}
-.ct-rails .ct-avatar {
-  position: relative;
-  z-index: 1;
-  align-self: flex-start;
 }
 .viewer-composer {
   margin-bottom: 12px;

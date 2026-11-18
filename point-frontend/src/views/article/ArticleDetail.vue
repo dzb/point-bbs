@@ -95,16 +95,14 @@
           </div>
         </div>
         <div
-          v-for="c in comments"
+          v-for="c in thread.items"
           :key="c.id"
           :data-comment-id="c.id"
-          :class="railClass(rails, c.id)"
-          :style="railStyle(rails, c.id, RAIL_GEOM)"
-          class="py-3"
-          style="border-top: 1px solid var(--paper-border)"
+          :class="['ct-row', 'py-3', railClass(thread, c.id), { 'ct-sep': hasSeparator(thread, c.id) }]"
+          :style="railStyle(thread, c.id, RAIL_GEOM)"
         >
           <div class="d-flex">
-            <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" class="mr-3 flex-shrink-0 mt-1 ct-avatar" />
+            <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" class="mr-3 flex-shrink-0 mt-1" />
             <div class="flex-grow-1">
               <div class="d-flex align-center mb-1">
                 <span style="font-size: 14px; color: var(--paper-text); font-weight: 500">{{ c.user?.nickname
@@ -156,7 +154,7 @@ import ImageViewer from '@/components/ImageViewer.vue'
 import MentionTextarea from '@/components/MentionTextarea.vue'
 import LoadMore from '@/components/LoadMore.vue'
 import { renderMarkdown } from '@/utils/markdown'
-import { markRails, railClass, railStyle, type RailGeom } from '@/utils/thread'
+import { hasSeparator, layoutThread, railClass, railStyle, type RailGeom } from '@/utils/thread'
 
 const route = useRoute()
 const router = useRouter()
@@ -328,12 +326,14 @@ function replyTo(c: any) {
   el?.focus()
 }
 
-// X-style conversation: parent nickname for the 回复 @x label,
-// plus rail marks so a reply links to its real parent.
+// X-style conversation lines: comments ordered depth-first so each
+// conversation is contiguous, one line from the root's avatar down.
+const thread = computed(() => layoutThread(comments.value))
+// Parent nickname for the 回复 @x label.
 const commentById = computed(() => new Map(comments.value.map((c: any) => [c.id, c])))
-const rails = computed(() => markRails(comments.value))
-// Lane 0 at the avatar center; extra conversations step right git-graph style.
-const RAIL_GEOM: RailGeom = { base: 16, step: 12, startTop: 16 }
+// 12px gutter left of the avatar holds the line; head row starts level
+// with the avatar centre (py-3 12px + mt-1 4px + radius 16px).
+const RAIL_GEOM: RailGeom = { gutter: 12, width: 2, headTop: 32 }
 function replyToName(c: any): string | null {
   if (!c.quoteId) return null
   return commentById.value.get(c.quoteId)?.user?.nickname || null
@@ -442,31 +442,27 @@ function onContentClick(e: MouseEvent) {
 .comment-body :deep(img) {
   max-width: 100%;
 }
-/* Conversation rails: one lane per top-level thread, so overlapping
-   pairs draw as distinct parallel lines instead of one merged line.
-   Avatars stay above the rails. */
-.ct-rails {
+/* X separates conversations, not replies: the rule sits on the row that
+   opens a group, so members of one conversation run together. */
+.ct-sep {
+  border-top: 1px solid var(--paper-border);
+}
+/* Conversation line: one per conversation, from the root's avatar centre
+   down through the whole (contiguous) subtree. */
+/* The line lives in the gutter left of the avatar (X style). */
+.ct-row {
+  padding-left: var(--gutter, 12px);
+}
+.ct-rail {
   position: relative;
 }
-.ct-rails::before,
-.ct-rails-2::after {
+.ct-rail::before {
   content: '';
   position: absolute;
+  left: var(--rx);
+  top: var(--rt, 0);
+  bottom: 0;
   width: 2px;
   background: var(--paper-border);
-  bottom: 0;
-}
-.ct-rails::before {
-  left: var(--rx1);
-  top: var(--rt1, 0);
-}
-.ct-rails-2::after {
-  left: var(--rx2);
-  top: var(--rt2, 0);
-}
-.ct-rails .ct-avatar {
-  position: relative;
-  z-index: 1;
-  align-self: flex-start;
 }
 </style>

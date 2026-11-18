@@ -110,18 +110,15 @@
         </div>
 
         <div
-          v-for="c in comments"
+          v-for="c in thread.items"
           :key="c.id"
           :data-comment-id="c.id"
-          :class="railClass(rails, c.id)"
-          :style="railStyle(rails, c.id, RAIL_GEOM)"
+          :class="['ct-row', 'py-3', railClass(thread, c.id), { 'ct-sep': hasSeparator(thread, c.id) }]"
+          :style="railStyle(thread, c.id, RAIL_GEOM)"
         >
-          <div
-            :class="isThreaded(c) ? 'threaded-comment' : 'py-3'"
-            :style="isThreaded(c) ? '' : 'border-top:1px solid var(--paper-border)'"
-          >
+          <div>
             <div class="d-flex">
-              <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3 ct-avatar">
+              <router-link :to="`/users/${c.user?.id}`" class="flex-shrink-0 mr-3">
                 <UserAvatar :src="c.user?.avatar" :name="c.user?.nickname" :size="32" />
               </router-link>
               <div>
@@ -202,7 +199,7 @@ import ImageViewer from '@/components/ImageViewer.vue'
 import MentionTextarea from '@/components/MentionTextarea.vue'
 import LoadMore from '@/components/LoadMore.vue'
 import { renderMarkdown } from '@/utils/markdown'
-import { markRails, railClass, railStyle, type RailGeom } from '@/utils/thread'
+import { hasSeparator, layoutThread, railClass, railStyle, type RailGeom } from '@/utils/thread'
 import type { Comment, Topic } from '@/types'
 import { topicAsideState } from '@/composables/useTopicAside'
 
@@ -428,15 +425,14 @@ async function postComment() {
 function formatTime(ts: number) {
   return ts ? new Date(ts).toLocaleString('zh-CN') : ''
 }
-// X-style conversation line: a reply hangs off the quoted comment when the
-// parent is visible in the loaded list — no quote block needed.
+// X-style conversation lines: comments are ordered depth-first so each
+// conversation's subtree is contiguous, then one line runs from the root's
+// avatar through the whole subtree.
+const thread = computed(() => layoutThread(comments.value))
 const commentById = computed(() => new Map(comments.value.map((c) => [c.id, c])))
-const rails = computed(() => markRails(comments.value))
-// Lane 0 at the avatar center; extra conversations step right git-graph style.
-const RAIL_GEOM: RailGeom = { base: 16, step: 12, startTop: 16 }
-function isThreaded(c: any) {
-  return c.quoteId > 0 && commentById.value.has(c.quoteId)
-}
+// 12px gutter left of the avatar holds the line; head row starts level
+// with the avatar centre (py-3 12px + avatar radius 16px).
+const RAIL_GEOM: RailGeom = { gutter: 12, width: 2, headTop: 28 }
 function replyToName(c: any): string | null {
   if (c.quoteId <= 0) return null
   return commentById.value.get(c.quoteId)?.user?.nickname || null
@@ -484,36 +480,30 @@ function onContentClick(e: MouseEvent) {
 .topic-content :deep(li) {
   margin: 0.2em 0;
 }
-.threaded-comment {
-  padding-top: 0;
-  padding-bottom: 0;
+/* X separates conversations, not replies: the rule sits on the row that
+   opens a group, so members of one conversation run together. */
+.ct-sep {
+  border-top: 1px solid var(--paper-border);
 }
-/* Conversation rails: one lane per top-level thread, so overlapping
-   pairs draw as distinct parallel lines instead of one merged line.
-   Avatars stay above the rails. */
-.ct-rails {
+/* Conversation line: one per conversation, from the root's avatar centre
+   down through the whole (contiguous) subtree. The head row starts at the
+   avatar centre so the line never crosses the avatar above it. */
+/* The line lives in the gutter left of the avatar (X style), so every
+   row reserves the same space and avatars stay on a common left edge. */
+.ct-row {
+  padding-left: var(--gutter, 12px);
+}
+.ct-rail {
   position: relative;
 }
-.ct-rails::before,
-.ct-rails-2::after {
+.ct-rail::before {
   content: '';
   position: absolute;
+  left: var(--rx);
+  top: var(--rt, 0);
+  bottom: 0;
   width: 2px;
   background: var(--paper-border);
-  bottom: 0;
-}
-.ct-rails::before {
-  left: var(--rx1);
-  top: var(--rt1, 0);
-}
-.ct-rails-2::after {
-  left: var(--rx2);
-  top: var(--rt2, 0);
-}
-.ct-rails .ct-avatar {
-  position: relative;
-  z-index: 1;
-  align-self: flex-start;
 }
 .comment-body {
   font-size: 14px;
