@@ -100,6 +100,7 @@ If you're working on the frontend separately:
 cd point-frontend
 npm run dev            # http://localhost:3000, API proxied to :8082
 npm run build          # Production build → point-boot serves it
+npm run test:e2e       # Playwright E2E (needs the backend jar built first)
 ```
 
 ---
@@ -116,6 +117,8 @@ point-bbs/
 ├── point-web/            # Public REST API routes
 ├── point-admin/          # Admin panel REST API routes
 ├── point-frontend/       # Vue 3 SPA
+│   ├── DESIGN.md         # Full design system documentation
+│   ├── e2e/              # Playwright E2E specs
 │   └── src/
 │       ├── api/          # HTTP client + API calls
 │       ├── components/   # Shared UI components
@@ -131,8 +134,10 @@ point-bbs/
 │           ├── home/     # Home / Explore / Following / Search
 │           ├── topic/    # Topic pages
 │           └── user/     # Profile / Messages / Favorites
+├── tools/                # smoke-api.sh, seed.py, sync-frontend.sh
+├── point.sh              # build / start / stop / restart / logs
 ├── TODO.md               # Remaining unconnected features
-├── DESIGN.md             # Full design system documentation
+├── DEPLOYMENT.md         # Deployment, profiles, cloud mode
 └── AGENTS.md             # AI workspace instructions
 ```
 
