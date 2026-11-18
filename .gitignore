@@ -19,3 +19,6 @@ package-lock.json
 dependency-reduced-pom.xml
 ._*
 output/
+point-frontend/test-results/
+point-frontend/playwright-report/
+point-frontend/blob-report/
