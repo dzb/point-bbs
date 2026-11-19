@@ -1,10 +1,6 @@
 package com.jujin.point.boot;
 
-import com.jujin.freeway.boot.FreewayApp;
-import com.jujin.freeway.cloud.CloudModule;
 import com.jujin.freeway.cloud.discovery.StaticModule;
-import com.jujin.point.boot.cloud.AuthRpcExportModule;
-import com.jujin.point.boot.cloud.CloudHealthModule;
 
 /**
  * point in the cloud — the mesh deployment shape of the same application.
@@ -34,36 +30,8 @@ import com.jujin.point.boot.cloud.CloudHealthModule;
 public class PointCloudApp {
 
     public static void main(String[] args) throws Exception {
-        java.nio.file.Files.createDirectories(java.nio.file.Path.of("logs"));
-        var logConfig = PointCloudApp.class
-            .getClassLoader()
-            .getResource("logging.properties");
-        if (logConfig != null) {
-            java.util.logging.LogManager.getLogManager().readConfiguration(
-                logConfig.openStream()
-            );
-        }
-
-        var runtime = FreewayApp.create(PointModules.base())
-            .name("point")
-            .add(new AuthRpcExportModule())
-            .add(new CloudHealthModule())
-            .add(CloudModule.class)
-            .add(new StaticModule())
-            .autoDiscovery(false) // Same explicit composition as the monolith
-            .args(args)
-            .start();
-
-        var port = runtime
-            .get(com.jujin.freeway.ioc.symbol.SymbolSource.class)
-            .resolve("freeway.http.server.port", null);
-        System.out.println(
-            "point (cloud shape) running on http://localhost:" +
-            (port != null ? port : 8082) +
-            " — auth exported as /rpc/auth/validateToken"
-        );
-
-        // Keep JVM alive — freeway HTTP acceptor threads are daemon.
-        new java.util.concurrent.CountDownLatch(1).await();
+        // Same base list as the monolith plus the cloud bundle, the auth
+        // export and the database readiness contributor (see PointLauncher).
+        PointLauncher.run(args, true);
     }
 }

@@ -11,11 +11,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * File upload service — local filesystem storage.
  */
 public class UploadService {
+    private static final Logger log = LoggerFactory.getLogger(UploadService.class);
+
     private final Database db;
     private final Orm orm;
     private final Path uploadDir;
@@ -131,6 +135,22 @@ public class UploadService {
      */
     public void recordDownload(String attachmentId) {
         db.execute("UPDATE bbs_attachment SET download_count = download_count + 1 WHERE id = ?", attachmentId);
+    }
+
+    /**
+     * Download audit trail: counter plus one log row, anonymous recorded as
+     * user 0. Never throws — an audit failure must not break the download.
+     */
+    public void recordDownloadLog(String attachmentId, Long viewerUserId) {
+        try {
+            orm.insert(new com.jujin.point.domain.entity.AttachmentDownloadLog(
+                viewerUserId != null ? viewerUserId : 0L,
+                attachmentId,
+                System.currentTimeMillis()
+            ));
+        } catch (Exception e) {
+            log.warn("download audit insert failed for attachment {}: {}", attachmentId, e.getMessage());
+        }
     }
 
     /** Allowed image types for direct display */

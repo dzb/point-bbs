@@ -5,8 +5,10 @@ import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
 import com.jujin.freeway.db.Row;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * User repository providing common queries beyond base CRUD.
@@ -35,6 +37,20 @@ public class UserRepository extends BaseRepository<User> {
 
 
 
+
+    /**
+     * Display projections for a set of ids — one IN query, no N+1. The empty
+     * set short-circuits because {@code IN ()} is a syntax error on both
+     * supported dialects.
+     */
+    public List<User> findSummariesByIds(Collection<Long> ids) {
+        if (ids.isEmpty()) return List.of();
+        var placeholders = ids.stream().map(id -> "?").collect(Collectors.joining(","));
+        return query(
+            "SELECT id, username, nickname, avatar FROM bbs_user WHERE id IN (" + placeholders + ")",
+            ids.toArray())
+            .list(User.class);
+    }
 
     public List<User> findPage(int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;

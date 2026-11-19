@@ -2,8 +2,6 @@ package com.jujin.point.web.route;
 
 import static com.jujin.point.web.WebUtils.intParam;
 
-import com.jujin.freeway.db.Database;
-import com.jujin.freeway.db.Row;
 import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
@@ -81,97 +79,44 @@ public class TopicRoutes {
     }
 
     public static final class FollowingFeedHandler implements RouteHandler {
-        private final Database db;
-        private final ResponseEnricher enricher;
-
-        public FollowingFeedHandler(Database db, ResponseEnricher enricher) {
-            this.db = db;
-            this.enricher = enricher;
-        }
-
-        @Override
-        public void handle(HttpExchange ctx) throws Exception {
-            var user = AuthFilter.requireUser();
-            int page = intParam(ctx, "page", 1);
-            int pageSize = intParam(ctx, "pageSize", 30);
-            var pr = PageRequest.of(page, pageSize);
-            int offset = (int) pr.offset();
-            // Get followed user IDs
-            var followedIds = db
-                .query(
-                    "SELECT other_id FROM bbs_user_follow WHERE user_id = ? AND status = 1",
-                    user.userId()
-                )
-                .list(Row.class)
-                .stream()
-                .map(r -> r.asLong("other_id"))
-                .toList();
-            if (followedIds.isEmpty()) {
-                ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(List.of(), page, pageSize, 0)));
-                return;
-            }
-            var placeholders = followedIds
-                .stream()
-                .map(id -> "?")
-                .reduce((a, b) -> a + "," + b)
-                .orElse("?");
-            var params = new Object[followedIds.size() + 2];
-            for (int i = 0; i < followedIds.size(); i++) params[i] =
-                followedIds.get(i);
-            params[followedIds.size()] = pageSize;
-            params[followedIds.size() + 1] = offset;
-            var tweets = db
-                .query(
-                    "SELECT * FROM bbs_topic WHERE user_id IN (" +
-                        placeholders +
-                        ") AND status = 1 AND type = 1 ORDER BY create_time DESC LIMIT ? OFFSET ?",
-                    params
-                )
-                .list(com.jujin.point.domain.entity.Topic.class);
-            var countParams = new Object[followedIds.size()];
-            for (int i = 0; i < followedIds.size(); i++) countParams[i] = followedIds.get(i);
-            var total = db
-                .query(
-                    "SELECT COUNT(*) AS cnt FROM bbs_topic WHERE user_id IN (" +
-                        placeholders +
-                        ") AND status = 1 AND type = 1",
-                    countParams
-                )
-                .one(Row.class)
-                .map(r -> r.asLong("cnt"))
-                .orElse(0L);
-            var enriched = enricher.enrichTopics(tweets);
-            ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(enriched, page, pageSize, total)));
-        }
-    }
-
-    public static final class MomentsHandler implements RouteHandler {
-        private final Database db;
         private final TopicService topicSvc;
         private final ResponseEnricher enricher;
 
-        public MomentsHandler(Database db, TopicService topicSvc, ResponseEnricher enricher) {
-            this.db = db;
+        public FollowingFeedHandler(TopicService topicSvc, ResponseEnricher enricher) {
             this.topicSvc = topicSvc;
             this.enricher = enricher;
         }
 
         @Override
         public void handle(HttpExchange ctx) throws Exception {
-            int page = intParam(ctx, "page", 1);
-            int pageSize = intParam(ctx, "pageSize", 30);
-            var pr = PageRequest.of(page, pageSize);
-            int offset = (int) pr.offset();
-            var tweets = db
-                .query(
-                    "SELECT * FROM bbs_topic WHERE type = 1 AND status = 1 ORDER BY create_time DESC LIMIT ? OFFSET ?",
-                    pageSize,
-                    offset
-                )
-                .list(com.jujin.point.domain.entity.Topic.class);
-            var enriched = enricher.enrichTopics(tweets);
-            ctx.sendJson(200, ApiResponse.ok(
-                ApiResponse.page(enriched, page, pageSize, topicSvc.countByType(1))));
+            var user = AuthFilter.requireUser();
+            var result = topicSvc.getFollowingFeed(
+                user.userId(),
+                PageRequest.of(intParam(ctx, "page", 1), intParam(ctx, "pageSize", 30))
+            );
+            ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(
+                enricher.enrichTopics(result.items()),
+                result.page(), result.pageSize(), result.total())));
+        }
+    }
+
+    public static final class MomentsHandler implements RouteHandler {
+        private final TopicService topicSvc;
+        private final ResponseEnricher enricher;
+
+        public MomentsHandler(TopicService topicSvc, ResponseEnricher enricher) {
+            this.topicSvc = topicSvc;
+            this.enricher = enricher;
+        }
+
+        @Override
+        public void handle(HttpExchange ctx) throws Exception {
+            var result = topicSvc.getMoments(
+                PageRequest.of(intParam(ctx, "page", 1), intParam(ctx, "pageSize", 30))
+            );
+            ctx.sendJson(200, ApiResponse.ok(ApiResponse.page(
+                enricher.enrichTopics(result.items()),
+                result.page(), result.pageSize(), result.total())));
         }
     }
 

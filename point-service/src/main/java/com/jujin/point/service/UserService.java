@@ -10,6 +10,7 @@ import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Row;
 import com.jujin.freeway.ioc.event.EventBus;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,11 +26,18 @@ public class UserService {
 
     private final Database db;
     private final UserRepository userRepo;
+    private final com.jujin.point.db.repository.ThirdUserRepository thirdUserRepo;
     private final EventBus eventBus;
 
-    public UserService(Database db, UserRepository userRepo, EventBus eventBus) {
+    public UserService(
+        Database db,
+        UserRepository userRepo,
+        com.jujin.point.db.repository.ThirdUserRepository thirdUserRepo,
+        EventBus eventBus
+    ) {
         this.db = db;
         this.userRepo = userRepo;
+        this.thirdUserRepo = thirdUserRepo;
         this.eventBus = eventBus;
     }
 
@@ -60,6 +68,11 @@ public class UserService {
 
     public List<User> searchByPrefix(String prefix, int limit) {
         return userRepo.searchByPrefix(prefix, limit);
+    }
+
+    /** Display projections for a set of ids — the feed enricher's batch read. */
+    public List<User> findSummariesByIds(Collection<Long> ids) {
+        return userRepo.findSummariesByIds(ids);
     }
 
     public User signUp(CreateUserRequest req) {
@@ -125,6 +138,94 @@ public class UserService {
         }
 
         return user;
+    }
+
+    /**
+     * Find-or-create the account bound to a third-party identity.
+     *
+     * <p>The binding and the account are created in one transaction. A unique
+     * {@code (open_id, third_type)} violation means a concurrent callback won
+     * the race, so the catch resolves the binding they created instead of
+     * failing the login.</p>
+     *
+     * @return the bound user, or empty when this identity cannot be resolved
+     */
+    public Optional<User> loginWithThirdParty(
+        String provider,
+        String openId,
+        String nickname,
+        String avatar
+    ) {
+        var existing = thirdUserRepo.findByOpenIdAndType(openId, provider);
+        if (existing.isPresent()) {
+            return userRepo.findById(existing.get().getUserId());
+        }
+
+        var now = System.currentTimeMillis();
+        var user = new User();
+        user.setNickname(nickname);
+        user.setAvatar(avatar);
+        user.setEmailVerified(false);
+        user.setStatus(1);
+        user.setLevel(1);
+        user.setCreateTime(now);
+        user.setUpdateTime(now);
+        try {
+            db.transaction(() -> {
+                // email_verified is NOT NULL in the schema: a third-party
+                // account has no verified local email, but the column still
+                // needs an explicit value.
+                var created = db.execute(
+                    "INSERT INTO bbs_user (nickname, avatar, email_verified, score, exp, level, status, " +
+                    "topic_count, comment_count, follow_count, fans_count, forbidden_end_time, " +
+                    "create_time, update_time) " +
+                    "VALUES (?,?,false,0,0,1,1,0,0,0,0,0,?,?)",
+                    nickname, avatar, now, now);
+                if (created.hasGeneratedKey()) {
+                    user.setId(created.longKey());
+                }
+                thirdUserRepo.insert(thirdUser(user.getId(), provider, openId, nickname, avatar, now));
+            });
+            return Optional.of(user);
+        } catch (com.jujin.freeway.db.SqlException race) {
+            return thirdUserRepo.findByOpenIdAndType(openId, provider)
+                .flatMap(binding -> userRepo.findById(binding.getUserId()));
+        }
+    }
+
+    /** Bind a third-party identity to an existing account; re-binding is a no-op. */
+    public void bindThirdParty(
+        long userId,
+        String provider,
+        String openId,
+        String nickname,
+        String avatar
+    ) {
+        if (thirdUserRepo.exists(openId, provider)) return;
+        thirdUserRepo.insert(thirdUser(userId, provider, openId, nickname, avatar, System.currentTimeMillis()));
+    }
+
+    public void unbindThirdParty(long userId, String provider) {
+        thirdUserRepo.deleteByUserIdAndType(userId, provider);
+    }
+
+    private static com.jujin.point.domain.entity.ThirdUser thirdUser(
+        Long userId,
+        String provider,
+        String openId,
+        String nickname,
+        String avatar,
+        long now
+    ) {
+        var binding = new com.jujin.point.domain.entity.ThirdUser();
+        binding.setUserId(userId);
+        binding.setOpenId(openId);
+        binding.setThirdType(provider);
+        binding.setNickname(nickname);
+        binding.setAvatar(avatar);
+        binding.setCreateTime(now);
+        binding.setUpdateTime(now);
+        return binding;
     }
 
     public void updateUser(long userId, UpdateUserRequest req) {

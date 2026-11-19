@@ -8,6 +8,7 @@ import com.jujin.freeway.db.PoolConfig;
 import com.jujin.freeway.db.schema.Schema;
 import com.jujin.freeway.ioc.Container;
 import com.jujin.freeway.ioc.Freeway;
+import com.jujin.point.db.repository.ThirdUserRepository;
 import com.jujin.point.db.repository.UserRepository;
 import com.jujin.point.domain.dto.UserDtos.CreateUserRequest;
 import com.jujin.point.domain.entity.User;
@@ -27,12 +28,15 @@ class UserServiceTest {
             "jdbc:h2:mem:point_user_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "");
         var db = Database.create(config);
         var orm = Orm.of(db);
-        Schema.ensure(db, new Class<?>[] { User.class });
+        Schema.ensure(db, new Class<?>[] {
+            User.class, com.jujin.point.domain.entity.ThirdUser.class
+        });
 
         container = Freeway.create(binder -> {
             binder.bind(Database.class).to(c -> db);
             binder.bind(Orm.class).to(c -> orm);
             binder.bind(UserRepository.class).to(c -> new UserRepository(db, orm));
+            binder.bind(ThirdUserRepository.class).to(c -> new ThirdUserRepository(db, orm));
             binder.bind(UserService.class).to(UserService.class);
         });
         userService = container.get(UserService.class);
@@ -145,6 +149,33 @@ class UserServiceTest {
             userService.setPassword(user.getId(), "oldpass1", "12345"));
         assertThrows(ServiceException.class, () ->
             userService.setPassword(user.getId(), "oldpass1", "oldpass1"));
+    }
+
+    @Test
+    void thirdPartyLoginIsFindOrCreate() {
+        var first = userService.loginWithThirdParty("github", "gh-open-1", "ghuser", "http://a/1.png");
+        assertTrue(first.isPresent());
+        assertEquals("ghuser", first.get().getNickname());
+
+        var second = userService.loginWithThirdParty("github", "gh-open-1", "ghuser", "http://a/1.png");
+        assertTrue(second.isPresent());
+        assertEquals(first.get().getId(), second.get().getId(),
+            "the same identity must resolve to the account created the first time");
+    }
+
+    @Test
+    void bindIsIdempotentAndUnbindDetaches() {
+        var user = userService.signUp(req("ghbind", "ghbind@test.com", "pw123456"));
+        userService.bindThirdParty(user.getId(), "github", "gh-bind-1", "n", "a");
+        userService.bindThirdParty(user.getId(), "github", "gh-bind-1", "n", "a");
+
+        var bound = userService.loginWithThirdParty("github", "gh-bind-1", "n", "a").orElseThrow();
+        assertEquals(user.getId(), bound.getId(), "binding points at the existing account");
+
+        userService.unbindThirdParty(user.getId(), "github");
+        var fresh = userService.loginWithThirdParty("github", "gh-bind-1", "n", "a").orElseThrow();
+        assertNotEquals(user.getId(), fresh.getId(),
+            "after unbind the identity creates a new account instead of reusing the old one");
     }
 
     @Test

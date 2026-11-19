@@ -1,24 +1,31 @@
 package com.jujin.point.web;
 
-import com.jujin.freeway.db.Database;
-import com.jujin.freeway.db.Row;
 import com.jujin.point.domain.entity.*;
+import com.jujin.point.service.CommentService;
 import com.jujin.point.service.Strings;
+import com.jujin.point.service.TagService;
+import com.jujin.point.service.UserService;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Enriches entities with related user info for frontend display.
  *
- * Bound as a singleton in {@link WebModule} with Database injected via
- * constructor; route handlers receive the instance.
+ * <p>Bound as a singleton in {@link WebModule}; the batch reads live in the
+ * service layer, so this class only shapes responses. It used to run its own
+ * SQL, which put table knowledge in the web tier and kept the queries out of
+ * reach of service tests.</p>
  */
 public class ResponseEnricher {
 
-    private final Database db;
+    private final UserService userSvc;
+    private final CommentService commentSvc;
+    private final TagService tagSvc;
 
-    public ResponseEnricher(Database db) {
-        this.db = db;
+    public ResponseEnricher(UserService userSvc, CommentService commentSvc, TagService tagSvc) {
+        this.userSvc = userSvc;
+        this.commentSvc = commentSvc;
+        this.tagSvc = tagSvc;
     }
 
     // -- single-item (for detail endpoints) --
@@ -171,119 +178,51 @@ public class ResponseEnricher {
 
     private Map<Long, Map<String, Object>> batchQueryUsers(Set<Long> userIds) {
         if (userIds.isEmpty()) return Map.of();
-        var placeholders = userIds
-            .stream()
-            .map(id -> "?")
-            .collect(Collectors.joining(","));
-        var params = userIds.toArray();
-        var rows = db
-            .query(
-                "SELECT id, nickname, username, avatar FROM bbs_user WHERE id IN (" +
-                    placeholders +
-                    ")",
-                params
-            )
-            .list(Row.class);
         Map<Long, Map<String, Object>> result = new HashMap<>();
-        for (var r : rows) {
-            var m = new LinkedHashMap<String, Object>();
-            m.put("id", r.asLong("id"));
-            m.put("nickname", r.asString("nickname"));
-            m.put("username", r.asString("username"));
-            m.put("avatar", r.asString("avatar"));
-            result.put(r.asLong("id"), m);
+        for (var user : userSvc.findSummariesByIds(userIds)) {
+            result.put(user.getId(), userSummary(user));
         }
         return result;
     }
 
     private Map<Long, List<String>> batchQueryTags(List<Long> articleIds) {
-        if (articleIds.isEmpty()) return Map.of();
-        var placeholders = articleIds
-            .stream()
-            .map(id -> "?")
-            .collect(Collectors.joining(","));
-        var params = articleIds.toArray();
-        var rows = db
-            .query(
-                "SELECT at.article_id, t.name FROM bbs_tag t INNER JOIN bbs_article_tag at ON t.id = at.tag_id WHERE at.article_id IN (" +
-                    placeholders +
-                    ") AND at.status = 1",
-                params
-            )
-            .list(Row.class);
-        Map<Long, List<String>> result = new HashMap<>();
-        for (var r : rows) {
-            long aid = r.asLong("article_id");
-            result
-                .computeIfAbsent(aid, k -> new ArrayList<>())
-                .add(r.asString("name"));
-        }
-        return result;
+        return tagSvc.findNamesByArticleIds(articleIds);
     }
 
     private Map<String, Object> queryUser(long userId) {
-        var rows = db
-            .query(
-                "SELECT id, nickname, username, avatar FROM bbs_user WHERE id = ?",
-                userId
-            )
-            .list(Row.class);
-        if (rows.isEmpty()) return new LinkedHashMap<>();
-        var r = rows.getFirst();
-        var m = new LinkedHashMap<String, Object>();
-        m.put("id", r.asLong("id"));
-        m.put("nickname", r.asString("nickname"));
-        m.put("username", r.asString("username"));
-        m.put("avatar", r.asString("avatar"));
-        return m;
+        return userSvc.findById(userId).map(ResponseEnricher::userSummary).orElseGet(LinkedHashMap::new);
     }
 
     /** Preview of a single quoted comment (content truncated). */
     private String queryQuotePreview(long quoteId) {
-        return db
-            .query(
-                "SELECT content FROM bbs_comment WHERE id = ? AND status = 1",
-                quoteId
-            )
-            .one(Row.class)
-            .map(r -> Strings.truncate(r.asString("content"), 120))
+        return commentSvc.findContentsByIds(List.of(quoteId))
+            .stream()
+            .findFirst()
+            .map(c -> Strings.truncate(c.getContent(), 120))
             .orElse(null);
     }
 
     /** Batch previews for quoted comments — one IN query, no N+1. */
     private Map<Long, String> batchQueryQuotePreviews(Set<Long> quoteIds) {
         if (quoteIds.isEmpty()) return Map.of();
-        var placeholders = quoteIds
-            .stream()
-            .map(id -> "?")
-            .collect(Collectors.joining(","));
-        var rows = db
-            .query(
-                "SELECT id, content FROM bbs_comment WHERE id IN (" +
-                    placeholders +
-                    ") AND status = 1",
-                quoteIds.toArray()
-            )
-            .list(Row.class);
         Map<Long, String> result = new HashMap<>();
-        for (var r : rows) {
-            result.put(
-                r.asLong("id"),
-                Strings.truncate(r.asString("content"), 120)
-            );
+        for (var c : commentSvc.findContentsByIds(quoteIds)) {
+            result.put(c.getId(), Strings.truncate(c.getContent(), 120));
         }
         return result;
     }
 
     private List<String> queryTags(long articleId) {
-        return db
-            .query(
-                "SELECT t.name FROM bbs_tag t INNER JOIN bbs_article_tag at ON t.id = at.tag_id WHERE at.article_id = ? AND at.status = 1",
-                articleId
-            )
-            .list(Row.class)
-            .stream()
-            .map(r -> r.asString("name"))
-            .toList();
+        return tagSvc.findNamesByArticleIds(List.of(articleId)).getOrDefault(articleId, List.of());
+    }
+
+    /** Wire shape of the embedded author — kept here because it is presentation. */
+    private static Map<String, Object> userSummary(User user) {
+        var m = new LinkedHashMap<String, Object>();
+        m.put("id", user.getId());
+        m.put("nickname", user.getNickname());
+        m.put("username", user.getUsername());
+        m.put("avatar", user.getAvatar());
+        return m;
     }
 }

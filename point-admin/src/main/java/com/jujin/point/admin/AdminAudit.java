@@ -1,18 +1,18 @@
 package com.jujin.point.admin;
 
-import com.jujin.freeway.db.Orm;
 import com.jujin.freeway.http.HttpExchange;
 import com.jujin.point.domain.auth.AuthApi;
-import com.jujin.point.domain.entity.OperateLog;
+import com.jujin.point.service.OperateLogService;
 
 /**
  * Admin action audit trail — every mutating admin operation writes a row to
  * bbs_operate_log (operator, target, description).
  *
- * Operator identity comes from the AuthApi service (served by the
- * web layer) — no compile-time dependency on point-web. AuthApi and Orm
- * arrive via constructor injection; admin route handlers receive this
- * bound instance.
+ * <p>This is the admin-layer adapter: it resolves the operator from the
+ * AuthApi service (served by the web layer, no compile-time dependency on
+ * point-web) and the request's remote address, then hands both to
+ * {@link OperateLogService}. The database write itself lives in the service
+ * layer.</p>
  */
 public final class AdminAudit {
 
@@ -20,11 +20,11 @@ public final class AdminAudit {
         org.slf4j.LoggerFactory.getLogger(AdminAudit.class);
 
     private final AuthApi authApi;
-    private final Orm orm;
+    private final OperateLogService operateLogService;
 
-    public AdminAudit(AuthApi authApi, Orm orm) {
+    public AdminAudit(AuthApi authApi, OperateLogService operateLogService) {
         this.authApi = authApi;
-        this.orm = orm;
+        this.operateLogService = operateLogService;
     }
 
     public void log(
@@ -35,19 +35,14 @@ public final class AdminAudit {
         String description
     ) {
         try {
-            long operatorId = authApi.currentUserId();
-            var entry = new OperateLog(
-                operatorId,
+            operateLogService.log(
+                authApi.currentUserId(),
                 opType,
                 dataType,
                 dataId,
                 description,
-                ctx.remoteAddress(),
-                null,
-                null,
-                System.currentTimeMillis()
+                ctx.remoteAddress()
             );
-            orm.insert(entry);
         } catch (Exception e) {
             // Auditing must never break the admin action itself
             log.warn("audit log write failed: {}", e.getMessage());

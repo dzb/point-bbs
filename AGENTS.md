@@ -18,7 +18,7 @@ Runtime shapes: `PointApp` (single machine, default) and `PointCloudApp` (cloud,
 ## Build & run
 
 ```bash
-mvn -o clean test                        # 29 tests: service 23 + boot 6
+mvn -o clean test                        # 31 tests: service 25 + boot 6
 mvn -o clean package -pl point-boot -am  # fat JAR, mainClass PointApp
 java -jar point-boot/target/point-boot-*.jar --F2.profile=dev   # :8082, H2 at ./data/bbs
 
@@ -72,6 +72,9 @@ fast on a placeholder JWT secret; anything public must use `prod`.
 - **DB** — `Schema.ensure` is idempotent; `db.query()` / `db.execute()`; dialect from the JDBC URL.
 - **Auth** — HttpOnly `point_token` cookie, SameSite=Lax (+ `Secure` when configured); `Authorization` header also accepted, `?token=` deliberately is not. `AuthFilter` binds `CurrentUser` via `ScopedValue`. `AuthApi` is the in-process seam; cloud peers use `RpcExport` at `/rpc/auth/validateToken`.
 - **Cloud** — `CloudModule` + config-driven `StaticModule`; no registry, heartbeat or discovery write side. `CloudHealthModule` contributes the database to `/health/ready` (`/health/live` and `/health/ready` are freeway's probes; `/healthz` stays the single-machine check).
+- **Layering** — web/admin modules hold no SQL: reads and writes live in `point-service` services over `point-db` repositories. `ResponseEnricher` only shapes DTOs.
+- **Request bodies** — annotate a record in `point-domain/.../dto` and parse it through `WebUtils.validatedBody` (web) or `AdminBodies.validated` (admin). Both turn decoder rejections and bean failures into 400 `validation_failed`; never `bodyAsJson(Map.class)`.
+- **Startup** — `PointLauncher` owns logging/banner/port for both mains; the version comes from filtered `build-info.properties`, not a literal. Keep both `main` classes: `point.sh` reads the deployment shape from the process command line.
 
 ## Frontend
 
@@ -102,7 +105,7 @@ fast on a placeholder JWT secret; anything public must use `prod`.
 - Deferred contributions (filters, subscribers) are constructed before extension stores seal. Do not inject the service graph into a filter; `AuthFilter` holds `Container` and resolves per request. Follow that pattern.
 - `bbs_article` has no `last_comment_time`; only topics do.
 - Static files: hashed assets immutable; `index.html` revalidates with `max-age=0` + ETag.
-- After a freeway version bump: clean build, update the `PointApp` banner and record the change below.
+- After a freeway version bump: clean build and record the change below — the banner reads `freeway.version` from the filtered `build-info.properties`, so nothing to hand-edit.
 
 ## Version history
 

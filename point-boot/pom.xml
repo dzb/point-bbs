@@ -65,6 +65,25 @@
     </dependencies>
 
     <build>
+        <resources>
+            <!-- Filtering is scoped to build-info.properties: the compiled SPA
+                 under static/ contains ${...} template literals that Maven
+                 would otherwise try to substitute. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>build-info.properties</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>build-info.properties</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

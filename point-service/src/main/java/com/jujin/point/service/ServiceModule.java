@@ -37,6 +37,8 @@ public class ServiceModule implements ModuleEx {
         binder.bind(UserRepository.class).to(UserRepository.class);
         binder.bind(TopicRepository.class).to(TopicRepository.class);
         binder.bind(CommentRepository.class).to(CommentRepository.class);
+        binder.bind(com.jujin.point.db.repository.ThirdUserRepository.class)
+            .to(com.jujin.point.db.repository.ThirdUserRepository.class);
 
         // Core services
         binder.bind(SysConfigService.class).to(SysConfigService.class);
@@ -56,6 +58,9 @@ public class ServiceModule implements ModuleEx {
 
         // Permission & RBAC
         binder.bind(PermissionService.class).to(PermissionService.class);
+
+        // Audit trail (admin operations)
+        binder.bind(OperateLogService.class).to(OperateLogService.class);
 
         // Upload
         binder.bind(UploadService.class).to(UploadService.class);

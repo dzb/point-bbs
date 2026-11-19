@@ -7,9 +7,6 @@ import com.jujin.point.service.*;
 import com.jujin.point.web.LoginRateLimiter;
 import com.jujin.point.web.WebUtils;
 import com.jujin.point.web.filter.AuthFilter;
-import com.jujin.freeway.db.Database;
-import com.jujin.freeway.db.Orm;
-import com.jujin.freeway.db.Row;
 import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
@@ -125,12 +122,12 @@ public class AuthRoutes {
     public static final class GithubCallbackHandler implements RouteHandler {
         private final GitHubOAuthProvider provider;
         private final AuthService authSvc;
-        private final Database db;
+        private final UserService userSvc;
 
-        public GithubCallbackHandler(GitHubOAuthProvider provider, AuthService authSvc, Database db) {
+        public GithubCallbackHandler(GitHubOAuthProvider provider, AuthService authSvc, UserService userSvc) {
             this.provider = provider;
             this.authSvc = authSvc;
-            this.db = db;
+            this.userSvc = userSvc;
         }
 
         @Override
@@ -150,9 +147,16 @@ public class AuthRoutes {
             );
             var info = provider.handleCallback(code);
             if (info == null) { ctx.sendJson(400, ApiResponse.error("OAuth授权失败")); return; }
-            var runtime = handleOAuthLogin("github", info);
-            String token = (String) runtime.get("token");
-            if (token == null) { ctx.sendJson(400, ApiResponse.error("登录失败")); return; }
+            var user = userSvc
+                .loginWithThirdParty("github", info.openId(), info.nickname(), info.avatar())
+                .orElse(null);
+            if (user == null) { ctx.sendJson(400, ApiResponse.error("登录失败")); return; }
+            String token = authSvc.createToken(
+                user.getId(),
+                user.getNickname(),
+                user.getAvatar() != null ? user.getAvatar() : "",
+                null
+            );
             // Redirect to the configured SPA origin — never to the request's
             // Origin header (open-redirect via a spoofed Origin). The token
             // goes into the HttpOnly session cookie, not the URL.
@@ -161,54 +165,15 @@ public class AuthRoutes {
             ctx.setHeader("Location", spaOrigin + "/#/");
             ctx.setStatus(302).body("Redirecting...".getBytes(StandardCharsets.UTF_8));
         }
-
-        /** Find or create the third-party binding and issue a session token. */
-        private Map<String, Object> handleOAuthLogin(String provider, OAuthProvider.OAuthUserInfo info) {
-            var orm = Orm.of(db);
-            var existing = db.query("SELECT * FROM bbs_third_user WHERE open_id=? AND third_type=?", info.openId(), provider).one(ThirdUser.class);
-            User user;
-            if (existing.isPresent()) {
-                user = orm.findById(User.class, existing.get().getUserId()).orElse(null);
-                if (user == null) return Map.of("error", "用户不存在");
-            } else {
-                user = new User(); long now = System.currentTimeMillis();
-                user.setNickname(info.nickname()); user.setAvatar(info.avatar());
-                user.setStatus(1); user.setLevel(1);
-                user.setCreateTime(now); user.setUpdateTime(now);
-                var created = new User[1];
-                created[0] = user;
-                try {
-                    db.transaction(() -> {
-                        var r = db.execute("INSERT INTO bbs_user (nickname, avatar, score, exp, level, status, topic_count, comment_count, follow_count, fans_count, forbidden_end_time, create_time, update_time) VALUES (?,?,0,0,1,1,0,0,0,0,0,?,?)", info.nickname(), info.avatar(), now, now);
-                        if (r.hasGeneratedKey()) created[0].setId(r.longKey());
-                        var tu = new ThirdUser(); tu.setUserId(created[0].getId()); tu.setOpenId(info.openId()); tu.setThirdType(provider);
-                        tu.setNickname(info.nickname()); tu.setAvatar(info.avatar()); tu.setCreateTime(now); tu.setUpdateTime(now);
-                        orm.insert(tu);
-                    });
-                } catch (com.jujin.freeway.db.SqlException e) {
-                    // Unique (open_id, third_type) index — a concurrent callback
-                    // created the account; fall back to the existing binding.
-                    var again = db.query("SELECT * FROM bbs_third_user WHERE open_id=? AND third_type=?", info.openId(), provider).one(ThirdUser.class);
-                    if (again.isPresent()) {
-                        user = orm.findById(User.class, again.get().getUserId()).orElse(null);
-                        if (user == null) return Map.of("error", "用户不存在");
-                    } else {
-                        return Map.of("error", "OAuth登录失败");
-                    }
-                }
-            }
-            String token = authSvc.createToken(user.getId(), user.getNickname(), user.getAvatar() != null ? user.getAvatar() : "", null);
-            return Map.of("token", token, "id", user.getId(), "nickname", user.getNickname());
-        }
     }
 
     public static final class GithubBindHandler implements RouteHandler {
         private final GitHubOAuthProvider provider;
-        private final Database db;
+        private final UserService userSvc;
 
-        public GithubBindHandler(GitHubOAuthProvider provider, Database db) {
+        public GithubBindHandler(GitHubOAuthProvider provider, UserService userSvc) {
             this.provider = provider;
-            this.db = db;
+            this.userSvc = userSvc;
         }
 
         @Override
@@ -218,32 +183,22 @@ public class AuthRoutes {
             if (code == null) { ctx.sendJson(400, ApiResponse.error("缺少code")); return; }
             var info = provider.handleCallback(code);
             if (info == null) { ctx.sendJson(400, ApiResponse.error("OAuth授权失败")); return; }
-            bindThirdUser(user.userId(), "github", info);
+            userSvc.bindThirdParty(user.userId(), "github", info.openId(), info.nickname(), info.avatar());
             ctx.sendJson(200, ApiResponse.ok(Map.of("bound", true)));
-        }
-
-        private void bindThirdUser(long userId, String provider, OAuthProvider.OAuthUserInfo info) {
-            if (db.query("SELECT 1 FROM bbs_third_user WHERE open_id=? AND third_type=?", info.openId(), provider).list(Row.class).isEmpty()) {
-                var tu = new ThirdUser(); long now = System.currentTimeMillis();
-                tu.setUserId(userId); tu.setOpenId(info.openId()); tu.setThirdType(provider);
-                tu.setNickname(info.nickname()); tu.setAvatar(info.avatar());
-                tu.setCreateTime(now); tu.setUpdateTime(now);
-                Orm.of(db).insert(tu);
-            }
         }
     }
 
     public static final class GithubUnbindHandler implements RouteHandler {
-        private final Database db;
+        private final UserService userSvc;
 
-        public GithubUnbindHandler(Database db) {
-            this.db = db;
+        public GithubUnbindHandler(UserService userSvc) {
+            this.userSvc = userSvc;
         }
 
         @Override
         public void handle(HttpExchange ctx) throws Exception {
             var user = AuthFilter.requireUser();
-            db.execute("DELETE FROM bbs_third_user WHERE user_id=? AND third_type=?", user.userId(), "github");
+            userSvc.unbindThirdParty(user.userId(), "github");
             ctx.sendJson(200, ApiResponse.ok());
         }
     }

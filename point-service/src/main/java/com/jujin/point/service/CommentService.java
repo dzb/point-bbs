@@ -9,6 +9,7 @@ import com.jujin.point.domain.event.CommentCreatedEvent;
 import com.jujin.freeway.db.Database;
 import com.jujin.freeway.ioc.event.EventBus;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -165,5 +166,10 @@ public class CommentService {
         var items = commentRepo.findByUserId(userId, page.page(), page.pageSize());
         var total = commentRepo.countByUserId(userId);
         return new PageResult<>(items, page.page(), page.pageSize(), total);
+    }
+
+    /** Live contents for a set of ids — the quote-preview batch read. */
+    public List<Comment> findContentsByIds(Collection<Long> ids) {
+        return commentRepo.findContentsByIds(ids);
     }
 }

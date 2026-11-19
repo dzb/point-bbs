@@ -243,14 +243,10 @@ public class UserRoutes {
             var user = AuthFilter.requireUser();
             long uid = ctx.pathVar("id", Long.class).orElse(0L);
             if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能操作自己的消息")); return; }
-            var req = ctx.bodyAsJson(Map.class);
-            if (req == null || req.get("ids") == null) {
-                ctx.sendJson(400, ApiResponse.error("缺少 ids 参数"));
-                return;
-            }
-            @SuppressWarnings("unchecked")
-            var ids = ((List<Number>) req.get("ids")).stream().map(Number::longValue).toList();
-            msgSvc.markRead(uid, ids);
+            // Typed body: a non-numeric element used to throw ClassCastException
+            // (500); it is now a 400 validation error.
+            var req = WebUtils.validatedBody(ctx, com.jujin.point.domain.dto.AdminDtos.MarkMessagesReadRequest.class);
+            msgSvc.markRead(uid, req.ids().stream().map(Long::longValue).toList());
             ctx.sendJson(200, ApiResponse.ok());
         }
     }

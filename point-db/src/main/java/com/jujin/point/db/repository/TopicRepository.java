@@ -24,6 +24,40 @@ public class TopicRepository extends BaseRepository<Topic> {
             .list(Topic.class);
     }
 
+    /**
+     * Feed of the people {@code userId} follows. The follow set is a
+     * subquery, so an empty follow list needs no special case and the whole
+     * feed stays one statement.
+     */
+    public List<Topic> findFollowingFeed(long userId, int type, int page, int pageSize) {
+        long offset = (long) (page - 1) * pageSize;
+        return query(
+            "SELECT * FROM bbs_topic WHERE status = 1 AND type = $type AND user_id IN (" +
+            "SELECT other_id FROM bbs_user_follow WHERE user_id = $userId AND status = 1) " +
+            "ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
+            .bind("type", type).bind("userId", userId)
+            .bind("limit", pageSize).bind("offset", offset)
+            .list(Topic.class);
+    }
+
+    public long countFollowingFeed(long userId, int type) {
+        var row = query(
+            "SELECT COUNT(*) AS cnt FROM bbs_topic WHERE status = 1 AND type = $type AND user_id IN (" +
+            "SELECT other_id FROM bbs_user_follow WHERE user_id = $userId AND status = 1)")
+            .bind("type", type).bind("userId", userId)
+            .one(Row.class).orElse(null);
+        return row != null ? row.asLong("cnt") : 0;
+    }
+
+    /** Moments: type 1 regardless of author, newest first. */
+    public List<Topic> findByType(int type, int page, int pageSize) {
+        long offset = (long) (page - 1) * pageSize;
+        return query(
+            "SELECT * FROM bbs_topic WHERE type = $type AND status = 1 ORDER BY create_time DESC LIMIT $limit OFFSET $offset")
+            .bind("type", type).bind("limit", pageSize).bind("offset", offset)
+            .list(Topic.class);
+    }
+
     public List<Topic> findByCategoryId(long categoryId, int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;
         return query(

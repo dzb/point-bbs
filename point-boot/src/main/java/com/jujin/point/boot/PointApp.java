@@ -1,58 +1,21 @@
 package com.jujin.point.boot;
 
-import com.jujin.freeway.boot.FreewayApp;
-
 /**
  * point application entry point — the single-machine monolith.
  *
- * freeway 2.0: module composition is a flat declaration list built at
- * the entry point — the app holds every feature module in bind order —
- * with autoDiscovery(false) so nothing is silently installed a second time.
+ * <p>freeway 2.0: module composition is a flat declaration list built at the
+ * entry point — the app holds every feature module in bind order — with
+ * {@code autoDiscovery(false)} so nothing is silently installed a second time.
  * {@link PointCloudApp} is the mesh deployment shape; it composes this same
- * base list plus the cloud modules.
+ * base list plus the cloud modules.</p>
+ *
+ * <p>The startup choreography (logging, banner, port report) lives in
+ * {@link PointLauncher}. The two mains stay separate on purpose: {@code
+ * point.sh} detects the deployment shape from the process command line.</p>
  */
 public class PointApp {
 
     public static void main(String[] args) throws Exception {
-        // Ensure log directory exists (JUL doesn't auto-create)
-        java.nio.file.Files.createDirectories(java.nio.file.Path.of("logs"));
-
-        // Load JUL logging config — freeway uses java.util.logging via its SLF4J provider
-        var logConfig = PointApp.class
-            .getClassLoader()
-            .getResource("logging.properties");
-        if (logConfig != null) {
-            java.util.logging.LogManager.getLogManager().readConfiguration(
-                logConfig.openStream()
-            );
-        }
-
-        System.out.println(
-            """
-             ____  ____  ____  _  _  ____
-            ||P ||||O ||||I ||||N ||||T ||
-            ||__||||__||||__||||__||||__||
-            |/__\\\\||/__\\\\||/__\\\\||/__\\\\||/__\\\\|
-            point v1.0.7 -- powered by freeway 2.0.1-SNAPSHOT + JDK %s
-            """.formatted(Runtime.version().feature())
-        );
-
-        var runtime = FreewayApp.create(PointModules.base())
-            .name("point")
-            .autoDiscovery(false) // All modules explicitly composed in the list
-            .args(args)
-            .start();
-
-        var port = runtime
-            .get(com.jujin.freeway.ioc.symbol.SymbolSource.class)
-            .resolve("freeway.http.server.port", null);
-        System.out.println(
-            "point running on http://localhost:" + (port != null ? port : 8082)
-        );
-        System.out.println("Press Ctrl+C to stop.");
-
-        // Keep JVM alive — freeway HTTP acceptor threads are daemon.
-        // Shutdown is handled by the JVM shutdown hook registered by FreewayApp.
-        new java.util.concurrent.CountDownLatch(1).await();
+        PointLauncher.run(args, false);
     }
 }

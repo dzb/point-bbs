@@ -5,7 +5,9 @@ import com.jujin.freeway.db.Database;
 import com.jujin.freeway.db.Orm;
 import com.jujin.freeway.db.Row;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Comment repository.
@@ -26,6 +28,20 @@ public class CommentRepository extends BaseRepository<Comment> {
             .list(Comment.class);
     }
 
+
+    /**
+     * Live comment contents for a set of ids — used for quote previews.
+     * Only {@code id} and {@code content} come back; the empty set
+     * short-circuits because {@code IN ()} is invalid on both dialects.
+     */
+    public List<Comment> findContentsByIds(Collection<Long> ids) {
+        if (ids.isEmpty()) return List.of();
+        var placeholders = ids.stream().map(id -> "?").collect(Collectors.joining(","));
+        return query(
+            "SELECT id, content FROM bbs_comment WHERE id IN (" + placeholders + ") AND status = 1",
+            ids.toArray())
+            .list(Comment.class);
+    }
 
     public List<Comment> findByUserId(long userId, int page, int pageSize) {
         long offset = (long) (page - 1) * pageSize;

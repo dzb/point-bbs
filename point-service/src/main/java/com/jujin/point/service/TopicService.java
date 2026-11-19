@@ -154,6 +154,20 @@ public class TopicService {
         return new PageResult<>(items, page.page(), page.pageSize(), total);
     }
 
+    /** Moments feed (type 1) — newest first. */
+    public PageResult<Topic> getMoments(PageRequest page) {
+        var items = topicRepo.findByType(1, page.page(), page.pageSize());
+        var total = topicRepo.countByType(1);
+        return new PageResult<>(items, page.page(), page.pageSize(), total);
+    }
+
+    /** Moments written by the people this user follows. */
+    public PageResult<Topic> getFollowingFeed(long userId, PageRequest page) {
+        var items = topicRepo.findFollowingFeed(userId, 1, page.page(), page.pageSize());
+        var total = topicRepo.countFollowingFeed(userId, 1);
+        return new PageResult<>(items, page.page(), page.pageSize(), total);
+    }
+
     public List<Topic> getRecommended(int limit) {
         return topicRepo.findRecommended(limit);
     }

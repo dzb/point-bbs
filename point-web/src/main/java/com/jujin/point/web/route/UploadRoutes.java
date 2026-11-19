@@ -1,7 +1,5 @@
 package com.jujin.point.web.route;
 
-import com.jujin.freeway.db.Database;
-import com.jujin.freeway.db.Orm;
 import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.route.Route;
 import com.jujin.freeway.http.route.RouteGroup;
@@ -82,11 +80,9 @@ public class UploadRoutes {
 
     public static final class DownloadAttachmentHandler implements RouteHandler {
         private final UploadService svc;
-        private final Database db;
 
-        public DownloadAttachmentHandler(UploadService svc, Database db) {
+        public DownloadAttachmentHandler(UploadService svc) {
             this.svc = svc;
-            this.db = db;
         }
 
         @Override
@@ -99,17 +95,7 @@ public class UploadRoutes {
             svc.recordDownload(id);
             // Download audit trail (anonymous downloads recorded as user 0)
             var viewer = AuthFilter.currentUser();
-            try {
-                Orm.of(db).insert(
-                    new com.jujin.point.domain.entity.AttachmentDownloadLog(
-                        viewer != null ? viewer.userId() : 0L,
-                        id,
-                        System.currentTimeMillis()
-                    )
-                );
-            } catch (Exception e) {
-                // never break the download for a logging failure
-            }
+            svc.recordDownloadLog(id, viewer != null ? viewer.userId() : null);
             String type = att.getFileType() != null ? att.getFileType() : "application/octet-stream";
             // Serve images inline; force download for everything else so an
             // attacker-uploaded HTML/SVG cannot execute from this origin.

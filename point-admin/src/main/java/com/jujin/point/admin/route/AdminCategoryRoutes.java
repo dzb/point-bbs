@@ -1,6 +1,9 @@
 package com.jujin.point.admin.route;
 
 import com.jujin.point.admin.AdminAudit;
+import com.jujin.point.admin.AdminBodies;
+import com.jujin.point.domain.dto.AdminDtos.CreateCategoryRequest;
+import com.jujin.point.domain.dto.AdminDtos.UpdateCategoryRequest;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.domain.entity.Category;
 import com.jujin.point.service.CategoryService;
@@ -51,17 +54,13 @@ public class AdminCategoryRoutes {
 
         @Override
         public void handle(HttpExchange ctx) throws Exception {
-            var req = ctx.bodyAsJson(Map.class);
-            if (req == null || req.get("name") == null) {
-                ctx.sendJson(400, ApiResponse.error("缺少 name 参数"));
-                return;
-            }
+            var req = AdminBodies.validated(ctx, CreateCategoryRequest.class);
             var cat = new Category();
-            cat.setName((String) req.get("name"));
-            cat.setParentId(req.get("parentId") != null ? ((Number) req.get("parentId")).longValue() : 0L);
-            cat.setType((String) req.getOrDefault("type", "normal"));
-            cat.setDescription((String) req.get("description"));
-            cat.setSortNo(req.get("sortNo") != null ? ((Number) req.get("sortNo")).intValue() : 0);
+            cat.setName(req.name());
+            cat.setParentId(req.parentId() != null ? req.parentId() : 0L);
+            cat.setType(req.type() != null ? req.type() : "normal");
+            cat.setDescription(req.description());
+            cat.setSortNo(req.sortNo() != null ? req.sortNo() : 0);
             cat.setStatus(1);
             cat.setCreateTime(System.currentTimeMillis());
             catSvc.create(cat);
@@ -86,17 +85,15 @@ public class AdminCategoryRoutes {
             var existing = catSvc.findById(id);
             if (existing.isEmpty()) { ctx.sendJson(404, ApiResponse.error("分类不存在")); return; }
             var cat = existing.get();
-            var req = ctx.bodyAsJson(Map.class);
-            if (req == null) {
-                ctx.sendJson(400, ApiResponse.error("请求体不能为空"));
-                return;
-            }
-            if (req.containsKey("name")) cat.setName((String) req.get("name"));
-            if (req.containsKey("parentId")) cat.setParentId(((Number) req.get("parentId")).longValue());
-            if (req.containsKey("type")) cat.setType((String) req.get("type"));
-            if (req.containsKey("description")) cat.setDescription((String) req.get("description"));
-            if (req.containsKey("sortNo")) cat.setSortNo(((Number) req.get("sortNo")).intValue());
-            if (req.containsKey("status")) cat.setStatus(((Number) req.get("status")).intValue());
+            // Null means "leave unchanged": a record cannot tell an absent
+            // field from a null one, and refusing to clear is the safe side.
+            var req = AdminBodies.validated(ctx, UpdateCategoryRequest.class);
+            if (req.name() != null) cat.setName(req.name());
+            if (req.parentId() != null) cat.setParentId(req.parentId());
+            if (req.type() != null) cat.setType(req.type());
+            if (req.description() != null) cat.setDescription(req.description());
+            if (req.sortNo() != null) cat.setSortNo(req.sortNo());
+            if (req.status() != null) cat.setStatus(req.status());
             catSvc.update(cat);
             audit.log(ctx, "update", "category", id,
                 "更新分类: " + cat.getName());
