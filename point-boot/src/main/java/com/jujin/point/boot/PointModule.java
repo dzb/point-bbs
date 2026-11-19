@@ -51,9 +51,13 @@ public class PointModule implements ModuleEx {
             .primary();
 
         // ── 3. Seed default roles & permissions (idempotent) ──
+        // Before the listener: otherwise the health probe (and any client)
+        // can reach an API whose tables exist but whose seed has not been
+        // written yet — a fresh database briefly answers 404 for demo data.
         binder
             .contribute(RuntimeHook.class)
-            .add("data-seed", new DataSeedHook());
+            .add("data-seed", new DataSeedHook())
+            .beforeIfPresent("freeway.http.server");
 
         // ── 4. Seed dev test data (idempotent, dev profiles only) ──
         // Required ordering: roles/permissions must exist before the dev
@@ -63,7 +67,10 @@ public class PointModule implements ModuleEx {
         binder
             .contribute(RuntimeHook.class)
             .add("dev-data-seed", new DevDataSeedHook())
-            .after("data-seed");
+            .after("data-seed")
+            // after() alone only places it after data-seed; without this the
+            // listener can still start in between and serve an empty site.
+            .beforeIfPresent("freeway.http.server");
     }
 
     /** All entity classes for Schema.ensure auto-migration. */
