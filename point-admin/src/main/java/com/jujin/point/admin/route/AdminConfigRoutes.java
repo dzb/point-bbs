@@ -74,8 +74,12 @@ public class AdminConfigRoutes {
         @Override
         public void handle(HttpExchange ctx) throws Exception {
             String key = ctx.pathVar("key").orElse(null);
-            var value = configSvc.get(key);
-            ctx.sendJson(200, ApiResponse.ok(Map.of("key", key, "value", value)));
+            // A missing key is "not configured", not an error: value is null.
+            // Map.of rejects null values, so build a null-tolerant map.
+            var body = new java.util.LinkedHashMap<String, Object>();
+            body.put("key", key);
+            body.put("value", configSvc.get(key));
+            ctx.sendJson(200, ApiResponse.ok(body));
         }
     }
 

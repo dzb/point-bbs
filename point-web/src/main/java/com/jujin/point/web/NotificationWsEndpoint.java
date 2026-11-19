@@ -6,12 +6,14 @@ import com.jujin.freeway.http.websocket.WebSocketSession;
 import com.jujin.point.service.AuthService;
 
 /**
- * WebSocket endpoint at /ws/notify?token=&lt;jwt&gt; — authenticates with the
- * same JWT the SPA uses for HTTP (query param, since browsers cannot set
- * headers on the WS handshake) and registers the session for push
- * notifications. Services arrive via constructor injection: the route is
- * declared as {@code WebSocketRoute.of("/notify", NotificationWsEndpoint.class)}
- * and the container builds this endpoint at startup.
+ * WebSocket endpoint at /ws/notify — authenticates with the same HttpOnly
+ * session cookie the SPA uses for HTTP and registers the session for push
+ * notifications. The browser sends same-origin cookies on the WS handshake,
+ * so no token belongs in the URL; a credential in a query string leaks into
+ * access logs, proxy logs and browser history. Services arrive via
+ * constructor injection: the route is declared as
+ * {@code WebSocketRoute.of("/notify", NotificationWsEndpoint.class)} and the
+ * container builds this endpoint at startup.
  */
 public class NotificationWsEndpoint implements WebSocketEndpoint {
 
@@ -25,13 +27,10 @@ public class NotificationWsEndpoint implements WebSocketEndpoint {
 
     @Override
     public WebSocketListener open(WebSocketSession session) {
-        var token = session.queryParam("token").orElse(null);
-        if (token == null) {
-            // Same-origin WS handshakes carry the HttpOnly session cookie
-            token = com.jujin.point.service.AuthService.tokenFromCookie(
-                session.header("Cookie").orElse(null)
-            );
-        }
+        // Same-origin WS handshakes carry the HttpOnly session cookie.
+        var token = com.jujin.point.service.AuthService.tokenFromCookie(
+            session.header("Cookie").orElse(null)
+        );
         Long userId = (token == null)
             ? null
             : authService.validateToken(token).map(u -> u.userId()).orElse(null);

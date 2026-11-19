@@ -18,7 +18,7 @@ Runtime shapes: `PointApp` (single machine, default) and `PointCloudApp` (cloud,
 ## Build & run
 
 ```bash
-mvn -o clean test                        # 36 tests: service 28 + boot 8
+mvn -o clean test                        # 44 tests: service 30 + boot 14
 mvn -o clean package -pl point-boot -am  # fat JAR, mainClass PointApp
 java -jar point-boot/target/point-boot-*.jar --F2.profile=dev   # :8082, H2 at ./data/bbs
 
@@ -48,7 +48,7 @@ JSON, layered: `application.json` overridden by `application-dev.json` / `applic
 |---|---|
 | `F2.http.server.port` / `host` | HTTP listener |
 | `F2.db.url` / `username` / `password` | H2 or PostgreSQL |
-| `bbs.jwt.secret` / `expire-days` / `cookie-domain` | session signing |
+| `bbs.jwt.secret` / `expire-days` / `cookie-domain` | session signing; `expire-days` also sets the cookie Max-Age |
 | `bbs.jwt.cookie-secure` | `Secure` on the session cookie; unset ⇒ false only under `dev` (prod, and a no-profile boot that may still be behind TLS, get true) |
 | `bbs.upload.dir` / `max-size` | uploads; default 10 MB |
 | `bbs.admin.username` / `password` | bootstrap admin (password ≥ 8) |
@@ -70,7 +70,7 @@ fast on a placeholder JWT secret; anything public must use `prod`.
 - **RuntimeHook** — ordered startup: schema → seeds → HTTP.
 - **Container** — constructor injection; routes/filters/subscribers are contributions, not scanned.
 - **DB** — `Schema.ensure` is idempotent; `db.query()` / `db.execute()`; dialect from the JDBC URL.
-- **Auth** — HttpOnly `point_token` cookie, SameSite=Lax (+ `Secure` when configured); `Authorization` header also accepted, `?token=` deliberately is not. `AuthFilter` binds `CurrentUser` via `ScopedValue`. `AuthApi` is the in-process seam; cloud peers use `RpcExport` at `/rpc/auth/validateToken`.
+- **Auth** — HttpOnly `point_token` cookie, SameSite=Lax (+ `Secure` when configured); `Authorization` header also accepted, `?token=` deliberately is not (the notification socket reads the cookie only). `AuthFilter` binds `CurrentUser` via `ScopedValue`. `AuthApi` is the in-process seam; cloud peers use `RpcExport` at `/rpc/auth/validateToken`.
 - **Cloud** — `CloudModule` + config-driven `StaticModule`; no registry, heartbeat or discovery write side. `CloudHealthModule` contributes the database to `/health/ready` (`/health/live` and `/health/ready` are freeway's probes; `/healthz` stays the single-machine check).
 - **Layering** — web/admin modules hold no SQL: reads and writes live in `point-service` services over `point-db` repositories. `ResponseEnricher` only shapes DTOs.
 - **Request bodies** — annotate a record in `point-domain/.../dto` and parse it through `WebUtils.validatedBody` (web) or `AdminBodies.validated` (admin). Both turn decoder rejections and bean failures into 400 `validation_failed`; never `bodyAsJson(Map.class)`.

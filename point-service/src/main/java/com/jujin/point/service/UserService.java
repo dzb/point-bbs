@@ -3,6 +3,8 @@ package com.jujin.point.service;
 import com.jujin.point.db.repository.UserRepository;
 import com.jujin.point.domain.auth.Passwords;
 import com.jujin.point.domain.dto.CurrentUser;
+import com.jujin.point.domain.dto.PageRequest;
+import com.jujin.point.domain.dto.PageResult;
 import com.jujin.point.domain.dto.UserDtos.*;
 import com.jujin.point.domain.entity.User;
 import com.jujin.point.domain.event.UserForbiddenEvent;
@@ -68,6 +70,13 @@ public class UserService {
 
     public List<User> searchByPrefix(String prefix, int limit) {
         return userRepo.searchByPrefix(prefix, limit);
+    }
+
+    /** Admin listing: active users, newest first, with the total count. */
+    public PageResult<User> listUsers(PageRequest page) {
+        var items = userRepo.findPage(page.page(), page.pageSize());
+        var total = userRepo.countAll();
+        return new PageResult<>(items, page.page(), page.pageSize(), total);
     }
 
     /** Display projections for a set of ids — the feed enricher's batch read. */

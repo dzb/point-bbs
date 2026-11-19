@@ -20,6 +20,10 @@ import java.util.Set;
  */
 public class AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
+    /** Minimum HMAC key length accepted on a production profile. */
+    public static final int MIN_SECRET_LENGTH = 32;
+
     private final String secret;
     private final int expireDays;
 
@@ -30,21 +34,34 @@ public class AuthService {
         @Symbol("${bbs.jwt.cookie-domain:}") String cookieDomain,
         @Symbol("${bbs.jwt.cookie-secure:}") String cookieSecure
     ) {
-        // A known/placeholder HMAC key lets anyone forge tokens for any userId.
+        // A known/placeholder or short HMAC key lets anyone forge tokens for
+        // any userId: HMAC-SHA256 keys below 32 bytes leave too little margin.
         var effective = secret == null ? "" : secret.trim();
         boolean placeholder = effective.isEmpty() || isPlaceholder(effective);
+        boolean tooShort = effective.length() < MIN_SECRET_LENGTH;
+        boolean prod = profile != null && profile.contains("prod");
+        if (prod && (placeholder || tooShort)) {
+            throw new IllegalStateException(
+                placeholder
+                    ? "bbs.jwt.secret is missing or still a placeholder — set a " +
+                      "random secret of at least " + MIN_SECRET_LENGTH +
+                      " chars (config file named by freeway.config.file, or " +
+                      "-Dbbs.jwt.secret=...)"
+                    : "bbs.jwt.secret is only " + effective.length() +
+                      " chars — use at least " + MIN_SECRET_LENGTH +
+                      " random characters in production"
+            );
+        }
         if (placeholder) {
-            boolean prod = profile != null && profile.contains("prod");
-            if (prod) {
-                throw new IllegalStateException(
-                    "bbs.jwt.secret is missing or still a placeholder — set a " +
-                    "random secret of at least 32 chars (config file named by " +
-                    "freeway.config.file, or -Dbbs.jwt.secret=...)"
-                );
-            }
             log.warn(
                 "bbs.jwt.secret is missing or a placeholder — JWT tokens " +
                 "are forgeable. Set a random secret before deploying."
+            );
+        } else if (tooShort) {
+            log.warn(
+                "bbs.jwt.secret is shorter than {} chars — use a longer " +
+                "random secret before deploying.",
+                MIN_SECRET_LENGTH
             );
         }
         this.secret = effective;
@@ -75,8 +92,14 @@ public class AuthService {
      * is the CSRF protection for all state-changing endpoints (they are all
      * POST). The optional Domain (dev: localhost so the Vite proxy origin
      * receives it) is configured via bbs.jwt.cookie-domain.
+     *
+     * <p>Max-Age follows {@code bbs.jwt.expire-days} — the token's own expiry.
+     * A fixed 7-day cookie would outlive a short-lived token (useless) and cut
+     * a long one short (the browser drops the cookie while the JWT is still
+     * valid), so the two must come from the same number.</p>
      */
-    public String sessionCookie(String token, int maxAgeSeconds) {
+    public String sessionCookie(String token) {
+        long maxAgeSeconds = Math.max(expireDays, 0) * 86400L;
         var sb = new StringBuilder(COOKIE_NAME)
             .append('=').append(token)
             .append("; Path=/; HttpOnly; SameSite=Lax; Max-Age=").append(maxAgeSeconds);

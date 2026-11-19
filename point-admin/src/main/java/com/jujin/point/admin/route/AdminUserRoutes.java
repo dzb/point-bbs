@@ -1,7 +1,6 @@
 package com.jujin.point.admin.route;
 
 import com.jujin.point.admin.AdminAudit;
-import com.jujin.point.db.repository.UserRepository;
 import com.jujin.point.domain.dto.ApiResponse;
 import com.jujin.point.domain.dto.PageRequest;
 import com.jujin.point.domain.dto.UserDtos.*;
@@ -31,23 +30,27 @@ public class AdminUserRoutes {
     }
 
     public static final class ListUsersHandler implements RouteHandler {
-        private final UserRepository userRepo;
+        private final UserService userSvc;
 
-        public ListUsersHandler(UserRepository userRepo) {
-            this.userRepo = userRepo;
+        public ListUsersHandler(UserService userSvc) {
+            this.userSvc = userSvc;
         }
 
         @Override
         public void handle(HttpExchange ctx) throws Exception {
-            var pr = PageRequest.of(
+            var page = PageRequest.of(
                 ctx.queryParam("page", Integer.class).orElse(1),
                 ctx.queryParam("pageSize", Integer.class).orElse(20)
             );
-            var users = userRepo.findPage(pr.page(), pr.pageSize());
-            users.forEach(u -> u.setPassword(null));
-            var result = Map.of("items", (Object) users, "total", userRepo.countAll(),
-                "page", pr.page(), "pageSize", pr.pageSize());
-            ctx.sendJson(200, ApiResponse.ok(result));
+            var result = userSvc.listUsers(page);
+            // Never let a password hash leave the service boundary.
+            result.items().forEach(u -> u.setPassword(null));
+            ctx.sendJson(200, ApiResponse.ok(Map.of(
+                "items", (Object) result.items(),
+                "total", result.total(),
+                "page", result.page(),
+                "pageSize", result.pageSize()
+            )));
         }
     }
 
@@ -77,7 +80,7 @@ public class AdminUserRoutes {
         @Override
         public void handle(HttpExchange ctx) throws Exception {
             long id = ctx.pathVar("id", Long.class).orElse(0L);
-            var req = ctx.bodyAsJson(UpdateUserRequest.class);
+            var req = com.jujin.point.admin.AdminBodies.validated(ctx, UpdateUserRequest.class);
             userSvc.updateUser(id, req);
             ctx.sendJson(200, ApiResponse.ok());
         }

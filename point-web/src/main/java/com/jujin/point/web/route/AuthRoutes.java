@@ -51,7 +51,7 @@ public class AuthRoutes {
             var user = userSvc.signUp(req);
             var token = authSvc.createToken(user.getId(), user.getNickname(),
                 user.getAvatar() != null ? user.getAvatar() : "", null);
-            ctx.setHeader("Set-Cookie", authSvc.sessionCookie(token, 7 * 86400));
+            ctx.setHeader("Set-Cookie", authSvc.sessionCookie(token));
             ctx.sendJson(201, ApiResponse.ok(Map.of("token", token, "id", user.getId(),
                 "nickname", user.getNickname(), "avatar", user.getAvatar() != null ? user.getAvatar() : "")));
         }
@@ -75,7 +75,7 @@ public class AuthRoutes {
             var user = userSvc.signIn(req.loginName(), req.password());
             var token = authSvc.createToken(user.getId(), user.getNickname(),
                 user.getAvatar() != null ? user.getAvatar() : "", null);
-            ctx.setHeader("Set-Cookie", authSvc.sessionCookie(token, 7 * 86400));
+            ctx.setHeader("Set-Cookie", authSvc.sessionCookie(token));
             ctx.sendJson(200, ApiResponse.ok(Map.of("token", token, "id", user.getId(),
                 "nickname", user.getNickname(), "avatar", user.getAvatar() != null ? user.getAvatar() : "")));
         }
@@ -161,7 +161,7 @@ public class AuthRoutes {
             // Origin header (open-redirect via a spoofed Origin). The token
             // goes into the HttpOnly session cookie, not the URL.
             var spaOrigin = provider.spaOrigin();
-            ctx.setHeader("Set-Cookie", authSvc.sessionCookie(token, 7 * 86400));
+            ctx.setHeader("Set-Cookie", authSvc.sessionCookie(token));
             ctx.setHeader("Location", spaOrigin + "/#/");
             ctx.setStatus(302).body("Redirecting...".getBytes(StandardCharsets.UTF_8));
         }

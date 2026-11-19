@@ -150,14 +150,14 @@ H2 文件默认在 `./data/bbs.mv.db`，随 JAR 工作目录变化。H2 文件�
 
 | 键 | 默认值 | 说明 |
 |---|---|---|
-| `bbs.jwt.secret` | 开发占位值 | HMAC 密钥，生产至少 32 位随机串 |
-| `bbs.jwt.expire-days` | `7`（dev 30） | 会话有效天数 |
+| `bbs.jwt.secret` | 开发占位值 | HMAC 密钥；prod 下少于 32 位或占位值会直接启动失败 |
+| `bbs.jwt.expire-days` | `7`（dev 30） | 会话有效天数；Cookie 的 `Max-Age` 由它换算，不再单独写死 |
 | `bbs.jwt.cookie-domain` | 空 | 需要跨子域共享会话时设置 |
 | `bbs.jwt.cookie-secure` | 空（按 profile 推导） | 会话 Cookie 是否带 `Secure`；未设置时只有显式 `dev` 为 false，`prod` 与不激活 profile 都是 true |
 | `bbs.upload.dir` | `./uploads` | 上传文件目录 |
 | `bbs.upload.max-size` | `10485760` | 单文件上限（字节，10 MB） |
 
-会话只从 Cookie 或 `Authorization: Bearer` 读取；`?token=` 查询参数已不再接受（URL 里的凭据会进入访问日志、Referer 和浏览器历史）。
+会话只从 Cookie 或 `Authorization: Bearer` 读取；`?token=` 查询参数在 HTTP 与 WebSocket 上都不再接受（URL 里的凭据会进入访问日志、Referer 和浏览器历史）。
 
 ### 密钥来源
 

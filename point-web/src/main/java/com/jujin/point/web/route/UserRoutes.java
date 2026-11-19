@@ -139,11 +139,8 @@ public class UserRoutes {
                 ctx.sendJson(403, ApiResponse.error(403, "只能编辑自己的资料"));
                 return;
             }
-            var editReq = ctx.bodyAsJson(UpdateUserRequest.class);
-            if (editReq == null) {
-                ctx.sendJson(400, ApiResponse.error("请求体不能为空"));
-                return;
-            }
+            // Typed + validated: a null or mistyped body is a 400, not a 500.
+            var editReq = WebUtils.validatedBody(ctx, UpdateUserRequest.class);
             userSvc.updateUser(targetId, editReq);
             ctx.sendJson(200, ApiResponse.ok());
         }

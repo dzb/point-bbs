@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 class AuthServiceTest {
 
-    private static final String SECRET = "test-secret-0123456789-abcdef";
+    private static final String SECRET = "test-secret-0123456789-abcdef012345";
 
     private AuthService svc() {
         return new AuthService(SECRET, 7, "", "", "");
@@ -72,14 +72,35 @@ class AuthServiceTest {
     void secureCookieFollowsProfileAndExplicitConfig() {
         // Unset ⇒ Secure unless dev is explicit: prod and a no-profile boot
         // may both be behind TLS, where an unmarked cookie would leak.
-        assertTrue(new AuthService(SECRET, 7, "prod", "", "").sessionCookie("t", 60).contains("; Secure"));
+        assertTrue(new AuthService(SECRET, 7, "prod", "", "").sessionCookie("t").contains("; Secure"));
         assertTrue(new AuthService(SECRET, 7, "prod", "", "").clearSessionCookie().contains("; Secure"));
-        assertTrue(new AuthService(SECRET, 7, "", "", "").sessionCookie("t", 60).contains("; Secure"));
-        assertFalse(new AuthService(SECRET, 7, "dev", "", "").sessionCookie("t", 60).contains("Secure"));
+        assertTrue(new AuthService(SECRET, 7, "", "", "").sessionCookie("t").contains("; Secure"));
+        assertFalse(new AuthService(SECRET, 7, "dev", "", "").sessionCookie("t").contains("Secure"));
 
         // An explicit value wins over the profile default, in both directions.
-        assertFalse(new AuthService(SECRET, 7, "prod", "", "false").sessionCookie("t", 60).contains("Secure"));
-        assertTrue(new AuthService(SECRET, 7, "dev", "", "true").sessionCookie("t", 60).contains("Secure"));
+        assertFalse(new AuthService(SECRET, 7, "prod", "", "false").sessionCookie("t").contains("Secure"));
+        assertTrue(new AuthService(SECRET, 7, "dev", "", "true").sessionCookie("t").contains("Secure"));
+    }
+
+    @Test
+    void prodRejectsShortSecrets() {
+        var shortSecret = "x".repeat(AuthService.MIN_SECRET_LENGTH - 1);
+        var thrown = assertThrows(IllegalStateException.class,
+            () -> new AuthService(shortSecret, 7, "prod", "", ""));
+        assertTrue(thrown.getMessage().contains(String.valueOf(AuthService.MIN_SECRET_LENGTH - 1)),
+            "the message names the length that was rejected: " + thrown.getMessage());
+        assertDoesNotThrow(() -> new AuthService("x".repeat(AuthService.MIN_SECRET_LENGTH), 7, "prod", "", ""));
+        // Short secrets stay tolerated outside prod (warn only).
+        assertDoesNotThrow(() -> new AuthService("short", 7, "dev", "", ""));
+    }
+
+    @Test
+    void cookieMaxAgeFollowsTokenExpiry() {
+        assertTrue(new AuthService(SECRET, 7, "dev", "", "").sessionCookie("t").contains("Max-Age=604800"));
+        assertTrue(new AuthService(SECRET, 30, "dev", "", "").sessionCookie("t").contains("Max-Age=2592000"),
+            "a 30-day token must not be clipped by a fixed 7-day cookie");
+        assertTrue(new AuthService(SECRET, -1, "dev", "", "").sessionCookie("t").contains("Max-Age=0"),
+            "an already-expired token sets an immediately expired cookie");
     }
 
     @Test
