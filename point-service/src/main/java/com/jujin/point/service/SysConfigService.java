@@ -61,11 +61,12 @@ public class SysConfigService {
 
     public void set(String key, String value) {
         db.transaction(() -> {
-            // `key` is a H2 reserved word; NON_KEYWORDS in the JDBC URL makes the bare
-        // identifier valid on both MODE=MySQL and MODE=PostgreSQL (no quoting,
-        // because quoted identifiers are case-sensitive while the legacy
-        // MODE=MySQL database stored them upper-cased).
-            var existing = db.query("SELECT * FROM bbs_sys_config WHERE key = $key").bind("key", key)
+            // `key` is a reserved word, so the schema creates the column
+            // QUOTED — and quoted means case-sensitive: the column really is
+            // lowercase "key". An unquoted reference folds to KEY (H2/Postgres
+            // uppercase unquoted identifiers here) and fails with
+            // "Column \"KEY\" not found". Quote it to match the schema.
+            var existing = db.query("SELECT * FROM bbs_sys_config WHERE \"key\" = $key").bind("key", key)
                 .one(SysConfig.class);
             if (existing.isPresent()) {
                 var c = existing.get();
@@ -80,7 +81,7 @@ public class SysConfigService {
                 c.setName(key);
                 c.setCreateTime(System.currentTimeMillis());
                 c.setUpdateTime(System.currentTimeMillis());
-                db.execute("INSERT INTO bbs_sys_config (key, value, name, create_time, update_time) VALUES (?, ?, ?, ?, ?)",
+                db.execute("INSERT INTO bbs_sys_config (\"key\", value, name, create_time, update_time) VALUES (?, ?, ?, ?, ?)",
                     key, value, key, System.currentTimeMillis(), System.currentTimeMillis());
             }
         });
