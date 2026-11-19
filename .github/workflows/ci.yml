@@ -51,3 +51,9 @@ jobs:
           done
           curl -sf http://localhost:8082/healthz > /dev/null || { tail -n 50 /tmp/point.log; exit 1; }
           bash tools/smoke-api.sh http://localhost:8082
+
+      # Diagnostics only — never a retry. A failure here means startup or the
+      # seed ordering regressed, and the server log says which.
+      - name: Server log on smoke failure
+        if: failure()
+        run: tail -n 200 /tmp/point.log

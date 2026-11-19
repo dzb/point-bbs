@@ -51,12 +51,14 @@ public class PointModule implements ModuleEx {
             .primary();
 
         // ── 3. Seed default roles & permissions (idempotent) ──
-        // Before the listener: otherwise the health probe (and any client)
-        // can reach an API whose tables exist but whose seed has not been
-        // written yet — a fresh database briefly answers 404 for demo data.
+        // Depends on the schema and must finish before the listener: otherwise
+        // the health probe (and any client) can reach an API whose tables
+        // exist but whose seed has not been written yet — a fresh database
+        // briefly answers 404 for demo data.
         binder
             .contribute(RuntimeHook.class)
             .add("data-seed", new DataSeedHook())
+            .afterIfPresent("freeway.db.migration")
             .beforeIfPresent("freeway.http.server");
 
         // ── 4. Seed dev test data (idempotent, dev profiles only) ──

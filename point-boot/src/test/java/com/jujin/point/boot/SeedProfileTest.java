@@ -49,6 +49,13 @@ class SeedProfileTest {
         assertTrue(countUsers(app) > 0, "an explicit dev profile still seeds the demo site");
     }
 
+    @Test
+    void prodProfileDoesNotSeedDemoData() throws Exception {
+        app = start("point_seed_prod", "prod");
+        assertEquals(0, countUsers(app), "production must never create demo accounts");
+        assertTrue(countPermissions(app) > 0, "roles and permissions still seed on prod");
+    }
+
     private static AppRuntime start(String dbName, String profile) {
         System.setProperty(HttpModule.ConfigKeys.SERVER_PORT, "0");
         System.setProperty(HttpModule.ConfigKeys.SERVER_HOST, "127.0.0.1");

@@ -18,7 +18,7 @@ Runtime shapes: `PointApp` (single machine, default) and `PointCloudApp` (cloud,
 ## Build & run
 
 ```bash
-mvn -o clean test                        # 34 tests: service 28 + boot 6
+mvn -o clean test                        # 36 tests: service 28 + boot 8
 mvn -o clean package -pl point-boot -am  # fat JAR, mainClass PointApp
 java -jar point-boot/target/point-boot-*.jar --F2.profile=dev   # :8082, H2 at ./data/bbs
 
