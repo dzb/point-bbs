@@ -80,6 +80,9 @@ public class AuthFilter implements HttpFilter {
         // HttpOnly session cookie (SameSite=Lax) — the primary session carrier
         var cookie = AuthService.tokenFromCookie(ctx.header("Cookie").orElse(null));
         if (cookie != null) return cookie;
-        return ctx.queryParam("token").orElse(null);
+        // No ?token= fallback: a URL carrying a credential lands in access
+        // logs, Referer headers, proxy logs and browser history. The SPA
+        // sends the cookie; scripts use Authorization.
+        return null;
     }
 }

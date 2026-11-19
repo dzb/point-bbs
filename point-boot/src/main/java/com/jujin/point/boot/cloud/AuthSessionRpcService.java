@@ -3,6 +3,7 @@ package com.jujin.point.boot.cloud;
 import com.jujin.freeway.ioc.annotation.Inject;
 import com.jujin.point.domain.dto.CurrentUser;
 import com.jujin.point.service.AuthService;
+import com.jujin.point.service.PermissionService;
 
 /**
  * Cross-process session validation — the wire surface of point-bbs auth,
@@ -21,14 +22,26 @@ import com.jujin.point.service.AuthService;
  * type is the boundary). Peers reaching it ride the mesh's transport security
  * and discovery — this endpoint does not itself authorize callers beyond
  * what the token proves.</p>
+ *
+ * <p><b>Permissions are resolved, not read from the token.</b> Tokens are
+ * signed at sign-in without role claims (a role set in a JWT would go stale
+ * the moment an admin grants or revokes one), so the returned
+ * {@link CurrentUser} carries the same permission codes the local
+ * {@code AuthFilter} resolves for a request on this process. Without this
+ * lookup a peer would see {@code isAdmin() == false} for a real admin.</p>
  */
 public class AuthSessionRpcService {
 
     private final AuthService authService;
+    private final PermissionService permissionService;
 
     @Inject
-    public AuthSessionRpcService(AuthService authService) {
+    public AuthSessionRpcService(
+        AuthService authService,
+        PermissionService permissionService
+    ) {
         this.authService = authService;
+        this.permissionService = permissionService;
     }
 
     /**
@@ -39,6 +52,11 @@ public class AuthSessionRpcService {
         if (token == null || token.isBlank()) {
             return null;
         }
-        return authService.validateToken(token).orElse(null);
+        var user = authService.validateToken(token).orElse(null);
+        if (user == null) {
+            return null;
+        }
+        var permCodes = permissionService.getUserPermissionCodes(user.userId());
+        return new CurrentUser(user.userId(), user.nickname(), user.avatar(), permCodes);
     }
 }

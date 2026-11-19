@@ -10,7 +10,6 @@ import com.jujin.point.domain.auth.AuthApi;
 import com.jujin.point.web.filter.AuthFilter;
 import com.jujin.point.web.filter.PointErrorMapper;
 import com.jujin.point.web.filter.SecurityHeadersFilter;
-import com.jujin.point.web.filter.SpaFilter;
 import com.jujin.point.web.route.*;
 
 /**
@@ -55,28 +54,29 @@ public class WebModule implements ModuleEx {
                     .withCacheMaxAge(java.time.Duration.ofSeconds(31536000))
             ); // 1 year
 
-        // Serve root-level static files (favicon, etc.) — fallthrough for SPA routes.
+        // Serve root-level static files (favicon, etc.) and the SPA shell.
         // Entry files must revalidate every time (max-age=0 + ETag → cheap
         // 304): index.html references hashed bundles by name, so a cached
         // index.html would pin the browser to a stale frontend for a day.
+        //
+        // withSpaFallback is the terminal hop of nginx's try_files: it answers
+        // an extensionless GET/HEAD with index.html only after the mount and
+        // the whole route chain have missed, and never rewrites a 405 or a
+        // dotted asset path. A filter cannot do that — it runs before route
+        // dispatch, which is how the old spa-filter used to swallow
+        // /health/live, /health/ready and the WebSocket upgrade.
         binder
             .contribute(StaticResourceMount.class)
             .add(
                 StaticResourceMount.classpath("/", "static")
-                    .withRouteFallback(true)
+                    .withSpaFallback(true)
                     .withCacheMaxAge(java.time.Duration.ofSeconds(0))
             ); // revalidate (hashed /assets/* keep their own immutable 1y mount above)
 
-        // SPA frontend fallthrough filter (skips /api paths)
-        binder.contribute(HttpFilter.class).add("spa-filter", new SpaFilter());
-
-        // Security headers on every response. Must run BEFORE spa-filter:
-        // SpaFilter serves index.html without calling next.handle(), so any
-        // filter after it never sees SPA routes.
+        // Security headers on every response.
         binder
             .contribute(HttpFilter.class)
-            .add("security-headers", new SecurityHeadersFilter())
-            .before("spa-filter");
+            .add("security-headers", new SecurityHeadersFilter());
 
         // Auth filter — built with the container, resolving its service graph
         // per request (freeway 2.0 seals extension stores after construction).

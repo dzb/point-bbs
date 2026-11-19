@@ -9,7 +9,7 @@ class AuthServiceTest {
     private static final String SECRET = "test-secret-0123456789-abcdef";
 
     private AuthService svc() {
-        return new AuthService(SECRET, 7, "", "");
+        return new AuthService(SECRET, 7, "", "", "");
     }
 
     @Test
@@ -39,13 +39,13 @@ class AuthServiceTest {
     @Test
     void rejectsWrongSecret() {
         var token = svc().createToken(42L, "墨客", null, null);
-        var other = new AuthService("a-completely-different-secret-123456", 7, "", "");
+        var other = new AuthService("a-completely-different-secret-123456", 7, "", "", "");
         assertTrue(other.validateToken(token).isEmpty());
     }
 
     @Test
     void rejectsExpiredToken() {
-        var svc = new AuthService(SECRET, -1, "", ""); // already expired on creation
+        var svc = new AuthService(SECRET, -1, "", "", ""); // already expired on creation
         var token = svc.createToken(42L, "墨客", null, null);
         assertTrue(svc.validateToken(token).isEmpty());
     }
@@ -69,12 +69,24 @@ class AuthServiceTest {
     }
 
     @Test
+    void secureCookieFollowsProfileAndExplicitConfig() {
+        // Unset ⇒ prod implies TLS; dev is plain HTTP through the Vite proxy.
+        assertTrue(new AuthService(SECRET, 7, "prod", "", "").sessionCookie("t", 60).contains("; Secure"));
+        assertTrue(new AuthService(SECRET, 7, "prod", "", "").clearSessionCookie().contains("; Secure"));
+        assertFalse(new AuthService(SECRET, 7, "dev", "", "").sessionCookie("t", 60).contains("Secure"));
+
+        // An explicit value wins over the profile default, in both directions.
+        assertFalse(new AuthService(SECRET, 7, "prod", "", "false").sessionCookie("t", 60).contains("Secure"));
+        assertTrue(new AuthService(SECRET, 7, "dev", "", "true").sessionCookie("t", 60).contains("Secure"));
+    }
+
+    @Test
     void rejectsPlaceholderSecretsOnProdProfile() {
         assertThrows(IllegalStateException.class,
-            () -> new AuthService("change-me-in-production-use-a-long-random-string", 7, "prod", ""));
+            () -> new AuthService("change-me-in-production-use-a-long-random-string", 7, "prod", "", ""));
         assertThrows(IllegalStateException.class,
-            () -> new AuthService("", 7, "prod", ""));
+            () -> new AuthService("", 7, "prod", "", ""));
         // Non-prod: placeholder is tolerated (warn only)
-        assertDoesNotThrow(() -> new AuthService("change-me", 7, "dev", ""));
+        assertDoesNotThrow(() -> new AuthService("change-me", 7, "dev", "", ""));
     }
 }

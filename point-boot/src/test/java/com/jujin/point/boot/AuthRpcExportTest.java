@@ -1,6 +1,7 @@
 package com.jujin.point.boot;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -11,8 +12,13 @@ import com.jujin.freeway.cloud.rpc.RemoteCaller;
 import com.jujin.freeway.http.HttpModule;
 import com.jujin.freeway.http.HttpServer;
 import com.jujin.point.boot.cloud.AuthRpcExportModule;
+import com.jujin.point.boot.cloud.CloudHealthModule;
 import com.jujin.point.domain.dto.CurrentUser;
+import com.jujin.point.domain.dto.UserDtos.CreateUserRequest;
+import com.jujin.point.domain.entity.Role;
 import com.jujin.point.service.AuthService;
+import com.jujin.point.service.PermissionService;
+import com.jujin.point.service.UserService;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -20,7 +26,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -65,6 +70,7 @@ class AuthRpcExportTest {
         var launcher = FreewayApp.create(PointModules.base()).name("point-test");
         if (cloud) {
             launcher.add(new AuthRpcExportModule());
+            launcher.add(new CloudHealthModule());
             launcher.add(com.jujin.freeway.cloud.CloudModule.class);
             // freeway 2.0.1: config-driven static discovery, no app module.
             launcher.add(StaticModule.class);
@@ -101,20 +107,44 @@ class AuthRpcExportTest {
     }
 
     @Test
-    void cloudShapeValidatesTokensOverRpc() throws Exception {
+    void cloudShapeResolvesPermissionsOverRpc() throws Exception {
         int port = setCommonConfig(true);
         app = startTree(true);
         assertEquals(port, app.get(HttpServer.class).port(),
             "the cloud shape binds the endpoint named in static discovery");
 
-        var token = app.get(AuthService.class)
-            .createToken(7L, "rpcuser", "avatar-url", Set.of("admin"));
+        var users = app.get(UserService.class);
+        var permissions = app.get(PermissionService.class);
+        var auth = app.get(AuthService.class);
+        long adminRoleId = permissions.getAllRoles().stream()
+            .filter(role -> "admin".equals(role.getCode()))
+            .map(Role::getId)
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("the seeded admin role is missing"));
 
+        var admin = users.signUp(new CreateUserRequest(
+            "rpcadmin", "rpc-admin@example.com", null, "rpcadmin",
+            "secret123", null, null, null));
+        permissions.assignRole(admin.getId(), adminRoleId);
+
+        // Exactly what /api/auth/signin issues: a token with no role claim.
+        // Permissions must be resolved at validation time, not read from it.
+        var adminToken = auth.createToken(admin.getId(), "rpcadmin", "", null);
         var current = app.get(RemoteCaller.class)
-            .invoke(SERVICE_ID, "auth", "validateToken", List.of(token), CurrentUser.class);
-        assertEquals(7L, current.userId(), "the export resolves the presented token");
-        assertEquals("rpcuser", current.nickname());
-        assertTrue(current.isAdmin(), "roles ride the wire on CurrentUser");
+            .invoke(SERVICE_ID, "auth", "validateToken", List.of(adminToken), CurrentUser.class);
+        assertEquals(admin.getId(), current.userId(), "the export resolves the presented token");
+        assertTrue(current.isAdmin(),
+            "an admin's permission codes ride the wire even though the JWT has no role claim");
+        assertTrue(current.roles().contains("admin"),
+            "roles carries permission codes, matching AuthFilter's local identity");
+
+        var plain = users.signUp(new CreateUserRequest(
+            "rpcplain", "rpc-plain@example.com", null, "rpcplain",
+            "secret123", null, null, null));
+        var plainToken = auth.createToken(plain.getId(), "rpcplain", "", null);
+        var plainUser = app.get(RemoteCaller.class)
+            .invoke(SERVICE_ID, "auth", "validateToken", List.of(plainToken), CurrentUser.class);
+        assertFalse(plainUser.isAdmin(), "a user with no role is not an admin over RPC");
 
         var bogus = app.get(RemoteCaller.class)
             .invoke(SERVICE_ID, "auth", "validateToken", List.of("x.y.z"), CurrentUser.class);

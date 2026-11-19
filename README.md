@@ -81,14 +81,16 @@ Prefer the manual route:
 
 ```bash
 mvn clean package -pl point-boot -am
-java -jar point-boot/target/point-boot-*.jar
+java -jar point-boot/target/point-boot-*.jar --F2.profile=dev
 ```
 
 The JAR contains:
 - The REST API server (Freeway embedded HTTP engine)
 - The compiled frontend SPA (served as static resources)
 - The **H2 file-based database** engine (auto-creates `./data/bbs` on first run — data persists across restarts)
-- Schema migration and seed data (auto-run at startup)
+- Schema migration at startup; **demo data only with an explicit `dev` profile**
+  (roles, permissions and the `bbs.admin.*` bootstrap account always seed).
+  Without a profile the site starts empty — use `prod` for a real deployment.
 
 The runtime needs no Docker, PostgreSQL, nginx or Node.js.
 

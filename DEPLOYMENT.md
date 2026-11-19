@@ -115,7 +115,9 @@
 |---|---|---|---|
 | `dev` | H2 文件 | 会写入演示用户/帖子/评论，密码为 `123456` | 仅警告 |
 | `prod` | PostgreSQL（默认） | 跳过 | **启动失败**，必须设置真实密钥 |
-| 不激活 | 基础配置 | 会写入演示数据 | 仅警告 |
+| 不激活 | 基础配置 | **跳过**（只写入角色/权限与 `bbs.admin.*` 引导管理员） | 仅警告 |
+
+演示数据只在**显式激活 `dev` profile** 时写入。裸跑 `java -jar`（无 profile）不再创建演示账号——它曾经看起来像正常部署，却在空库上写入 `123456` 账号和演示内容。
 
 **任何对外可访问的部署都必须使用 `prod` profile。** `dev` 数据只用于本地开发。
 
@@ -151,8 +153,25 @@ H2 文件默认在 `./data/bbs.mv.db`，随 JAR 工作目录变化。H2 文件�
 | `bbs.jwt.secret` | 开发占位值 | HMAC 密钥，生产至少 32 位随机串 |
 | `bbs.jwt.expire-days` | `7`（dev 30） | 会话有效天数 |
 | `bbs.jwt.cookie-domain` | 空 | 需要跨子域共享会话时设置 |
+| `bbs.jwt.cookie-secure` | 空（按 profile 推导） | 会话 Cookie 是否带 `Secure`；未设置时 `prod` 为 true、`dev` 为 false |
 | `bbs.upload.dir` | `./uploads` | 上传文件目录 |
 | `bbs.upload.max-size` | `10485760` | 单文件上限（字节，10 MB） |
+
+会话只从 Cookie 或 `Authorization: Bearer` 读取；`?token=` 查询参数已不再接受（URL 里的凭据会进入访问日志、Referer 和浏览器历史）。
+
+### 密钥来源
+
+不要把密钥放在 `-D` 启动参数里：`ps` 对所有本机用户可见。freeway 会加载 `freeway.config.file`（环境变量 `FREEWAY_CONFIG_FILE`）指向的文件，并把它排在配置文件的最高优先级。
+
+`point.sh` 已按此处理：它把 `JWT_SECRET`、`DB_*`、`ADMIN_*`、`UPLOAD_DIR`、`STATIC_SERVICES` 写入 `logs/point.runtime.json`（权限 0600，`stop` 时删除），再通过 `FREEWAY_CONFIG_FILE` 传给进程。想自己管理这份文件时：
+
+```bash
+install -m 600 /dev/null /etc/point/secrets.json
+# 写入 "bbs.jwt.secret"、"freeway.db.password" 等键（点号分隔或嵌套均可）
+POINT_CONFIG=/etc/point/secrets.json ./point.sh start --profile prod
+```
+
+systemd 的 `EnvironmentFile=` 仍然可用：变量名不变，脚本会把它们转进运行时配置文件。
 
 生成密钥：
 
@@ -316,7 +335,9 @@ point=http://point.default.svc.cluster.local:8080
 云形态健康检查：
 
 - `GET /health/live`：进程存活
-- `GET /health/ready`：依赖就绪
+- `GET /health/ready`：依赖就绪。返回 JSON，`cloud.point-db.healthy` 是数据库检查（`CloudHealthModule` 贡献的 `SELECT 1`）；数据库不可达时整个探针返回 503
+
+`point.sh` 在 cloud 模式等待 `/health/ready`（而不是 `/health/live`），因此进程起来但数据库不可用不会报"启动完成"。单机模式仍使用 `/healthz`。
 
 需要动态成员时，改用 `MemberModule` + freeway-ext 的 Fleet/Consul 适配器，替换静态发现配置。
 
@@ -330,7 +351,7 @@ point=http://point.default.svc.cluster.local:8080
 | 前台运行 | `./point.sh run` |
 | 停止 | `./point.sh stop` |
 | 重启 | `./point.sh restart` |
-| 状态 | `./point.sh status`（从运行进程自动识别模式和端口，选择 `/healthz` 或 `/health/live`） |
+| 状态 | `./point.sh status`（从运行进程自动识别模式和端口，选择 `/healthz` 或 `/health/ready`） |
 | 应用输出 | `./point.sh logs`（`logs/point.out`） |
 | JUL 文件日志 | `logs/point.0.log`（50 MB 滚动，保留 30 个） |
 | 健康检查 | `curl http://127.0.0.1:8082/healthz` |

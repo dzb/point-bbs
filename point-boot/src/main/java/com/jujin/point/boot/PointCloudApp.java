@@ -4,6 +4,7 @@ import com.jujin.freeway.boot.FreewayApp;
 import com.jujin.freeway.cloud.CloudModule;
 import com.jujin.freeway.cloud.discovery.StaticModule;
 import com.jujin.point.boot.cloud.AuthRpcExportModule;
+import com.jujin.point.boot.cloud.CloudHealthModule;
 
 /**
  * point in the cloud — the mesh deployment shape of the same application.
@@ -46,6 +47,7 @@ public class PointCloudApp {
         var runtime = FreewayApp.create(PointModules.base())
             .name("point")
             .add(new AuthRpcExportModule())
+            .add(new CloudHealthModule())
             .add(CloudModule.class)
             .add(new StaticModule())
             .autoDiscovery(false) // Same explicit composition as the monolith

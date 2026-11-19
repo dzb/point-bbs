@@ -16,6 +16,10 @@ cd "$ROOT"
 
 PID_FILE="${PID_FILE:-logs/point.pid}"
 LOG_FILE="${LOG_FILE:-logs/point.out}"
+# Generated per start (0600); holds secrets so they stay out of argv.
+RUNTIME_CONFIG="${RUNTIME_CONFIG:-logs/point.runtime.json}"
+# Operator-supplied config file (0600) — used instead of generating one.
+POINT_CONFIG="${POINT_CONFIG:-}"
 PROFILE_EXPLICIT=0
 if [[ -n "${PROFILE:-}" ]]; then PROFILE_EXPLICIT=1; fi
 PROFILE="${PROFILE:-dev}"
@@ -52,6 +56,11 @@ usage() {
   STATIC_SERVICES=...     cloud 模式的静态发现覆盖
   MODE=monolith|cloud     启动模式，默认 monolith
   JAR=path/to/point-boot.jar
+  POINT_CONFIG=...        使用你自己的 0600 配置文件，而不是生成 logs/point.runtime.json
+
+  上面的密钥类变量会写入 0600 的运行时配置文件（logs/point.runtime.json），
+  不再出现在 java 命令行里（-D 参数对所有本机用户可见）。
+  自定义 key 也可以直接写进 POINT_CONFIG 指向的 JSON（点号分隔或嵌套均可）。
 
   --yes / -y              restart 切换模式时跳过确认（非交互环境必须）
 
@@ -122,8 +131,12 @@ is_running() {
 }
 
 health_url() {
+  # Cloud instances are only useful once their dependencies answer, so the
+  # startup wait (and `status`) uses the readiness probe — it aggregates the
+  # application's CloudHealthContributor (database) and answers 503 while a
+  # dependency is unreachable. /health/live only proves the process is up.
   if [[ "$MODE" == "cloud" ]]; then
-    printf 'http://127.0.0.1:%s/health/live\n' "$PORT"
+    printf 'http://127.0.0.1:%s/health/ready\n' "$PORT"
   else
     printf 'http://127.0.0.1:%s/healthz\n' "$PORT"
   fi
@@ -173,6 +186,53 @@ build_app() {
   fi
 }
 
+json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
+# Writes the environment overrides that must not sit on the JVM command line
+# (`ps` shows argv to every local user) into a 0600 JSON file. freeway loads the
+# file named by FREEWAY_CONFIG_FILE at the top of its file tier, so the values
+# reach the app exactly as the old -D flags did.
+# Returns 1 when there is nothing to write (no file is created).
+write_runtime_config() {
+  local path="$1"
+  local -a entries=()
+  [[ -n "${DB_URL:-}" ]] && entries+=("\"freeway.db.url\": \"$(json_escape "$DB_URL")\"")
+  [[ -n "${DB_USERNAME:-}" ]] && entries+=("\"freeway.db.username\": \"$(json_escape "$DB_USERNAME")\"")
+  [[ -n "${DB_PASSWORD:-}" ]] && entries+=("\"freeway.db.password\": \"$(json_escape "$DB_PASSWORD")\"")
+  [[ -n "${JWT_SECRET:-}" ]] && entries+=("\"bbs.jwt.secret\": \"$(json_escape "$JWT_SECRET")\"")
+  [[ -n "${ADMIN_USERNAME:-}" ]] && entries+=("\"bbs.admin.username\": \"$(json_escape "$ADMIN_USERNAME")\"")
+  [[ -n "${ADMIN_PASSWORD:-}" ]] && entries+=("\"bbs.admin.password\": \"$(json_escape "$ADMIN_PASSWORD")\"")
+  [[ -n "${UPLOAD_DIR:-}" ]] && entries+=("\"bbs.upload.dir\": \"$(json_escape "$UPLOAD_DIR")\"")
+  [[ -n "${STATIC_SERVICES:-}" ]] && entries+=("\"freeway.cloud.discovery.static.services\": \"$(json_escape "$STATIC_SERVICES")\"")
+  [[ ${#entries[@]} -gt 0 ]] || return 1
+
+  mkdir -p "$(dirname "$path")"
+  (
+    umask 077
+    {
+      printf '{\n'
+      local i
+      for i in "${!entries[@]}"; do
+        printf '  %s' "${entries[$i]}"
+        [[ "$i" -lt $((${#entries[@]} - 1)) ]] && printf ','
+        printf '\n'
+      done
+      printf '}\n'
+    } > "$path"
+  )
+  chmod 600 "$path"
+  log "运行时配置写入 $path（0600）"
+  return 0
+}
+
 start_app() {
   if is_running; then
     log "point 已在运行 (PID $(cat "$PID_FILE"))"
@@ -190,16 +250,25 @@ start_app() {
   if [[ ${#java_opts[@]} -gt 0 ]]; then
     jvm_args+=("${java_opts[@]}")
   fi
+  # Non-secret values stay on the command line: point.sh's detected_port()
+  # reads the port back out of `ps`.
   jvm_args+=("-DF2.http.server.port=$PORT")
   [[ -n "${HOST:-}" ]] && jvm_args+=("-DF2.http.server.host=$HOST")
-  [[ -n "${DB_URL:-}" ]] && jvm_args+=("-DF2.db.url=$DB_URL")
-  [[ -n "${DB_USERNAME:-}" ]] && jvm_args+=("-DF2.db.username=$DB_USERNAME")
-  [[ -n "${DB_PASSWORD:-}" ]] && jvm_args+=("-DF2.db.password=$DB_PASSWORD")
-  [[ -n "${JWT_SECRET:-}" ]] && jvm_args+=("-Dbbs.jwt.secret=$JWT_SECRET")
-  [[ -n "${ADMIN_USERNAME:-}" ]] && jvm_args+=("-Dbbs.admin.username=$ADMIN_USERNAME")
-  [[ -n "${ADMIN_PASSWORD:-}" ]] && jvm_args+=("-Dbbs.admin.password=$ADMIN_PASSWORD")
-  [[ -n "${UPLOAD_DIR:-}" ]] && jvm_args+=("-Dbbs.upload.dir=$UPLOAD_DIR")
-  [[ -n "${STATIC_SERVICES:-}" ]] && jvm_args+=("-DF2.cloud.discovery.static.services=$STATIC_SERVICES")
+
+  # Everything else (credentials included) goes through a config file.
+  local config_file="${POINT_CONFIG:-}"
+  if [[ -n "$config_file" ]]; then
+    [[ -f "$config_file" ]] || die "POINT_CONFIG 指向的文件不存在: $config_file"
+    local perms
+    perms="$(stat -f '%Lp' "$config_file" 2>/dev/null || stat -c '%a' "$config_file" 2>/dev/null || printf '')"
+    [[ -z "$perms" || "$perms" == "600" ]] || warn "POINT_CONFIG 建议设为 0600: chmod 600 $config_file"
+  else
+    config_file="$RUNTIME_CONFIG"
+    write_runtime_config "$config_file" || config_file=""
+  fi
+  if [[ -n "$config_file" ]]; then
+    export FREEWAY_CONFIG_FILE="$config_file"
+  fi
 
   local main="com.jujin.point.boot.PointApp"
   local -a app_args=()
@@ -251,6 +320,7 @@ stop_app() {
   if ! is_running; then
     log "point 未运行"
     rm -f "$PID_FILE"
+    [[ -z "${POINT_CONFIG:-}" ]] && rm -f "$RUNTIME_CONFIG"
     return 0
   fi
   local pid; pid="$(cat "$PID_FILE")"
@@ -266,6 +336,8 @@ stop_app() {
     kill -9 "$pid" 2>/dev/null || true
   fi
   rm -f "$PID_FILE"
+  # The generated file holds secrets; it is regenerated on the next start.
+  [[ -z "${POINT_CONFIG:-}" ]] && rm -f "$RUNTIME_CONFIG"
   log "已停止"
 }
 

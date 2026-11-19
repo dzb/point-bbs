@@ -41,7 +41,10 @@ jobs:
         run: |
           JAR="$(ls -t point-boot/target/point-boot-*.jar | head -n 1)"
           echo "starting $JAR"
-          java -jar "$JAR" > /tmp/point.log 2>&1 &
+          # smoke-api.sh signs in as the dev seed account (moke/123456) and
+          # asserts the seeded admin, so the runner needs the dev profile:
+          # without it the database stays empty by design.
+          java -jar "$JAR" --F2.profile=dev > /tmp/point.log 2>&1 &
           for i in $(seq 1 60); do
             curl -sf http://localhost:8082/healthz > /dev/null && break
             sleep 1

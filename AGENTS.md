@@ -18,9 +18,9 @@ Runtime shapes: `PointApp` (single machine, default) and `PointCloudApp` (cloud,
 ## Build & run
 
 ```bash
-mvn -o clean test                        # 24 tests: service 22 + boot 2
+mvn -o clean test                        # 29 tests: service 23 + boot 6
 mvn -o clean package -pl point-boot -am  # fat JAR, mainClass PointApp
-java -jar point-boot/target/point-boot-*.jar   # :8082, H2 at ./data/bbs
+java -jar point-boot/target/point-boot-*.jar --F2.profile=dev   # :8082, H2 at ./data/bbs
 
 ./point.sh build [--frontend] [--fast]   # build
 ./point.sh start|stop|restart|status|logs
@@ -49,11 +49,20 @@ JSON, layered: `application.json` overridden by `application-dev.json` / `applic
 | `F2.http.server.port` / `host` | HTTP listener |
 | `F2.db.url` / `username` / `password` | H2 or PostgreSQL |
 | `bbs.jwt.secret` / `expire-days` / `cookie-domain` | session signing |
+| `bbs.jwt.cookie-secure` | `Secure` on the session cookie; unset ⇒ true under `prod`, false under `dev` |
 | `bbs.upload.dir` / `max-size` | uploads; default 10 MB |
 | `bbs.admin.username` / `password` | bootstrap admin (password ≥ 8) |
 | `F2.cloud.discovery.static.services` | cloud VIP: `serviceId=scheme://host:port[/basePath]` |
 
-`dev` seeds demo data (password `123456`); `prod` skips it and fails fast on a placeholder JWT secret. Anything public must use `prod`.
+Secrets belong in a config file, not `-D`: freeway loads the file named by
+`freeway.config.file` (env `FREEWAY_CONFIG_FILE`) at the top of its file tier.
+`point.sh` writes the env overrides into `logs/point.runtime.json` (0600) for
+exactly this reason — `ps` exposes argv to every local user. `bbs.*` keys are
+outside the `FREEWAY_`/`F2_` env mapping, so they have no environment-variable form.
+
+Demo data (password `123456`) seeds **only when the `dev` profile is explicitly
+active**; no profile means an empty site plus roles/permissions. `prod` fails
+fast on a placeholder JWT secret; anything public must use `prod`.
 
 ## Backend architecture
 
@@ -61,8 +70,8 @@ JSON, layered: `application.json` overridden by `application-dev.json` / `applic
 - **RuntimeHook** — ordered startup: schema → seeds → HTTP.
 - **Container** — constructor injection; routes/filters/subscribers are contributions, not scanned.
 - **DB** — `Schema.ensure` is idempotent; `db.query()` / `db.execute()`; dialect from the JDBC URL.
-- **Auth** — HttpOnly `point_token` cookie, SameSite=Lax; legacy Bearer/`?token=` accepted. `AuthFilter` binds `CurrentUser` via `ScopedValue`. `AuthApi` is the in-process seam; cloud peers use `RpcExport` at `/rpc/auth/validateToken`.
-- **Cloud** — `CloudModule` + config-driven `StaticModule`; no registry, heartbeat or discovery write side.
+- **Auth** — HttpOnly `point_token` cookie, SameSite=Lax (+ `Secure` when configured); `Authorization` header also accepted, `?token=` deliberately is not. `AuthFilter` binds `CurrentUser` via `ScopedValue`. `AuthApi` is the in-process seam; cloud peers use `RpcExport` at `/rpc/auth/validateToken`.
+- **Cloud** — `CloudModule` + config-driven `StaticModule`; no registry, heartbeat or discovery write side. `CloudHealthModule` contributes the database to `/health/ready` (`/health/live` and `/health/ready` are freeway's probes; `/healthz` stays the single-machine check).
 
 ## Frontend
 
@@ -86,7 +95,8 @@ JSON, layered: `application.json` overridden by `application-dev.json` / `applic
 - Let the JDBC URL choose the dialect; do not force `freeway.db.dialect=h2`. H2 runs `MODE=PostgreSQL` with `NON_KEYWORDS=...`.
 - `LIKE ... ESCAPE '!'`; `ESCAPE '\'` breaks under the MySQL lexer.
 - JWT placeholder fails fast in `prod`; sessions are HttpOnly cookies — never reintroduce localStorage tokens.
-- Security headers must run before `AuthFilter`/`SpaFilter`, including on 401/403 responses.
+- Security headers must run before `AuthFilter`, including on 401/403 responses.
+- The SPA shell comes from the root static mount's `.withSpaFallback(true)` — never from a filter. A filter runs before route dispatch, so it would shadow `/health/*`, `/rpc/*` and the `/ws` upgrade; the mount fallback only answers after the route chain misses, and never for dotted asset paths.
 - Errors go through `ErrorMapper`; the server writes the response. `PointErrorMapper` maps app exceptions. Do not add a writing error filter — 2.0 maps exceptions inside each filter level.
 - Event subscribers that resolve `EventBus`-dependent services must be registered from `RuntimeHook.start`, not composition-time contributions.
 - Deferred contributions (filters, subscribers) are constructed before extension stores seal. Do not inject the service graph into a filter; `AuthFilter` holds `Container` and resolves per request. Follow that pattern.

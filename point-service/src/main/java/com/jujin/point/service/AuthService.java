@@ -27,7 +27,8 @@ public class AuthService {
         @Symbol("${bbs.jwt.secret:}") String secret,
         @Symbol("${bbs.jwt.expire-days:7}") int expireDays,
         @Symbol("${freeway.profile:}") String profile,
-        @Symbol("${bbs.jwt.cookie-domain:}") String cookieDomain
+        @Symbol("${bbs.jwt.cookie-domain:}") String cookieDomain,
+        @Symbol("${bbs.jwt.cookie-secure:}") String cookieSecure
     ) {
         // A known/placeholder HMAC key lets anyone forge tokens for any userId.
         var effective = secret == null ? "" : secret.trim();
@@ -37,7 +38,8 @@ public class AuthService {
             if (prod) {
                 throw new IllegalStateException(
                     "bbs.jwt.secret is missing or still a placeholder — set a " +
-                    "random secret of at least 32 chars (e.g. via -Dbbs.jwt.secret=...)"
+                    "random secret of at least 32 chars (config file named by " +
+                    "freeway.config.file, or -Dbbs.jwt.secret=...)"
                 );
             }
             log.warn(
@@ -48,14 +50,24 @@ public class AuthService {
         this.secret = effective;
         this.expireDays = expireDays;
         this.cookieDomain = cookieDomain == null ? "" : cookieDomain.trim();
+
+        // bbs.jwt.cookie-secure unset ⇒ derive from the profile: production is
+        // served over TLS, where a Secure cookie keeps the session off any
+        // plaintext request; dev is plain HTTP (Vite proxy) and would lose it.
+        var declared = cookieSecure == null ? "" : cookieSecure.trim();
+        this.secureCookie = declared.isEmpty()
+            ? (profile != null && profile.contains("prod"))
+            : Boolean.parseBoolean(declared);
     }
 
     private final String cookieDomain;
+    private final boolean secureCookie;
 
     public static final String COOKIE_NAME = "point_token";
 
     /**
-     * Set-Cookie value for the session token: HttpOnly + SameSite=Lax.
+     * Set-Cookie value for the session token: HttpOnly + SameSite=Lax (+ Secure
+     * when the profile or bbs.jwt.cookie-secure says so).
      * SameSite=Lax keeps the cookie off cross-site POST/XHR requests, which
      * is the CSRF protection for all state-changing endpoints (they are all
      * POST). The optional Domain (dev: localhost so the Vite proxy origin
@@ -65,16 +77,22 @@ public class AuthService {
         var sb = new StringBuilder(COOKIE_NAME)
             .append('=').append(token)
             .append("; Path=/; HttpOnly; SameSite=Lax; Max-Age=").append(maxAgeSeconds);
+        if (secureCookie) {
+            sb.append("; Secure");
+        }
         if (!cookieDomain.isEmpty()) {
             sb.append("; Domain=").append(cookieDomain);
         }
         return sb.toString();
     }
 
-    /** Set-Cookie value that deletes the session cookie. */
+    /** Set-Cookie value that deletes the session cookie (same attributes). */
     public String clearSessionCookie() {
         var sb = new StringBuilder(COOKIE_NAME)
             .append("=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0");
+        if (secureCookie) {
+            sb.append("; Secure");
+        }
         if (!cookieDomain.isEmpty()) {
             sb.append("; Domain=").append(cookieDomain);
         }

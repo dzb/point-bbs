@@ -10,7 +10,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Seeds dev demo data — users, categories, topics, comments, articles,
- * follows, likes and counters (idempotent, skipped on prod profiles).
+ * follows, likes and counters (idempotent, only when the dev profile is
+ * explicitly active).
  * Contributed by {@link PointModule} as the {@code dev-data-seed}
  * RuntimeHook.
  */
@@ -19,15 +20,18 @@ final class DevDataSeedHook implements RuntimeHook {
 
     @Override
     public void start(Container container) {
-        // Never seed demo accounts on production: the dev data
-        // ships known passwords ("123456") and demo content.
+        // Demo data ships known passwords ("123456"), so it is seeded only
+        // when the dev profile is explicitly active. An allow-list, not a
+        // prod deny-list: a bare `java -jar` (no profile) used to look like a
+        // normal deployment while creating demo users and an admin account.
         var config = container.get(
             com.jujin.freeway.boot.AppConfig.class
         );
-        if (
-            config.profiles().stream().anyMatch("prod"::equals)
-        ) {
-            log.info("[dev-data] skipped (prod profile active)");
+        if (!config.profiles().contains("dev")) {
+            log.info(
+                "[dev-data] skipped (dev profile not active; profiles={})",
+                config.profiles()
+            );
             return;
         }
         var db = container.get(Database.class);
