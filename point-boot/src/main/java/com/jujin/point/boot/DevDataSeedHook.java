@@ -43,6 +43,7 @@ final class DevDataSeedHook implements RuntimeHook {
         // admin role so the admin panel is usable in dev. Runs
         // both on pre-existing databases and after a fresh seed.
         if (userCount > 0) {
+            log.info("[dev-data] skipped ({} users already present)", userCount);
             grantAdminToMoke(db);
             return;
         }
