@@ -54,22 +54,24 @@ public class WebModule implements ModuleEx {
                     .withCacheMaxAge(java.time.Duration.ofSeconds(31536000))
             ); // 1 year
 
-        // Serve root-level static files (favicon, etc.) and the SPA shell.
-        // Entry files must revalidate every time (max-age=0 + ETag → cheap
-        // 304): index.html references hashed bundles by name, so a cached
-        // index.html would pin the browser to a stale frontend for a day.
+        // Serve root-level static files (favicon, etc.) and the SPA shell at
+        // "/" (the mount's directory → index.html rule). Entry files must
+        // revalidate every time (max-age=0 + ETag → cheap 304): index.html
+        // references hashed bundles by name, so a cached index.html would pin
+        // the browser to a stale frontend for a day.
         //
-        // withSpaFallback is the terminal hop of nginx's try_files: it answers
-        // an extensionless GET/HEAD with index.html only after the mount and
-        // the whole route chain have missed, and never rewrites a 405 or a
-        // dotted asset path. A filter cannot do that — it runs before route
+        // No withSpaFallback: the SPA uses hash routing, so "/" is the only
+        // server-visible entry point, and a terminal fallback would answer
+        // unknown /api (or /health) paths with 200 HTML. withRouteFallback
+        // keeps a mount miss flowing into the route chain, whose own 404 stays
+        // a JSON error. A filter cannot express this: it runs before route
         // dispatch, which is how the old spa-filter used to swallow
         // /health/live, /health/ready and the WebSocket upgrade.
         binder
             .contribute(StaticResourceMount.class)
             .add(
                 StaticResourceMount.classpath("/", "static")
-                    .withSpaFallback(true)
+                    .withRouteFallback(true)
                     .withCacheMaxAge(java.time.Duration.ofSeconds(0))
             ); // revalidate (hashed /assets/* keep their own immutable 1y mount above)
 

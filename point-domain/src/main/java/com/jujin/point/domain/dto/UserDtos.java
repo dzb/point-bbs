@@ -1,6 +1,7 @@
 package com.jujin.point.domain.dto;
 
 import com.jujin.freeway.commons.validation.NotBlank;
+import com.jujin.freeway.commons.validation.NotNull;
 import com.jujin.freeway.commons.validation.Size;
 
 /**
@@ -39,4 +40,7 @@ public interface UserDtos {
     record SetUsernameRequest(String username) {}
 
     record SetEmailRequest(String email) {}
+
+    /** Mark a batch of messages read; ids must be concrete (no null entries). */
+    record MarkMessagesReadRequest(@NotNull @Size(min = 1) java.util.List<Long> ids) {}
 }

@@ -70,9 +70,11 @@ class AuthServiceTest {
 
     @Test
     void secureCookieFollowsProfileAndExplicitConfig() {
-        // Unset ⇒ prod implies TLS; dev is plain HTTP through the Vite proxy.
+        // Unset ⇒ Secure unless dev is explicit: prod and a no-profile boot
+        // may both be behind TLS, where an unmarked cookie would leak.
         assertTrue(new AuthService(SECRET, 7, "prod", "", "").sessionCookie("t", 60).contains("; Secure"));
         assertTrue(new AuthService(SECRET, 7, "prod", "", "").clearSessionCookie().contains("; Secure"));
+        assertTrue(new AuthService(SECRET, 7, "", "", "").sessionCookie("t", 60).contains("; Secure"));
         assertFalse(new AuthService(SECRET, 7, "dev", "", "").sessionCookie("t", 60).contains("Secure"));
 
         // An explicit value wins over the profile default, in both directions.

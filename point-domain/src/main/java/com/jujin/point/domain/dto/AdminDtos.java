@@ -4,7 +4,6 @@ import com.jujin.freeway.commons.validation.NotBlank;
 import com.jujin.freeway.commons.validation.NotNull;
 import com.jujin.freeway.commons.validation.Size;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,6 +41,4 @@ public interface AdminDtos {
     record SaveConfigsRequest(@NotNull Map<String, Object> configs) {}
 
     record SetConfigRequest(@NotNull Object value) {}
-
-    record MarkMessagesReadRequest(@NotNull @Size(min = 1) List<Long> ids) {}
 }

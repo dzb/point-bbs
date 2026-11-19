@@ -153,7 +153,7 @@ H2 文件默认在 `./data/bbs.mv.db`，随 JAR 工作目录变化。H2 文件�
 | `bbs.jwt.secret` | 开发占位值 | HMAC 密钥，生产至少 32 位随机串 |
 | `bbs.jwt.expire-days` | `7`（dev 30） | 会话有效天数 |
 | `bbs.jwt.cookie-domain` | 空 | 需要跨子域共享会话时设置 |
-| `bbs.jwt.cookie-secure` | 空（按 profile 推导） | 会话 Cookie 是否带 `Secure`；未设置时 `prod` 为 true、`dev` 为 false |
+| `bbs.jwt.cookie-secure` | 空（按 profile 推导） | 会话 Cookie 是否带 `Secure`；未设置时只有显式 `dev` 为 false，`prod` 与不激活 profile 都是 true |
 | `bbs.upload.dir` | `./uploads` | 上传文件目录 |
 | `bbs.upload.max-size` | `10485760` | 单文件上限（字节，10 MB） |
 
@@ -163,13 +163,17 @@ H2 文件默认在 `./data/bbs.mv.db`，随 JAR 工作目录变化。H2 文件�
 
 不要把密钥放在 `-D` 启动参数里：`ps` 对所有本机用户可见。freeway 会加载 `freeway.config.file`（环境变量 `FREEWAY_CONFIG_FILE`）指向的文件，并把它排在配置文件的最高优先级。
 
-`point.sh` 已按此处理：它把 `JWT_SECRET`、`DB_*`、`ADMIN_*`、`UPLOAD_DIR`、`STATIC_SERVICES` 写入 `logs/point.runtime.json`（权限 0600，`stop` 时删除），再通过 `FREEWAY_CONFIG_FILE` 传给进程。想自己管理这份文件时：
+`point.sh` 已按此处理：它把 `JWT_SECRET`、`DB_*`、`ADMIN_*`、`UPLOAD_DIR`、`STATIC_SERVICES` 写入 `logs/point.runtime.json`（权限 0600），再通过 `FREEWAY_CONFIG_FILE` 传给进程。该文件在 `stop`、前台运行退出、启动失败时都会删除。
+
+想自己管理这份主配置时：
 
 ```bash
 install -m 600 /dev/null /etc/point/secrets.json
 # 写入 "bbs.jwt.secret"、"freeway.db.password" 等键（点号分隔或嵌套均可）
 POINT_CONFIG=/etc/point/secrets.json ./point.sh start --profile prod
 ```
+
+两者可以同时使用：`FREEWAY_CONFIG_FILE` 会变成 `POINT_CONFIG,logs/point.runtime.json` 这样以逗号分隔的列表，后者优先级更高，因此同名的环境变量仍然覆盖文件里的值（与过去的 `-D` 语义一致）。`POINT_CONFIG` 本身不会被脚本删除。
 
 systemd 的 `EnvironmentFile=` 仍然可用：变量名不变，脚本会把它们转进运行时配置文件。
 

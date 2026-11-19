@@ -51,12 +51,15 @@ public class AuthService {
         this.expireDays = expireDays;
         this.cookieDomain = cookieDomain == null ? "" : cookieDomain.trim();
 
-        // bbs.jwt.cookie-secure unset ⇒ derive from the profile: production is
-        // served over TLS, where a Secure cookie keeps the session off any
-        // plaintext request; dev is plain HTTP (Vite proxy) and would lose it.
+        // bbs.jwt.cookie-secure unset ⇒ Secure everywhere except an explicit
+        // dev profile (plain HTTP through the Vite proxy, where the browser
+        // would drop the cookie). Failing safe matters for deployments that
+        // run TLS without the prod profile: a no-profile boot is still served
+        // over HTTPS in that case.
         var declared = cookieSecure == null ? "" : cookieSecure.trim();
+        boolean devProfile = profile != null && profile.contains("dev");
         this.secureCookie = declared.isEmpty()
-            ? (profile != null && profile.contains("prod"))
+            ? !devProfile
             : Boolean.parseBoolean(declared);
     }
 

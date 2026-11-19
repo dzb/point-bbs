@@ -1,12 +1,9 @@
 package com.jujin.point.web;
 
 import com.jujin.freeway.commons.validation.BeanValidator;
-import com.jujin.freeway.commons.validation.ValidationError;
-import com.jujin.freeway.commons.validation.ValidationResult;
 import com.jujin.freeway.http.HttpExchange;
 import com.jujin.freeway.http.ValidationException;
-
-import java.util.List;
+import com.jujin.point.domain.dto.DtoErrors;
 
 /** Shared helpers for route handlers. */
 public final class WebUtils {
@@ -45,8 +42,6 @@ public final class WebUtils {
 
     /** 400 for a body the decoder rejected before any validation ran. */
     public static ValidationException invalidBody(IllegalArgumentException cause) {
-        return new ValidationException(ValidationResult.of(List.of(
-            new ValidationError("body", "请求体格式或类型不正确", cause.getMessage())
-        )));
+        return new ValidationException(DtoErrors.malformedBody(cause));
     }
 }

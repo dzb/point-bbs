@@ -49,7 +49,7 @@ JSON, layered: `application.json` overridden by `application-dev.json` / `applic
 | `F2.http.server.port` / `host` | HTTP listener |
 | `F2.db.url` / `username` / `password` | H2 or PostgreSQL |
 | `bbs.jwt.secret` / `expire-days` / `cookie-domain` | session signing |
-| `bbs.jwt.cookie-secure` | `Secure` on the session cookie; unset ⇒ true under `prod`, false under `dev` |
+| `bbs.jwt.cookie-secure` | `Secure` on the session cookie; unset ⇒ false only under `dev` (prod, and a no-profile boot that may still be behind TLS, get true) |
 | `bbs.upload.dir` / `max-size` | uploads; default 10 MB |
 | `bbs.admin.username` / `password` | bootstrap admin (password ≥ 8) |
 | `F2.cloud.discovery.static.services` | cloud VIP: `serviceId=scheme://host:port[/basePath]` |
@@ -99,7 +99,7 @@ fast on a placeholder JWT secret; anything public must use `prod`.
 - `LIKE ... ESCAPE '!'`; `ESCAPE '\'` breaks under the MySQL lexer.
 - JWT placeholder fails fast in `prod`; sessions are HttpOnly cookies — never reintroduce localStorage tokens.
 - Security headers must run before `AuthFilter`, including on 401/403 responses.
-- The SPA shell comes from the root static mount's `.withSpaFallback(true)` — never from a filter. A filter runs before route dispatch, so it would shadow `/health/*`, `/rpc/*` and the `/ws` upgrade; the mount fallback only answers after the route chain misses, and never for dotted asset paths.
+- The SPA shell is the root mount's `index.html`, served for `/` by the mount's directory rule; there is no SPA fallback and no shell filter. The router is hash-based, so `/` is the only server-visible entry. A fallback (or a filter, which runs before route dispatch) answers unknown `/api/*`, `/health/*` and the `/ws` upgrade with HTML; those paths must stay JSON 404s.
 - Errors go through `ErrorMapper`; the server writes the response. `PointErrorMapper` maps app exceptions. Do not add a writing error filter — 2.0 maps exceptions inside each filter level.
 - Event subscribers that resolve `EventBus`-dependent services must be registered from `RuntimeHook.start`, not composition-time contributions.
 - Deferred contributions (filters, subscribers) are constructed before extension stores seal. Do not inject the service graph into a filter; `AuthFilter` holds `Container` and resolves per request. Follow that pattern.

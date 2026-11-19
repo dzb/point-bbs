@@ -245,8 +245,13 @@ public class UserRoutes {
             if (user.userId() != uid) { ctx.sendJson(403, ApiResponse.error(403, "只能操作自己的消息")); return; }
             // Typed body: a non-numeric element used to throw ClassCastException
             // (500); it is now a 400 validation error.
-            var req = WebUtils.validatedBody(ctx, com.jujin.point.domain.dto.AdminDtos.MarkMessagesReadRequest.class);
-            msgSvc.markRead(uid, req.ids().stream().map(Long::longValue).toList());
+            var req = WebUtils.validatedBody(ctx, MarkMessagesReadRequest.class);
+            if (req.ids().stream().anyMatch(java.util.Objects::isNull)) {
+                // Bean validation covers the collection, not its elements: a
+                // null id would NPE when unboxed.
+                throw WebUtils.invalidBody(new IllegalArgumentException("ids 不能包含 null"));
+            }
+            msgSvc.markRead(uid, req.ids());
             ctx.sendJson(200, ApiResponse.ok());
         }
     }

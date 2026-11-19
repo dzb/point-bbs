@@ -54,6 +54,7 @@ public class AdminConfigRoutes {
         @Override
         public void handle(HttpExchange ctx) throws Exception {
             var req = AdminBodies.validated(ctx, SaveConfigsRequest.class);
+            AdminBodies.requireNonNullValues(req.configs(), "configs");
             req.configs().forEach((k, v) -> {
                 configSvc.set(k, String.valueOf(v));
                 audit.log(ctx, "update", "config", 0,

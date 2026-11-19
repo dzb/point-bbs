@@ -187,13 +187,34 @@ build_app() {
 }
 
 json_escape() {
-  local s="$1"
-  s="${s//\\/\\\\}"
-  s="${s//\"/\\\"}"
-  s="${s//$'\n'/\\n}"
-  s="${s//$'\r'/\\r}"
-  s="${s//$'\t'/\\t}"
-  printf '%s' "$s"
+  # Every C0 control character must be escaped, not just the common ones:
+  # a stray byte in a password would otherwise produce a config file freeway
+  # refuses to parse. Byte-wise in the C locale keeps UTF-8 sequences intact.
+  local s="$1" out="" c i
+  local LC_ALL=C
+  for ((i = 0; i < ${#s}; i++)); do
+    c="${s:i:1}"
+    case "$c" in
+      '\') out+='\\' ;;
+      '"') out+='\"' ;;
+      $'\n') out+='\n' ;;
+      $'\r') out+='\r' ;;
+      $'\t') out+='\t' ;;
+      *)
+        if [[ "$c" < ' ' ]]; then
+          printf -v c '\\u%04x' "'$c"
+        fi
+        out+="$c"
+        ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+
+# Removes the generated secrets file (never an operator-supplied POINT_CONFIG).
+cleanup_runtime_config() {
+  [[ -n "${RUNTIME_CONFIG:-}" && "$RUNTIME_CONFIG" != "${POINT_CONFIG:-}" ]] || return 0
+  rm -f "$RUNTIME_CONFIG"
 }
 
 # Writes the environment overrides that must not sit on the JVM command line
@@ -255,16 +276,26 @@ start_app() {
   jvm_args+=("-DF2.http.server.port=$PORT")
   [[ -n "${HOST:-}" ]] && jvm_args+=("-DF2.http.server.host=$HOST")
 
-  # Everything else (credentials included) goes through a config file.
+  # Everything else (credentials included) goes through config files.
   local config_file="${POINT_CONFIG:-}"
   if [[ -n "$config_file" ]]; then
     [[ -f "$config_file" ]] || die "POINT_CONFIG 指向的文件不存在: $config_file"
     local perms
-    perms="$(stat -f '%Lp' "$config_file" 2>/dev/null || stat -c '%a' "$config_file" 2>/dev/null || printf '')"
+    # GNU stat first: on Linux `stat -f` means "file system status" and would
+    # print the wrong thing instead of failing into the BSD fallback.
+    perms="$(stat -c '%a' "$config_file" 2>/dev/null || stat -f '%Lp' "$config_file" 2>/dev/null || printf '')"
     [[ -z "$perms" || "$perms" == "600" ]] || warn "POINT_CONFIG 建议设为 0600: chmod 600 $config_file"
-  else
-    config_file="$RUNTIME_CONFIG"
-    write_runtime_config "$config_file" || config_file=""
+  fi
+
+  # Environment overrides are written even when POINT_CONFIG supplies the
+  # operator's file: freeway reads a comma-separated list and the later file
+  # wins, so an explicit env value still outranks the file (as -D did).
+  local generated=""
+  if write_runtime_config "$RUNTIME_CONFIG"; then
+    generated="$RUNTIME_CONFIG"
+  fi
+  if [[ -n "$generated" ]]; then
+    config_file="${config_file:+$config_file,}$generated"
   fi
   if [[ -n "$config_file" ]]; then
     export FREEWAY_CONFIG_FILE="$config_file"
@@ -283,7 +314,16 @@ start_app() {
   log "profile=${PROFILE:-none} mode=$MODE port=$PORT"
   log "jar=$jar"
   if [[ "$FOREGROUND" == "1" ]]; then
-    exec java "${jvm_args[@]}" -cp "$jar" "$main" ${app_args[@]+"${app_args[@]}"}
+    # No exec: the shell has to outlive the JVM only long enough to delete the
+    # generated secrets file on the way out (systemd's cgroup still delivers
+    # SIGTERM to the JVM directly).
+    java "${jvm_args[@]}" -cp "$jar" "$main" ${app_args[@]+"${app_args[@]}"} &
+    local child=$!
+    trap 'kill -TERM "$child" 2>/dev/null' INT TERM
+    local rc=0
+    wait "$child" || rc=$?
+    cleanup_runtime_config
+    exit "$rc"
   fi
 
   : > "$LOG_FILE"
@@ -308,6 +348,7 @@ start_app() {
       warn "启动失败，最后 40 行日志:"
       tail -n 40 "$LOG_FILE" >&2 || true
       rm -f "$PID_FILE"
+      cleanup_runtime_config
       exit 1
     fi
     sleep 1
@@ -320,7 +361,7 @@ stop_app() {
   if ! is_running; then
     log "point 未运行"
     rm -f "$PID_FILE"
-    [[ -z "${POINT_CONFIG:-}" ]] && rm -f "$RUNTIME_CONFIG"
+    cleanup_runtime_config
     return 0
   fi
   local pid; pid="$(cat "$PID_FILE")"
@@ -337,7 +378,7 @@ stop_app() {
   fi
   rm -f "$PID_FILE"
   # The generated file holds secrets; it is regenerated on the next start.
-  [[ -z "${POINT_CONFIG:-}" ]] && rm -f "$RUNTIME_CONFIG"
+  cleanup_runtime_config
   log "已停止"
 }
 
